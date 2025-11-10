@@ -10,6 +10,7 @@ interface PDFCanvasProps {
   lineWidth: number;
   showAnnotations: boolean;
   onAnnotationAdd: (annotation: PDFAnnotation) => void;
+  onAnnotationUpdate: (annotationId: string, updates: Partial<PDFAnnotation>) => void;
   scale: number;
 }
 
@@ -22,12 +23,16 @@ export function PDFCanvas({
   lineWidth,
   showAnnotations,
   onAnnotationAdd,
+  onAnnotationUpdate,
   scale,
 }: PDFCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPoints, setCurrentPoints] = useState<{ x: number; y: number }[]>([]);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
+  const [selectedAnnotation, setSelectedAnnotation] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Render all annotations
   useEffect(() => {
@@ -135,10 +140,87 @@ export function PDFCanvas({
     };
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (activeTool === 'select') return;
+  const hitTestAnnotation = (point: { x: number; y: number }, annotation: PDFAnnotation): boolean => {
+    if (annotation.type === 'freehand' && annotation.points) {
+      // Check if point is near any segment of the freehand path
+      for (let i = 0; i < annotation.points.length - 1; i++) {
+        const p1 = annotation.points[i];
+        const p2 = annotation.points[i + 1];
+        const dist = distanceToSegment(point, p1, p2);
+        if (dist < annotation.lineWidth + 5) return true;
+      }
+      return false;
+    } else if (annotation.type === 'rectangle' && annotation.x !== undefined && annotation.y !== undefined) {
+      return (
+        point.x >= annotation.x &&
+        point.x <= annotation.x + (annotation.width || 0) &&
+        point.y >= annotation.y &&
+        point.y <= annotation.y + (annotation.height || 0)
+      );
+    } else if (annotation.type === 'circle' && annotation.x !== undefined && annotation.y !== undefined) {
+      const centerX = annotation.x + (annotation.width || 0) / 2;
+      const centerY = annotation.y + (annotation.height || 0) / 2;
+      const radius = Math.sqrt(
+        Math.pow(annotation.width || 0, 2) + Math.pow(annotation.height || 0, 2)
+      ) / 2;
+      const dist = Math.sqrt(Math.pow(point.x - centerX, 2) + Math.pow(point.y - centerY, 2));
+      return dist <= radius;
+    } else if (annotation.type === 'text' && annotation.x !== undefined && annotation.y !== undefined) {
+      const textWidth = (annotation.text?.length || 0) * (annotation.fontSize || 16) * 0.6;
+      const textHeight = annotation.fontSize || 16;
+      return (
+        point.x >= annotation.x &&
+        point.x <= annotation.x + textWidth &&
+        point.y >= annotation.y - textHeight &&
+        point.y <= annotation.y
+      );
+    }
+    return false;
+  };
 
+  const distanceToSegment = (
+    point: { x: number; y: number },
+    p1: { x: number; y: number },
+    p2: { x: number; y: number }
+  ): number => {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const lengthSquared = dx * dx + dy * dy;
+    if (lengthSquared === 0) return Math.sqrt(Math.pow(point.x - p1.x, 2) + Math.pow(point.y - p1.y, 2));
+    
+    let t = ((point.x - p1.x) * dx + (point.y - p1.y) * dy) / lengthSquared;
+    t = Math.max(0, Math.min(1, t));
+    
+    const projX = p1.x + t * dx;
+    const projY = p1.y + t * dy;
+    
+    return Math.sqrt(Math.pow(point.x - projX, 2) + Math.pow(point.y - projY, 2));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCanvasPoint(e.clientX, e.clientY);
+
+    if (activeTool === 'select') {
+      // Check if clicking on an annotation (reverse order to select top-most)
+      for (let i = annotations.length - 1; i >= 0; i--) {
+        if (hitTestAnnotation(point, annotations[i])) {
+          setSelectedAnnotation(annotations[i].id);
+          setIsDragging(true);
+          
+          // Calculate offset for smooth dragging
+          if (annotations[i].type === 'freehand' && annotations[i].points) {
+            const firstPoint = annotations[i].points[0];
+            setDragOffset({ x: point.x - firstPoint.x, y: point.y - firstPoint.y });
+          } else if (annotations[i].x !== undefined && annotations[i].y !== undefined) {
+            setDragOffset({ x: point.x - annotations[i].x!, y: point.y - annotations[i].y! });
+          }
+          return;
+        }
+      }
+      setSelectedAnnotation(null);
+      return;
+    }
+
     setIsDrawing(true);
 
     if (activeTool === 'freehand') {
@@ -166,18 +248,43 @@ export function PDFCanvas({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const point = getCanvasPoint(e.clientX, e.clientY);
+
+    if (isDragging && selectedAnnotation) {
+      const annotation = annotations.find(a => a.id === selectedAnnotation);
+      if (!annotation) return;
+
+      const newX = point.x - dragOffset.x;
+      const newY = point.y - dragOffset.y;
+
+      if (annotation.type === 'freehand' && annotation.points) {
+        const firstPoint = annotation.points[0];
+        const dx = newX - firstPoint.x;
+        const dy = newY - firstPoint.y;
+        const newPoints = annotation.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+        onAnnotationUpdate(selectedAnnotation, { points: newPoints });
+      } else if (annotation.x !== undefined && annotation.y !== undefined) {
+        onAnnotationUpdate(selectedAnnotation, { x: newX, y: newY });
+      }
+      return;
+    }
+
     if (!isDrawing) return;
 
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;
 
     if (activeTool === 'freehand') {
-      const point = getCanvasPoint(e.clientX, e.clientY);
       setCurrentPoints((prev) => [...prev, point]);
     }
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isDragging) {
+      setIsDragging(false);
+      return;
+    }
+
     if (!isDrawing) return;
 
     if (activeTool === 'freehand' && currentPoints.length > 0) {
@@ -218,6 +325,9 @@ export function PDFCanvas({
       setCurrentPoints([]);
       setStartPoint(null);
     }
+    if (isDragging) {
+      setIsDragging(false);
+    }
   };
 
   return (
@@ -231,8 +341,8 @@ export function PDFCanvas({
         left: 0,
         width: width * scale,
         height: height * scale,
-        cursor: activeTool === 'select' ? 'default' : 'crosshair',
-        pointerEvents: activeTool === 'select' ? 'none' : 'auto',
+        cursor: activeTool === 'select' ? (isDragging ? 'grabbing' : 'grab') : 'crosshair',
+        pointerEvents: 'auto',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

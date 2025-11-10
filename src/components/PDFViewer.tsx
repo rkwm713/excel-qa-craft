@@ -97,6 +97,17 @@ export function PDFViewer({
     onAnnotationsChange?.(currentPage, updatedAnnotations);
   };
 
+  const handleAnnotationUpdate = (annotationId: string, updates: Partial<PDFAnnotation>) => {
+    const currentAnnotations = annotationsByPage.get(currentPage) || [];
+    const updatedAnnotations = currentAnnotations.map(ann =>
+      ann.id === annotationId ? { ...ann, ...updates } : ann
+    );
+    const newMap = new Map(annotationsByPage);
+    newMap.set(currentPage, updatedAnnotations);
+    setAnnotationsByPage(newMap);
+    onAnnotationsChange?.(currentPage, updatedAnnotations);
+  };
+
   const handleUndo = () => {
     const currentAnnotations = annotationsByPage.get(currentPage) || [];
     if (currentAnnotations.length === 0) return;
@@ -232,6 +243,7 @@ export function PDFViewer({
               lineWidth={lineWidth}
               showAnnotations={showAnnotations}
               onAnnotationAdd={handleAnnotationAdd}
+              onAnnotationUpdate={handleAnnotationUpdate}
               scale={scale}
             />
           </div>
