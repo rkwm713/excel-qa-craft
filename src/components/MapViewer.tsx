@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Navigation } from "lucide-react";
+import { ExternalLink, Navigation, Eye } from "lucide-react";
 
 // Fix for default marker icons
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -21,11 +21,14 @@ L.Icon.Default.mergeOptions({
 interface MapViewerProps {
   placemarks: any[];
   onStationClick?: (station: string) => void;
+  onStreetViewClick?: (location: { lat: number; lng: number; name: string }) => void;
+  hasGoogleApiKey?: boolean;
 }
 
-export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
+export const MapViewer = ({ placemarks, onStationClick, onStreetViewClick, hasGoogleApiKey }: MapViewerProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [selectedStation, setSelectedStation] = useState<string | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -138,9 +141,9 @@ export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
           buttonsDiv.style.flexDirection = "column";
           buttonsDiv.style.gap = "8px";
 
-          // Street View button
+          // Street View button (embedded if API key, external if not)
           const streetViewBtn = document.createElement('button');
-          streetViewBtn.textContent = "🗺️ Open Street View";
+          streetViewBtn.textContent = hasGoogleApiKey ? "👁️ Open Street View" : "🗺️ Open in Google Maps";
           streetViewBtn.style.padding = "8px 12px";
           streetViewBtn.style.background = "#FFFF00";
           streetViewBtn.style.color = "#282A30";
@@ -151,13 +154,22 @@ export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
           streetViewBtn.style.cursor = "pointer";
           streetViewBtn.style.fontFamily = "'Saira', sans-serif";
           streetViewBtn.onclick = () => {
-            // Use the simpler Google Maps URL format for Street View
-            const lat = placemark.coordinates.lat;
-            const lng = placemark.coordinates.lng;
-            window.open(
-              `https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0`,
-              '_blank'
-            );
+            if (hasGoogleApiKey && onStreetViewClick) {
+              // Use embedded Street View
+              onStreetViewClick({
+                lat: placemark.coordinates.lat,
+                lng: placemark.coordinates.lng,
+                name: placemark.name,
+              });
+            } else {
+              // Fallback to external Google Maps
+              const lat = placemark.coordinates.lat;
+              const lng = placemark.coordinates.lng;
+              window.open(
+                `https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0`,
+                '_blank'
+              );
+            }
           };
           buttonsDiv.appendChild(streetViewBtn);
 
@@ -228,8 +240,14 @@ export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
             </h3>
             <p className="text-sm text-muted-foreground font-neuton">
               {placemarks.length} locations • Click markers for details
+              {hasGoogleApiKey && " • Street View enabled"}
             </p>
           </div>
+          {selectedStation && (
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              Station {selectedStation}
+            </Badge>
+          )}
         </div>
       </div>
       <div ref={mapContainerRef} style={{ height: "600px", width: "100%" }} />

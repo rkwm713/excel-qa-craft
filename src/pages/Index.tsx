@@ -4,6 +4,8 @@ import { KMZUpload } from "@/components/KMZUpload";
 import { Dashboard } from "@/components/Dashboard";
 import { QAReviewTable } from "@/components/QAReviewTable";
 import { MapViewer } from "@/components/MapViewer";
+import { GoogleApiKeyInput } from "@/components/GoogleApiKeyInput";
+import { StreetViewModal } from "@/components/StreetViewModal";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, FileSpreadsheet, Map as MapIcon } from "lucide-react";
@@ -20,6 +22,10 @@ const Index = () => {
   const [kmzPlacemarks, setKmzPlacemarks] = useState<any[]>([]);
   const [kmzFileName, setKmzFileName] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("data");
+  const [googleApiKey, setGoogleApiKey] = useState<string>("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(true);
+  const [streetViewLocation, setStreetViewLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
+  const [isStreetViewOpen, setIsStreetViewOpen] = useState(false);
   const { toast } = useToast();
 
   const handleFileSelect = async (file: File) => {
@@ -90,6 +96,28 @@ const Index = () => {
     // Switch to data tab and scroll to station
     setActiveTab("data");
     // Could add logic to filter/highlight the station in the table
+  };
+
+  const handleStreetViewClick = (location: { lat: number; lng: number; name: string }) => {
+    setStreetViewLocation(location);
+    setIsStreetViewOpen(true);
+  };
+
+  const handleApiKeySubmit = (key: string) => {
+    setGoogleApiKey(key);
+    setShowApiKeyInput(false);
+    toast({
+      title: "API Key saved",
+      description: "Street View is now enabled",
+    });
+  };
+
+  const handleSkipApiKey = () => {
+    setShowApiKeyInput(false);
+    toast({
+      title: "Using map only",
+      description: "You can still add an API key later from settings",
+    });
   };
 
   const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
@@ -290,11 +318,30 @@ const Index = () => {
                 </div>
               </div>
 
-              {kmzPlacemarks.length > 0 ? (
-                <MapViewer
-                  placemarks={kmzPlacemarks}
-                  onStationClick={handleStationClick}
+              {showApiKeyInput && kmzPlacemarks.length > 0 && (
+                <GoogleApiKeyInput 
+                  onApiKeySubmit={handleApiKeySubmit} 
+                  onSkip={handleSkipApiKey}
                 />
+              )}
+
+              {kmzPlacemarks.length > 0 ? (
+                <>
+                  <MapViewer
+                    placemarks={kmzPlacemarks}
+                    onStationClick={handleStationClick}
+                    onStreetViewClick={handleStreetViewClick}
+                    hasGoogleApiKey={!!googleApiKey}
+                  />
+                  {googleApiKey && (
+                    <StreetViewModal
+                      isOpen={isStreetViewOpen}
+                      onClose={() => setIsStreetViewOpen(false)}
+                      location={streetViewLocation}
+                      apiKey={googleApiKey}
+                    />
+                  )}
+                </>
               ) : (
                 <div className="text-center py-12">
                   <MapIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
