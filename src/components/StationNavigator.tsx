@@ -44,81 +44,83 @@ export const StationNavigator = ({
   };
 
   return (
-    <Card className="p-4 bg-muted/30 border-primary/20">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handlePrevious}
-            disabled={!canGoPrevious || !currentStation}
-            className="h-9 w-9"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          <div className="flex items-center gap-2 min-w-[200px]">
-            <Select
-              value={currentStation || "all"}
-              onValueChange={(value) => onStationChange(value === "all" ? null : value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select station" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <div className="flex items-center gap-2">
-                    <List className="w-4 h-4" />
-                    <span>View All Stations</span>
-                  </div>
-                </SelectItem>
-                {stations.map((station) => (
-                  <SelectItem key={station} value={station}>
-                    <div className="flex items-center justify-between gap-2 w-full">
-                      <span>Station {station}</span>
-                      <Badge variant="secondary" className="ml-2">
-                        {stationCounts[station] || 0}
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleNext}
-            disabled={!canGoNext || !currentStation}
-            className="h-9 w-9"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {currentStation && (
-          <div className="flex items-center gap-4 ml-auto">
-            <div className="text-sm font-neuton">
-              <span className="text-muted-foreground">Viewing:</span>{" "}
-              <span className="font-semibold text-primary font-saira">
-                Station {currentStation}
-              </span>{" "}
-              <span className="text-muted-foreground">
-                ({stationCounts[currentStation] || 0} records)
-              </span>
-            </div>
+    <Card className="overflow-hidden border-2 border-primary/20 shadow-sm">
+      <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
-              onClick={handleViewAll}
-              className="gap-2"
+              size="icon"
+              onClick={handlePrevious}
+              disabled={!canGoPrevious || !currentStation}
+              className="h-10 w-10 border-2 hover:bg-primary hover:text-primary-foreground transition-colors"
             >
-              <List className="w-4 h-4" />
-              View All
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            
+            <div className="flex items-center gap-2 min-w-[250px]">
+              <Select
+                value={currentStation || "all"}
+                onValueChange={(value) => onStationChange(value === "all" ? null : value)}
+              >
+                <SelectTrigger className="w-full h-10 border-2 font-semibold">
+                  <SelectValue placeholder="Select station" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-2 py-1">
+                      <List className="w-4 h-4" />
+                      <span className="font-semibold">View All Stations</span>
+                    </div>
+                  </SelectItem>
+                  {stations.map((station) => (
+                    <SelectItem key={station} value={station}>
+                      <div className="flex items-center justify-between gap-3 w-full py-1">
+                        <span className="font-semibold font-saira">Station {station}</span>
+                        <Badge variant="secondary" className="ml-2 font-bold">
+                          {stationCounts[station] || 0}
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleNext}
+              disabled={!canGoNext || !currentStation}
+              className="h-10 w-10 border-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
-        )}
+
+          {currentStation && (
+            <div className="flex items-center gap-4 ml-auto">
+              <div className="flex items-center gap-2 text-sm font-neuton bg-background px-4 py-2 rounded-lg border-2">
+                <span className="text-muted-foreground">Viewing:</span>
+                <span className="font-bold text-primary font-saira text-base">
+                  Station {currentStation}
+                </span>
+                <Badge variant="default" className="font-bold">
+                  {stationCounts[currentStation] || 0} records
+                </Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleViewAll}
+                className="gap-2 border-2 font-semibold hover:bg-primary hover:text-primary-foreground"
+              >
+                <List className="w-4 h-4" />
+                View All
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   );
