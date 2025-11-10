@@ -29,16 +29,6 @@ export function PDFUpload({ onFileSelect, fileName, onClear }: PDFUploadProps) {
         return;
       }
 
-      // Check file size (20MB limit)
-      if (file.size > 20 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
-          description: "PDF file must be smaller than 20MB.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       onFileSelect(file);
       toast({
         title: "PDF Uploaded",
