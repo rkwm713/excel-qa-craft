@@ -6,15 +6,181 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 
 interface QAReviewCardProps {
   row: QAReviewRowType;
   onUpdateRow: (id: string, field: keyof QAReviewRowType, value: any) => void;
   cuOptions: string[];
+  compact?: boolean;
 }
 
-export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardProps) => {
+export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions, compact = true }: QAReviewCardProps) => {
+  if (compact) {
+    // Compact horizontal layout
+    return (
+      <Card className="overflow-hidden hover:shadow-sm transition-all duration-200 border-l-[3px] shadow-sm" 
+            style={{ 
+              borderLeftColor: row.issueType === "OK" ? "hsl(var(--success))" : "hsl(var(--destructive))",
+            }}>
+        <CardContent className="p-3">
+          {/* Compact Header Row */}
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="text-xs font-bold font-saira text-foreground">{row.station}</span>
+              {row.workSet && (
+                <>
+                  <span className="text-[10px] text-muted-foreground">•</span>
+                  <span className="text-[10px] text-muted-foreground truncate">{row.workSet}</span>
+                </>
+              )}
+            </div>
+            <Select
+              value={row.issueType}
+              onValueChange={(value) => onUpdateRow(row.id, "issueType", value)}
+            >
+              <SelectTrigger className="w-[120px] h-7 text-[10px] border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="OK" className="text-xs">
+                  <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                    OK
+                  </Badge>
+                </SelectItem>
+                <SelectItem value="NEEDS REVISIONS" className="text-xs">
+                  <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+                    NEEDS REVISIONS
+                  </Badge>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Description - Compact */}
+          {row.description && (
+            <div className="text-[10px] text-muted-foreground/70 mb-2 line-clamp-2 leading-tight">
+              {row.description}
+            </div>
+          )}
+
+          {/* Horizontal Layout: CU, WF, QTY side by side */}
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {/* CU */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-semibold uppercase text-muted-foreground">CU</span>
+                {row.cuCheck ? (
+                  <Check className="w-3 h-3 text-success" />
+                ) : (
+                  <X className="w-3 h-3 text-destructive" />
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 bg-primary/5 rounded px-1.5 py-1 border border-primary/10">
+                  <div className="text-[9px] text-primary/60 uppercase mb-0.5">D</div>
+                  <div className="font-mono text-[10px] font-semibold text-foreground truncate">
+                    {row.designerCU}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <Select
+                    value={row.qaCU}
+                    onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
+                  >
+                    <SelectTrigger className="h-8 text-[10px] font-mono font-semibold border">
+                      <SelectValue placeholder="QA" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {cuOptions.map((cu) => (
+                        <SelectItem key={cu} value={cu} className="font-mono text-xs">
+                          {cu}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* WF */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-semibold uppercase text-muted-foreground">WF</span>
+                {row.wfCheck ? (
+                  <Check className="w-3 h-3 text-success" />
+                ) : (
+                  <X className="w-3 h-3 text-destructive" />
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 bg-primary/5 rounded px-1.5 py-1 border border-primary/10">
+                  <div className="text-[9px] text-primary/60 uppercase mb-0.5">D</div>
+                  <div className="font-mono text-[10px] font-semibold text-foreground text-center">
+                    {row.designerWF}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <Select
+                    value={row.qaWF}
+                    onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
+                  >
+                    <SelectTrigger className="h-8 text-[10px] font-mono font-semibold border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="I" className="font-mono text-xs">I</SelectItem>
+                      <SelectItem value="R" className="font-mono text-xs">R</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* QTY */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-semibold uppercase text-muted-foreground">QTY</span>
+                {row.qtyCheck ? (
+                  <Check className="w-3 h-3 text-success" />
+                ) : (
+                  <X className="w-3 h-3 text-destructive" />
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 bg-primary/5 rounded px-1.5 py-1 border border-primary/10">
+                  <div className="text-[9px] text-primary/60 uppercase mb-0.5">D</div>
+                  <div className="font-mono text-[10px] font-semibold text-foreground text-center">
+                    {row.designerQty}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    value={row.qaQty}
+                    onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
+                    className="h-8 text-[10px] text-center font-mono font-semibold border"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Comments - Compact */}
+          <div className="pt-1.5 border-t border-border/30">
+            <Textarea
+              value={row.qaComments}
+              onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
+              placeholder="Add comments..."
+              className="min-h-[40px] text-[10px] resize-none focus-visible:ring-1 bg-muted/5 border-border/50 placeholder:text-muted-foreground/40"
+              rows={1}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Original detailed layout (kept for backward compatibility)
   return (
     <Card className="overflow-hidden hover:shadow-md transition-all duration-200 border-l-[4px] shadow-sm" 
           style={{ 
@@ -25,7 +191,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
         {/* Header */}
         <div className="flex items-center justify-between gap-2 px-4 py-3 bg-muted/20 border-b-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <span className="text-[9px] font-bold uppercase text-muted-foreground/50 tracking-wide">Station</span>
+            <span className="text-[9px] font-bold uppercase text-muted-foreground/50 tracking-wide">WP</span>
             <span className="text-base font-bold font-saira text-foreground">{row.station}</span>
             {row.workSet && (
               <>
@@ -208,7 +374,8 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
     prevProps.row.qaComments === nextProps.row.qaComments &&
     prevProps.row.cuCheck === nextProps.row.cuCheck &&
     prevProps.row.wfCheck === nextProps.row.wfCheck &&
-    prevProps.row.qtyCheck === nextProps.row.qtyCheck
+    prevProps.row.qtyCheck === nextProps.row.qtyCheck &&
+    prevProps.compact === nextProps.compact
   );
 });
 

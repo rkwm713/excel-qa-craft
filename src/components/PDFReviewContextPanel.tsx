@@ -117,7 +117,7 @@ export function PDFReviewContextPanel({
                 {/* Station Header - Fixed */}
                 <div className="px-4 py-3 border-b bg-muted/20">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-base">Station {currentWorkPoint.station}</h3>
+                    <h3 className="font-semibold text-base">WP {currentWorkPoint.station}</h3>
                     <Badge variant="secondary" className="text-xs">
                       {currentStationWorkPoints.filter(r => r.issueType === "OK").length}/{currentStationWorkPoints.length} OK
                     </Badge>
@@ -156,7 +156,7 @@ export function PDFReviewContextPanel({
                       Prev
                     </Button>
                     <span className="text-xs text-muted-foreground font-medium">
-                      Station {currentIndex + 1} / {uniqueStations.length}
+                      WP {currentIndex + 1} / {uniqueStations.length}
                     </span>
                     <Button
                       variant="outline"
@@ -173,7 +173,7 @@ export function PDFReviewContextPanel({
               </>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                No station selected
+                No WP selected
               </div>
             )}
           </TabsContent>
@@ -184,7 +184,7 @@ export function PDFReviewContextPanel({
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search stations..."
+                  placeholder="Search WPs..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-8 h-8 text-sm"
@@ -203,7 +203,7 @@ export function PDFReviewContextPanel({
                 ))}
                 {filteredData.length === 0 && (
                   <div className="text-center text-sm text-muted-foreground py-8">
-                    No stations found
+                    No WPs found
                   </div>
                 )}
               </div>
@@ -235,7 +235,7 @@ export function PDFReviewContextPanel({
                 ))}
                 {filteredFlagged.length === 0 && (
                   <div className="text-center text-sm text-muted-foreground py-8">
-                    {flaggedItems.length === 0 ? "No issues found! 🎉" : "No flagged stations found"}
+                    {flaggedItems.length === 0 ? "No issues found! 🎉" : "No flagged WPs found"}
                   </div>
                 )}
               </div>

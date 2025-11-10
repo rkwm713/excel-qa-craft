@@ -10,7 +10,8 @@ import {
   Trash2, 
   Eye, 
   EyeOff,
-  Hand 
+  Hand,
+  Move
 } from "lucide-react";
 import {
   Select,
@@ -21,8 +22,8 @@ import {
 } from "@/components/ui/select";
 
 interface PDFAnnotationToolbarProps {
-  activeTool: 'select' | 'freehand' | 'rectangle' | 'circle' | 'text';
-  onToolChange: (tool: 'select' | 'freehand' | 'rectangle' | 'circle' | 'text') => void;
+  activeTool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'circle' | 'text';
+  onToolChange: (tool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'circle' | 'text') => void;
   color: string;
   onColorChange: (color: string) => void;
   lineWidth: number;
@@ -63,7 +64,8 @@ export function PDFAnnotationToolbar({
   canUndo,
 }: PDFAnnotationToolbarProps) {
   const tools = [
-    { id: 'select' as const, icon: Hand, label: 'Select' },
+    { id: 'pan' as const, icon: Hand, label: 'Pan' },
+    { id: 'select' as const, icon: Move, label: 'Select' },
     { id: 'freehand' as const, icon: Pen, label: 'Redline' },
     { id: 'rectangle' as const, icon: Square, label: 'Rectangle' },
     { id: 'circle' as const, icon: Circle, label: 'Circle' },

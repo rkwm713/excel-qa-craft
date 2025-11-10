@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText } from "lucide-react";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
+import { exportDesignerPackage } from "@/utils/exportPackage";
 import { parseKMZ } from "@/utils/kmzParser";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
@@ -33,8 +34,7 @@ const Index = () => {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [streetViewLocation, setStreetViewLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const [isStreetViewOpen, setIsStreetViewOpen] = useState(false);
-  const [selectedStation, setSelectedStation] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
+  const [selectedStation, setSelectedStation] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [currentPdfPage, setCurrentPdfPage] = useState<number>(1);
@@ -230,14 +230,18 @@ const Index = () => {
 
   // Jump to work point from context panel
   const handleJumpToWorkPoint = useCallback((station: string) => {
-    console.log(`Jumping to station ${station}`);
+    console.log(`Jumping to WP/Station: ${station}`);
+    console.log(`Available mappings:`, Object.keys(stationPageMapping));
     
     // Use flexible matching to find page
     const page = findMatchingStation(station, stationPageMapping);
-    console.log(`Found page ${page} for station ${station}`);
+    console.log(`Found page ${page} for WP/Station ${station}`);
     
     if (page) {
       setCurrentPdfPage(page);
+      console.log(`PDF page set to ${page}`);
+    } else {
+      console.warn(`No page found for WP/Station ${station}. Available mappings:`, Object.keys(stationPageMapping));
     }
     
     const workPoint = qaData.find(row => row.station === station);
@@ -246,6 +250,20 @@ const Index = () => {
       setSelectedStation(station);
     }
   }, [stationPageMapping, qaData]);
+
+  // Set current work point from table row click
+  const handleSetCurrentWorkPoint = useCallback((row: QAReviewRow) => {
+    setCurrentWorkPoint(row);
+    setSelectedStation(row.station);
+    
+    // Also jump to PDF page if available
+    if (row.station) {
+      const page = findMatchingStation(row.station, stationPageMapping);
+      if (page) {
+        setCurrentPdfPage(page);
+      }
+    }
+  }, [stationPageMapping]);
 
   // Navigate to previous work point
   const handlePreviousWorkPoint = useCallback(() => {
@@ -332,7 +350,7 @@ const Index = () => {
     });
   }, []);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (qaData.length === 0) {
       toast({
         title: "No data to export",
@@ -343,31 +361,39 @@ const Index = () => {
     }
 
     try {
-      exportToExcel(qaData, cuLookup);
+      // Show loading toast
+      toast({
+        title: "Creating export package...",
+        description: "Generating annotated PDF and revision Excel file",
+      });
+
+      await exportDesignerPackage(
+        qaData,
+        cuLookup,
+        pdfFile,
+        pdfAnnotations,
+        stationPageMapping,
+        pdfWorkPointNotes
+      );
+
       toast({
         title: "Export successful",
-        description: "QA Tool workbook has been generated",
+        description: "Designer package (ZIP) has been generated with PDF and Excel files",
       });
     } catch (error) {
+      console.error("Export error:", error);
       toast({
         title: "Export failed",
-        description: "Failed to generate Excel file",
+        description: error instanceof Error ? error.message : "Failed to generate export package",
         variant: "destructive",
       });
-      console.error("Export error:", error);
     }
   };
 
   // Handle station selection from sidebar
-  const handleStationSelect = useCallback((station: string | null) => {
-    if (station === null) {
-      // View All - clear selection
-      setSelectedStation(null);
-      setCurrentWorkPoint(null);
-    } else {
-      // Jump to specific station
-      handleJumpToWorkPoint(station);
-    }
+  const handleStationSelect = useCallback((station: string) => {
+    // Jump to specific station
+    handleJumpToWorkPoint(station);
   }, [handleJumpToWorkPoint]);
 
   // Get unique stations and their counts
@@ -387,6 +413,33 @@ const Index = () => {
       stationCounts: counts,
     };
   }, [qaData]);
+
+  // Auto-select first station when stations are available or when data changes
+  useEffect(() => {
+    if (stations.length > 0) {
+      // If no station selected or selected station no longer exists, select first station
+      if (!selectedStation || !stations.includes(selectedStation)) {
+        const firstStation = stations[0];
+        setSelectedStation(firstStation);
+        // Also set the first work point for that station
+        const firstWorkPoint = qaData.find(row => row.station === firstStation);
+        if (firstWorkPoint) {
+          setCurrentWorkPoint(firstWorkPoint);
+          // Jump to first work point's page if PDF is loaded
+          if (pdfFile) {
+            const page = findMatchingStation(firstStation, stationPageMapping);
+            if (page) {
+              setCurrentPdfPage(page);
+            }
+          }
+        }
+      }
+    } else {
+      // No stations available, clear selection
+      setSelectedStation("");
+      setCurrentWorkPoint(null);
+    }
+  }, [stations, selectedStation, qaData, pdfFile, stationPageMapping]);
 
   const metrics = useMemo((): DashboardMetrics => {
     const totalRows = qaData.length;
@@ -409,8 +462,8 @@ const Index = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        {/* Sidebar - only show when data is loaded and has multiple stations */}
-        {qaData.length > 0 && stations.length > 1 && (
+        {/* Sidebar - show when data is loaded, has stations, and user has started QA Review */}
+        {hasUploadedFiles && qaData.length > 0 && stations.length > 0 && selectedStation && (
           <StationSidebar
             stations={stations}
             currentStation={selectedStation}
@@ -422,33 +475,111 @@ const Index = () => {
         {/* Main Content */}
         <SidebarInset className="flex-1">
           <header className="sticky top-0 z-10 border-b bg-card shadow-sm">
-            <div className="flex items-center gap-4 px-6 py-4">
-              {qaData.length > 0 && stations.length > 1 && (
-                <SidebarTrigger className="-ml-1" />
-              )}
-              <div className="flex items-center justify-between flex-1">
-                <div className="flex items-center gap-6">
-                  <img 
-                    src={techservLogo} 
-                    alt="TechServ" 
-                    className="h-12 w-auto"
-                  />
-                  <div className="border-l border-border pl-6">
-                    <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">QA Tool</h1>
-                    <p className="text-sm text-muted-foreground font-neuton">Designer Upload Review System</p>
+            <div className="flex flex-col gap-3 px-4 py-3">
+              {/* Top row: Logo and Export */}
+              <div className="flex items-center gap-4">
+                {hasUploadedFiles && qaData.length > 0 && stations.length > 0 && selectedStation && (
+                  <SidebarTrigger className="-ml-1" />
+                )}
+                <div className="flex items-center justify-between flex-1">
+                  <div className="flex items-center gap-6">
+                    <img 
+                      src={techservLogo} 
+                      alt="TechServ" 
+                      className="h-12 w-auto"
+                    />
+                    <div className="border-l border-border pl-6">
+                      <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">QA Tool</h1>
+                      <p className="text-sm text-muted-foreground font-neuton">Designer Upload Review System</p>
+                    </div>
+                  </div>
+                  {qaData.length > 0 && (
+                    <Button onClick={handleExport} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                      <Download className="w-4 h-4" />
+                      Export QA Tool
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Bottom row: Tabs and Action Buttons - only show when files are uploaded */}
+              {hasUploadedFiles && (
+                <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="flex gap-1 bg-muted p-1 rounded-md">
+                      <Button
+                        variant={activeTab === "dashboard" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setActiveTab("dashboard")}
+                        className="gap-2"
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        Dashboard
+                      </Button>
+                      <Button
+                        variant={activeTab === "data" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setActiveTab("data")}
+                        className="gap-2"
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        QA Data
+                      </Button>
+                      <Button
+                        variant={activeTab === "map" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setActiveTab("map")}
+                        className="gap-2"
+                      >
+                        <MapIcon className="w-4 h-4" />
+                        Map View
+                      </Button>
+                    </div>
+                    {activeTab === "data" && fileName && (
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold font-saira uppercase tracking-wide text-primary">
+                          QA Review: {fileName}
+                        </h2>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {!fileName && (
+                      <Button variant="outline" onClick={() => document.getElementById("excel-upload-later")?.click()} className="gap-2">
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Add Excel
+                      </Button>
+                    )}
+                    {!kmzPlacemarks.length && (
+                      <Button variant="outline" onClick={() => document.getElementById("kmz-upload")?.click()} className="gap-2">
+                        <MapIcon className="w-4 h-4" />
+                        Add KMZ
+                      </Button>
+                    )}
+                    {!pdfFileName && (
+                      <Button variant="outline" onClick={() => document.getElementById("pdf-upload-later")?.click()} className="gap-2">
+                        <FileText className="w-4 h-4" />
+                        Add PDF
+                      </Button>
+                    )}
+                    <Button variant="outline" onClick={() => { 
+                      setQaData([]); 
+                      setKmzPlacemarks([]);
+                      setPdfFile(null);
+                      setFileName("");
+                      setKmzFileName("");
+                      setPdfFileName("");
+                      setHasUploadedFiles(false);
+                    }}>
+                      Upload New Files
+                    </Button>
                   </div>
                 </div>
-                {qaData.length > 0 && (
-                  <Button onClick={handleExport} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                    <Download className="w-4 h-4" />
-                    Export QA Tool
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
           </header>
 
-          <main className="container mx-auto px-6 py-8">
+          <main className="w-full px-4 py-4">
         {!hasUploadedFiles ? (
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8">
@@ -506,52 +637,7 @@ const Index = () => {
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <div className="flex items-center justify-between">
-              <TabsList>
-                <TabsTrigger value="dashboard" className="gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Dashboard
-                </TabsTrigger>
-                <TabsTrigger value="data" className="gap-2">
-                  <FileSpreadsheet className="w-4 h-4" />
-                  QA Data
-                </TabsTrigger>
-                <TabsTrigger value="map" className="gap-2">
-                  <MapIcon className="w-4 h-4" />
-                  Map View
-                </TabsTrigger>
-              </TabsList>
-              <div className="flex gap-2">
-                {!fileName && (
-                  <Button variant="outline" onClick={() => document.getElementById("excel-upload-later")?.click()} className="gap-2">
-                    <FileSpreadsheet className="w-4 h-4" />
-                    Add Excel
-                  </Button>
-                )}
-                {!kmzPlacemarks.length && (
-                  <Button variant="outline" onClick={() => document.getElementById("kmz-upload")?.click()} className="gap-2">
-                    <MapIcon className="w-4 h-4" />
-                    Add KMZ
-                  </Button>
-                )}
-                {!pdfFileName && (
-                  <Button variant="outline" onClick={() => document.getElementById("pdf-upload-later")?.click()} className="gap-2">
-                    <FileText className="w-4 h-4" />
-                    Add PDF
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => { 
-                  setQaData([]); 
-                  setKmzPlacemarks([]);
-                  setPdfFile(null);
-                  setFileName("");
-                  setKmzFileName("");
-                  setPdfFileName("");
-                  setHasUploadedFiles(false);
-                }}>
-                  Upload New Files
-                </Button>
-              </div>
+            <div>
               <input
                 id="excel-upload-later"
                 type="file"
@@ -611,22 +697,6 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="data" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold font-saira uppercase tracking-wide text-primary">
-                    QA Review: {fileName}
-                  </h2>
-                  <p className="text-sm text-muted-foreground font-neuton">
-                    Review and validate designer data entries
-                    {kmzPlacemarks.length > 0 && ` • ${kmzPlacemarks.length} work points mapped`}
-                  </p>
-                </div>
-                <Button onClick={handleExport} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                  <Download className="w-4 h-4" />
-                  Export QA Tool
-                </Button>
-              </div>
-
               {isLoading ? (
                 <QAReviewSkeleton count={5} />
               ) : (
@@ -635,9 +705,9 @@ const Index = () => {
                     data={qaData}
                     onUpdateRow={handleUpdateRow}
                     cuOptions={cuLookup.map((cu) => cu.code)}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
                     selectedStation={selectedStation}
+                    stations={stations}
+                    onStationChange={handleStationSelect}
                     pdfFile={pdfFile}
                     currentPdfPage={currentPdfPage}
                     onPdfPageChange={handlePdfPageChange}
@@ -648,6 +718,7 @@ const Index = () => {
                     initialWorkPointNotes={pdfWorkPointNotes}
                     currentWorkPoint={currentWorkPoint}
                     onJumpToWorkPoint={handleJumpToWorkPoint}
+                    onSetCurrentWorkPoint={handleSetCurrentWorkPoint}
                     onPreviousWorkPoint={handlePreviousWorkPoint}
                     onNextWorkPoint={handleNextWorkPoint}
                     canGoPrevious={currentWorkPoint ? qaData.findIndex(r => r.id === currentWorkPoint.id) > 0 : false}

@@ -48,7 +48,7 @@ export function PDFUpload({ onFileSelect, fileName, onClear }: PDFUploadProps) {
             <div className="text-center">
               <h3 className="font-semibold text-lg mb-1">Upload Work Order Map PDF</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Upload the PDF containing station diagrams and work points
+                Upload the PDF containing WP diagrams and work points
               </p>
             </div>
             <Button 

@@ -30,8 +30,29 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
         .map((item: any) => item.str)
         .join(" ");
       
-      // Look for patterns like "WP: 1440859" or "WP 1440859"
-      const wpMatch = text.match(/WP[:\s]+(\d+)/i);
+      // Look for patterns like "WP: 1440859", "WP 1440859", "WP 2 / 108-705", "WP26", etc.
+      // Priority: Try formats with separators first (more specific), then general formats
+      let wpMatch = null;
+      
+      // First, try "WP 2 / 108-705" format - extract just the first number before the slash
+      // This is the most common format based on the user's example
+      wpMatch = text.match(/WP[:\s]+(\d+)\s*\/\s*\d+/i);
+      
+      if (!wpMatch) {
+        // Try "WP: 1440859" or "WP 1440859" (standard format)
+        wpMatch = text.match(/WP[:\s]+(\d+)/i);
+      }
+      
+      if (!wpMatch) {
+        // Try "WP26" (no space, no colon)
+        wpMatch = text.match(/WP(\d+)/i);
+      }
+      
+      if (!wpMatch) {
+        // Try "Work Point 26" or "WorkPoint 26"
+        wpMatch = text.match(/Work\s*Point[:\s]+(\d+)/i);
+      }
+      
       const workPoint = wpMatch ? wpMatch[1] : null;
       
       pages.push({
@@ -44,11 +65,25 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
         // Store the original extracted work point
         stationPageMapping[workPoint] = pageNum;
         
-        // ALSO store with leading zeros (pad to 4 digits) for Excel compatibility
-        const paddedWorkPoint = workPoint.padStart(4, '0');
-        stationPageMapping[paddedWorkPoint] = pageNum;
+        // Store normalized version (without leading zeros)
+        const normalized = String(parseInt(workPoint, 10));
+        if (normalized !== workPoint) {
+          stationPageMapping[normalized] = pageNum;
+        }
         
-        console.log(`Found WP ${workPoint} on page ${pageNum} (also mapped as ${paddedWorkPoint})`);
+        // Store with leading zeros (pad to 4 digits) for Excel compatibility
+        const padded4 = workPoint.padStart(4, '0');
+        if (padded4 !== workPoint) {
+          stationPageMapping[padded4] = pageNum;
+        }
+        
+        // Also store normalized with padding
+        const normalizedPadded4 = normalized.padStart(4, '0');
+        if (normalizedPadded4 !== workPoint && normalizedPadded4 !== padded4) {
+          stationPageMapping[normalizedPadded4] = pageNum;
+        }
+        
+        console.log(`Found WP ${workPoint} on page ${pageNum} (mapped as: ${workPoint}, ${normalized}, ${padded4}, ${normalizedPadded4})`);
       }
     }
 

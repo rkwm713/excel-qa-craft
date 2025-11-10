@@ -23,7 +23,7 @@ export function WorkPointEditor({ row, onUpdateRow, cuOptions }: WorkPointEditor
       {/* Header */}
       <div className="pb-2 border-b">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-lg">Station {row.station}</h3>
+          <h3 className="font-semibold text-lg">WP {row.station}</h3>
           <Badge
             variant={row.issueType === "OK" ? "default" : "destructive"}
           >

@@ -315,7 +315,7 @@ export const MapViewer = ({
         if (placemark.station) {
           const stationP = document.createElement("p");
           stationP.style.margin = "4px 0";
-          stationP.innerHTML = `<strong>Station:</strong> ${placemark.station}`;
+          stationP.innerHTML = `<strong>WP:</strong> ${placemark.station}`;
           popupContainer.appendChild(stationP);
         }
 

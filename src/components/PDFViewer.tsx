@@ -38,7 +38,7 @@ export function PDFViewer({
   const [numPages, setNumPages] = useState<number>(0);
   const [scale, setScale] = useState<number>(1.0);
   const [pageWidth, setPageWidth] = useState<number>(600);
-  const [activeTool, setActiveTool] = useState<'select' | 'freehand' | 'rectangle' | 'circle' | 'text'>('select');
+  const [activeTool, setActiveTool] = useState<'pan' | 'select' | 'freehand' | 'rectangle' | 'circle' | 'text'>('pan');
   const [drawColor, setDrawColor] = useState('#FF0000');
   const [lineWidth, setLineWidth] = useState(4);
   const [annotationsByPage, setAnnotationsByPage] = useState<Map<number, PDFAnnotation[]>>(new Map());
@@ -65,13 +65,19 @@ export function PDFViewer({
     const updateWidth = () => {
       const container = document.getElementById("pdf-container");
       if (container) {
-        setPageWidth(container.clientWidth - 40);
+        // Account for padding (p-2 = 8px on each side = 16px) and some margin
+        const availableWidth = container.clientWidth - 32;
+        // Ensure PDF fits within container - divide by scale to account for zoom
+        const maxWidth = availableWidth / scale;
+        // Cap at reasonable maximum to prevent overflow
+        const constrainedWidth = Math.min(maxWidth, 700);
+        setPageWidth(Math.max(300, constrainedWidth)); // Minimum 300px width
       }
     };
     updateWidth();
     window.addEventListener("resize", updateWidth);
     return () => window.removeEventListener("resize", updateWidth);
-  }, []);
+  }, [scale]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -142,17 +148,8 @@ export function PDFViewer({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Current Station Indicator */}
-      {currentStation && (
-        <div className="mb-2 px-2 py-1 bg-primary/10 border border-primary/20 rounded-md flex items-center justify-center">
-          <span className="text-xs font-medium text-primary">
-            📍 Reviewing: Station {currentStation}
-          </span>
-        </div>
-      )}
-      
       {/* Annotation Toolbar */}
-      <div className="mb-2">
+      <div className="mb-1">
         <PDFAnnotationToolbar
           activeTool={activeTool}
           onToolChange={setActiveTool}
@@ -169,7 +166,7 @@ export function PDFViewer({
       </div>
 
       {/* Page Navigation and Zoom Controls */}
-      <Card className="mb-2 p-2">
+      <Card className="mb-1 p-1.5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Button
@@ -218,8 +215,8 @@ export function PDFViewer({
         </div>
       </Card>
       <Card className="flex-1 overflow-auto" id="pdf-container">
-        <div className="flex justify-center p-4">
-          <div style={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}>
+        <div className="flex justify-center p-2">
+          <div style={{ position: 'relative', display: 'inline-block', lineHeight: 0, maxWidth: '100%', overflow: 'hidden' }}>
             <Document
               file={file}
               onLoadSuccess={onDocumentLoadSuccess}
@@ -232,14 +229,14 @@ export function PDFViewer({
               <Page
                 pageNumber={currentPage}
                 scale={scale}
-                width={pageWidth}
+                width={Math.min(pageWidth, 700)}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
               />
             </Document>
             <PDFCanvas
-              width={pageWidth}
-              height={pageWidth * 1.414}
+              width={Math.min(pageWidth * scale, 1000)}
+              height={Math.min(pageWidth * 1.414 * scale, 1414)}
               annotations={currentPageAnnotations}
               activeTool={activeTool}
               color={drawColor}
@@ -248,16 +245,18 @@ export function PDFViewer({
               onAnnotationAdd={handleAnnotationAdd}
               onAnnotationUpdate={handleAnnotationUpdate}
               scale={scale}
+              baseWidth={Math.min(pageWidth, 700)}
+              baseHeight={Math.min(pageWidth * 1.414, 990)}
             />
           </div>
         </div>
       </Card>
       {/* Work Point Notes Section */}
       {currentStation && (
-        <Card className="mt-2">
-          <CardHeader className="pb-3">
+        <Card className="mt-1">
+          <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center justify-between">
-              <span>📝 QA Notes for Station {currentStation}</span>
+              <span>📝 QA Notes for WP {currentStation}</span>
               <span className="text-xs text-muted-foreground font-normal">
                 {workPointNotes.length}/500 characters
               </span>

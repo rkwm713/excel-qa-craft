@@ -2,50 +2,37 @@ import { memo } from "react";
 import { QAReviewRow as QAReviewRowType } from "@/types/qa-tool";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Check, X } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 
 interface QAReviewRowProps {
   row: QAReviewRowType;
   onUpdateRow: (id: string, field: keyof QAReviewRowType, value: any) => void;
   cuOptions: string[];
+  isActive?: boolean;
+  onRowClick?: (row: QAReviewRowType) => void;
 }
 
-export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions }: QAReviewRowProps) => {
+export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, isActive = false, onRowClick }: QAReviewRowProps) => {
+  const handleRowClick = () => {
+    if (onRowClick) {
+      onRowClick(row);
+    }
+  };
+
   return (
-    <tr className="hover:bg-muted/30 transition-colors border-b">
-      <td className="px-4 py-3 min-w-[180px]">
-        <Select
-          value={row.issueType}
-          onValueChange={(value) => onUpdateRow(row.id, "issueType", value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="OK">
-              <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                OK
-              </Badge>
-            </SelectItem>
-            <SelectItem value="NEEDS REVISIONS">
-              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                NEEDS REVISIONS
-              </Badge>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </td>
-      <td className="px-4 py-3 text-sm min-w-[100px] font-neuton">{row.station}</td>
-      <td className="px-4 py-3 text-sm min-w-[120px] font-neuton">{row.workSet}</td>
+    <tr 
+      className={`hover:bg-muted/30 transition-colors border-b cursor-pointer ${isActive ? 'bg-primary/10 border-primary/30' : ''}`}
+      onClick={handleRowClick}
+    >
       <td className="px-4 py-3 text-sm font-medium min-w-[140px] font-neuton">{row.designerCU}</td>
       <td className="px-4 py-3 min-w-[180px]">
         <Select
           value={row.qaCU}
           onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger 
+            className="w-full"
+            onClick={(e) => e.stopPropagation()} // Prevent row click when opening dropdown
+          >
             <SelectValue placeholder="Select CU" />
           </SelectTrigger>
           <SelectContent className="max-h-60">
@@ -57,16 +44,16 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions }: QAReviewRowPro
           </SelectContent>
         </Select>
       </td>
-      <td className="px-4 py-3 text-sm max-w-xs truncate min-w-[250px] font-neuton" title={row.description}>
-        {row.description}
-      </td>
       <td className="px-4 py-3 text-sm min-w-[120px] font-neuton">{row.designerWF}</td>
       <td className="px-4 py-3 min-w-[100px]">
         <Select
           value={row.qaWF}
           onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
         >
-          <SelectTrigger className="w-20">
+          <SelectTrigger 
+            className="w-20"
+            onClick={(e) => e.stopPropagation()} // Prevent row click when opening dropdown
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -80,36 +67,13 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions }: QAReviewRowPro
         <Input
           type="number"
           value={row.qaQty}
-          onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
+          onChange={(e) => {
+            onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0);
+            e.stopPropagation(); // Prevent row click when editing
+          }}
+          onClick={(e) => e.stopPropagation()} // Prevent row click when clicking input
           className="w-24 text-right"
         />
-      </td>
-      <td className="px-4 py-3 min-w-[220px]">
-        <Textarea
-          value={row.qaComments}
-          onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
-          className="min-w-[200px]"
-          rows={1}
-        />
-      </td>
-      <td className="px-4 py-3 min-w-[100px]">
-        <div className="flex gap-2 justify-center">
-          {row.cuCheck ? (
-            <Check className="w-4 h-4 text-success" />
-          ) : (
-            <X className="w-4 h-4 text-destructive" />
-          )}
-          {row.wfCheck ? (
-            <Check className="w-4 h-4 text-success" />
-          ) : (
-            <X className="w-4 h-4 text-destructive" />
-          )}
-          {row.qtyCheck ? (
-            <Check className="w-4 h-4 text-success" />
-          ) : (
-            <X className="w-4 h-4 text-destructive" />
-          )}
-        </div>
       </td>
     </tr>
   );

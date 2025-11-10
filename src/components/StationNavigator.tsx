@@ -64,19 +64,19 @@ export const StationNavigator = ({
                 onValueChange={(value) => onStationChange(value === "all" ? null : value)}
               >
                 <SelectTrigger className="w-full h-10 border-2 font-semibold">
-                  <SelectValue placeholder="Select station" />
+                  <SelectValue placeholder="Select WP" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">
                     <div className="flex items-center gap-2 py-1">
                       <List className="w-4 h-4" />
-                      <span className="font-semibold">View All Stations</span>
+                      <span className="font-semibold">View All WPs</span>
                     </div>
                   </SelectItem>
                   {stations.map((station) => (
                     <SelectItem key={station} value={station}>
                       <div className="flex items-center justify-between gap-3 w-full py-1">
-                        <span className="font-semibold font-saira">Station {station}</span>
+                        <span className="font-semibold font-saira">WP {station}</span>
                         <Badge variant="secondary" className="ml-2 font-bold">
                           {stationCounts[station] || 0}
                         </Badge>
@@ -103,7 +103,7 @@ export const StationNavigator = ({
               <div className="flex items-center gap-2 text-sm font-neuton bg-background px-4 py-2 rounded-lg border-2">
                 <span className="text-muted-foreground">Viewing:</span>
                 <span className="font-bold text-primary font-saira text-base">
-                  Station {currentStation}
+                  WP {currentStation}
                 </span>
                 <Badge variant="default" className="font-bold">
                   {stationCounts[currentStation] || 0} records

@@ -21,7 +21,7 @@ export function CompactWorkPointCard({ row, onJumpToPdf, isActive }: CompactWork
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm">Station {row.station}</span>
+          <span className="font-semibold text-sm">WP {row.station}</span>
           <Badge
             variant={row.issueType === "OK" ? "default" : "destructive"}
             className="text-xs"
