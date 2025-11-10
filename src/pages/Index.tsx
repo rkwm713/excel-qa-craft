@@ -354,6 +354,18 @@ const Index = () => {
     }
   };
 
+  // Handle station selection from sidebar
+  const handleStationSelect = useCallback((station: string | null) => {
+    if (station === null) {
+      // View All - clear selection
+      setSelectedStation(null);
+      setCurrentWorkPoint(null);
+    } else {
+      // Jump to specific station
+      handleJumpToWorkPoint(station);
+    }
+  }, [handleJumpToWorkPoint]);
+
   // Get unique stations and their counts
   const { stations, stationCounts } = useMemo(() => {
     const stationsSet = new Set<string>();
@@ -398,7 +410,7 @@ const Index = () => {
           <StationSidebar
             stations={stations}
             currentStation={selectedStation}
-            onStationChange={setSelectedStation}
+            onStationChange={handleStationSelect}
             stationCounts={stationCounts}
           />
         )}
