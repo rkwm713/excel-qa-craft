@@ -1,144 +1,89 @@
-import { useState } from "react";
-import { QAReviewRow } from "@/types/qa-tool";
+import { useRef, useCallback } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { QAReviewRow as QAReviewRowType } from "@/types/qa-tool";
+import { QAReviewRow } from "./QAReviewRow";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Check, X } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 
 interface QAReviewTableProps {
-  data: QAReviewRow[];
-  onUpdateRow: (id: string, field: keyof QAReviewRow, value: any) => void;
+  data: QAReviewRowType[];
+  onUpdateRow: (id: string, field: keyof QAReviewRowType, value: any) => void;
   cuOptions: string[];
 }
 
 export const QAReviewTable = ({ data, onUpdateRow, cuOptions }: QAReviewTableProps) => {
-  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // Memoize the update handler to prevent recreating it on every render
+  const handleUpdateRow = useCallback(
+    (id: string, field: keyof QAReviewRowType, value: any) => {
+      onUpdateRow(id, field, value);
+    },
+    [onUpdateRow]
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: data.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 60,
+    overscan: 5,
+  });
 
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
-          <thead className="bg-muted/50">
+          <thead className="bg-muted/50 sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">Status</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">Station</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">Work Set</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">Designer CU</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">QA CU</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">Description</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">Designer WF</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">QA WF</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">Designer Qty</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">QA Qty</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b">Comments</th>
-              <th className="px-4 py-3 text-center text-sm font-semibold border-b">Checks</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">Status</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">Station</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">Work Set</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">Designer CU</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">QA CU</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">Description</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">Designer WF</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">QA WF</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">Designer Qty</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">QA Qty</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50">Comments</th>
+              <th className="px-4 py-3 text-center text-sm font-semibold border-b bg-muted/50">Checks</th>
             </tr>
           </thead>
-          <tbody>
-            {data.map((row) => (
-              <tr key={row.id} className="hover:bg-muted/30 transition-colors border-b">
-                <td className="px-4 py-3">
-                  <Select
-                    value={row.issueType}
-                    onValueChange={(value) => onUpdateRow(row.id, "issueType", value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="OK">
-                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                          OK
-                        </Badge>
-                      </SelectItem>
-                      <SelectItem value="NEEDS REVISIONS">
-                        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                          NEEDS REVISIONS
-                        </Badge>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </td>
-                <td className="px-4 py-3 text-sm">{row.station}</td>
-                <td className="px-4 py-3 text-sm">{row.workSet}</td>
-                <td className="px-4 py-3 text-sm font-medium">{row.designerCU}</td>
-                <td className="px-4 py-3">
-                  <Select
-                    value={row.qaCU}
-                    onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select CU" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {cuOptions.map((cu) => (
-                        <SelectItem key={cu} value={cu}>
-                          {cu}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-                <td className="px-4 py-3 text-sm max-w-xs truncate" title={row.description}>
-                  {row.description}
-                </td>
-                <td className="px-4 py-3 text-sm">{row.designerWF}</td>
-                <td className="px-4 py-3">
-                  <Select
-                    value={row.qaWF}
-                    onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
-                  >
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="I">I</SelectItem>
-                      <SelectItem value="R">R</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </td>
-                <td className="px-4 py-3 text-sm text-right">{row.designerQty}</td>
-                <td className="px-4 py-3">
-                  <Input
-                    type="number"
-                    value={row.qaQty}
-                    onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value))}
-                    className="w-24 text-right"
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <Textarea
-                    value={row.qaComments}
-                    onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
-                    className="min-w-[200px]"
-                    rows={1}
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2 justify-center">
-                    {row.cuCheck ? (
-                      <Check className="w-4 h-4 text-success" />
-                    ) : (
-                      <X className="w-4 h-4 text-destructive" />
-                    )}
-                    {row.wfCheck ? (
-                      <Check className="w-4 h-4 text-success" />
-                    ) : (
-                      <X className="w-4 h-4 text-destructive" />
-                    )}
-                    {row.qtyCheck ? (
-                      <Check className="w-4 h-4 text-success" />
-                    ) : (
-                      <X className="w-4 h-4 text-destructive" />
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
         </table>
+        <div
+          ref={parentRef}
+          className="overflow-auto"
+          style={{
+            height: `600px`,
+          }}
+        >
+          <table className="w-full border-collapse">
+            <tbody
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                position: "relative",
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const row = data[virtualRow.index];
+                return (
+                  <QAReviewRow
+                    key={row.id}
+                    row={row}
+                    onUpdateRow={handleUpdateRow}
+                    cuOptions={cuOptions}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  />
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </Card>
   );

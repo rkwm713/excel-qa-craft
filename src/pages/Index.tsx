@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { FileUpload } from "@/components/FileUpload";
 import { Dashboard } from "@/components/Dashboard";
 import { QAReviewTable } from "@/components/QAReviewTable";
@@ -50,36 +50,39 @@ const Index = () => {
     }
   };
 
-  const handleUpdateRow = (id: string, field: keyof QAReviewRow, value: any) => {
-    setQaData((prev) =>
-      prev.map((row) => {
-        if (row.id !== id) return row;
+  const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
+    setQaData((prev) => {
+      const index = prev.findIndex((row) => row.id === id);
+      if (index === -1) return prev;
 
-        const updatedRow = { ...row, [field]: value };
+      const row = prev[index];
+      const updatedRow = { ...row, [field]: value };
 
-        // Recalculate checks if editing QA fields
-        if (field === "qaCU") {
-          updatedRow.cuCheck = value === row.designerCU;
-        }
-        if (field === "qaWF") {
-          updatedRow.wfCheck = value === row.designerWF;
-        }
-        if (field === "qaQty") {
-          updatedRow.qtyCheck = value === row.designerQty;
-        }
+      // Recalculate checks if editing QA fields
+      if (field === "qaCU") {
+        updatedRow.cuCheck = value === row.designerCU;
+      }
+      if (field === "qaWF") {
+        updatedRow.wfCheck = value === row.designerWF;
+      }
+      if (field === "qaQty") {
+        updatedRow.qtyCheck = value === row.designerQty;
+      }
 
-        // Auto-update issue type based on checks unless manually overridden
-        if (field !== "issueType") {
-          updatedRow.issueType =
-            updatedRow.cuCheck && updatedRow.wfCheck && updatedRow.qtyCheck
-              ? "OK"
-              : "NEEDS REVISIONS";
-        }
+      // Auto-update issue type based on checks unless manually overridden
+      if (field !== "issueType") {
+        updatedRow.issueType =
+          updatedRow.cuCheck && updatedRow.wfCheck && updatedRow.qtyCheck
+            ? "OK"
+            : "NEEDS REVISIONS";
+      }
 
-        return updatedRow;
-      })
-    );
-  };
+      // Create new array with updated row
+      const newData = [...prev];
+      newData[index] = updatedRow;
+      return newData;
+    });
+  }, []);
 
   const handleExport = () => {
     if (qaData.length === 0) {
@@ -107,7 +110,7 @@ const Index = () => {
     }
   };
 
-  const calculateMetrics = (): DashboardMetrics => {
+  const metrics = useMemo((): DashboardMetrics => {
     const totalRows = qaData.length;
     const okCount = qaData.filter((r) => r.issueType === "OK").length;
     const needsRevisionCount = qaData.filter((r) => r.issueType === "NEEDS REVISIONS").length;
@@ -123,7 +126,7 @@ const Index = () => {
       wfMatchRate: totalRows > 0 ? (wfMatches / totalRows) * 100 : 0,
       qtyMatchRate: totalRows > 0 ? (qtyMatches / totalRows) * 100 : 0,
     };
-  };
+  }, [qaData]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,7 +173,7 @@ const Index = () => {
               </Button>
             </div>
 
-            <Dashboard metrics={calculateMetrics()} />
+            <Dashboard metrics={metrics} />
 
             <QAReviewTable
               data={qaData}
