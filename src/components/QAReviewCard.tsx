@@ -16,28 +16,17 @@ interface QAReviewCardProps {
 
 export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardProps) => {
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-all duration-200 border-l-4" 
+    <Card className="overflow-hidden hover:shadow-sm transition-shadow border-l-2" 
           style={{ borderLeftColor: row.issueType === "OK" ? "hsl(var(--success))" : "hsl(var(--destructive))" }}>
       <CardContent className="p-0">
-        {/* Compact Header */}
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-muted/30 to-muted/10 border-b">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold font-saira text-primary">{row.station}</span>
-              </div>
-              <div className="min-w-0">
-                <div className="text-[10px] font-semibold font-saira uppercase text-muted-foreground">Station</div>
-                <div className="text-base font-bold font-saira text-primary">{row.station}</div>
-              </div>
-            </div>
+        {/* Ultra Compact Header */}
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-muted/30 border-b">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-xs font-bold font-saira text-primary shrink-0">{row.station}</span>
             {row.workSet && (
               <>
-                <div className="h-6 w-px bg-border" />
-                <div className="min-w-0">
-                  <div className="text-[10px] font-semibold font-saira uppercase text-muted-foreground">Work Set</div>
-                  <div className="text-sm font-medium font-neuton text-foreground truncate">{row.workSet}</div>
-                </div>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-xs font-medium text-muted-foreground truncate">{row.workSet}</span>
               </>
             )}
           </div>
@@ -46,217 +35,117 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
             value={row.issueType}
             onValueChange={(value) => onUpdateRow(row.id, "issueType", value)}
           >
-            <SelectTrigger className="w-[140px] h-8 border-2 text-xs">
+            <SelectTrigger className="w-[120px] h-6 text-[10px] border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="OK">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-success" />
-                  <span className="font-semibold text-success text-xs">OK</span>
+              <SelectItem value="OK" className="text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-success" />
+                  <span className="font-semibold text-success">OK</span>
                 </div>
               </SelectItem>
-              <SelectItem value="NEEDS REVISIONS">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-destructive" />
-                  <span className="font-semibold text-destructive text-xs">NEEDS REVISIONS</span>
+              <SelectItem value="NEEDS REVISIONS" className="text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                  <span className="font-semibold text-destructive">NEEDS REVISIONS</span>
                 </div>
               </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="p-4 space-y-3">
-          {/* Compact CU Section */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5 p-3 bg-muted/20 rounded border">
-              <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-bold font-saira uppercase text-muted-foreground">
-                  Designer CU
-                </Label>
-                <Badge variant="secondary" className="text-[9px] font-mono h-4 px-1.5">Original</Badge>
-              </div>
-              <div className="text-sm font-bold font-mono bg-background px-2 py-1.5 rounded border text-center">
-                {row.designerCU}
-              </div>
-            </div>
-            <div className="space-y-1.5 p-3 bg-muted/20 rounded border">
-              <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-bold font-saira uppercase text-muted-foreground">
-                  QA CU
-                </Label>
-                <Badge 
-                  variant={row.cuCheck ? "default" : "destructive"} 
-                  className="text-[9px] gap-0.5 h-4 px-1.5"
-                >
-                  {row.cuCheck ? (
-                    <>
-                      <Check className="w-2.5 h-2.5" />
-                      Match
-                    </>
-                  ) : (
-                    <>
-                      <X className="w-2.5 h-2.5" />
-                      Miss
-                    </>
-                  )}
-                </Badge>
-              </div>
-              <Select
-                value={row.qaCU}
-                onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
-              >
-                <SelectTrigger className="w-full font-mono font-semibold h-8 text-sm">
-                  <SelectValue placeholder="Select CU" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {cuOptions.map((cu) => (
-                    <SelectItem key={cu} value={cu} className="font-mono text-sm">
-                      {cu}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="p-3 space-y-2">
+          {/* Inline CU Section */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[10px] font-bold font-saira uppercase text-muted-foreground shrink-0">CU:</span>
+            <span className="font-mono font-semibold">{row.designerCU}</span>
+            <span className="text-muted-foreground">→</span>
+            <Select
+              value={row.qaCU}
+              onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
+            >
+              <SelectTrigger className="h-6 text-xs font-mono font-semibold flex-1 max-w-[120px]">
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {cuOptions.map((cu) => (
+                  <SelectItem key={cu} value={cu} className="font-mono text-xs">
+                    {cu}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {row.cuCheck ? (
+              <Check className="w-3.5 h-3.5 text-success shrink-0" />
+            ) : (
+              <X className="w-3.5 h-3.5 text-destructive shrink-0" />
+            )}
           </div>
 
-          {/* Compact Description */}
+          {/* Description */}
           {row.description && (
-            <div className="p-2.5 bg-accent/5 rounded border border-accent/20">
-              <Label className="text-[10px] font-bold font-saira uppercase text-muted-foreground mb-1 flex items-center gap-1.5">
-                <div className="w-0.5 h-3 bg-accent rounded-full" />
-                Description
-              </Label>
-              <p className="text-xs font-neuton text-foreground leading-relaxed pl-2">
+            <div className="pl-2 border-l-2 border-accent/30 py-1">
+              <p className="text-[11px] text-muted-foreground leading-snug">
                 {row.description}
               </p>
             </div>
           )}
 
-          {/* Compact Work Function & Quantity in one row */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Work Function */}
-            <div className="space-y-2 p-3 bg-muted/20 rounded border">
-              <h4 className="text-[10px] font-bold font-saira uppercase text-primary pb-1.5 border-b border-primary/20">
-                Work Function
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-[9px] font-neuton text-muted-foreground uppercase">Designer</Label>
-                  <div className="text-base font-bold font-mono bg-background px-2 py-1 rounded border text-center">
-                    {row.designerWF}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[9px] font-neuton text-muted-foreground uppercase">QA</Label>
-                    {row.wfCheck ? (
-                      <Check className="w-3 h-3 text-success" />
-                    ) : (
-                      <X className="w-3 h-3 text-destructive" />
-                    )}
-                  </div>
-                  <Select
-                    value={row.qaWF}
-                    onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
-                  >
-                    <SelectTrigger className="w-full font-mono font-bold text-sm h-7">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="I" className="font-mono text-sm">I</SelectItem>
-                      <SelectItem value="R" className="font-mono text-sm">R</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Quantity */}
-            <div className="space-y-2 p-3 bg-muted/20 rounded border">
-              <h4 className="text-[10px] font-bold font-saira uppercase text-primary pb-1.5 border-b border-primary/20">
-                Quantity
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-[9px] font-neuton text-muted-foreground uppercase">Designer</Label>
-                  <div className="text-base font-bold font-mono bg-background px-2 py-1 rounded border text-center">
-                    {row.designerQty}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[9px] font-neuton text-muted-foreground uppercase">QA</Label>
-                    {row.qtyCheck ? (
-                      <Check className="w-3 h-3 text-success" />
-                    ) : (
-                      <X className="w-3 h-3 text-destructive" />
-                    )}
-                  </div>
-                  <Input
-                    type="number"
-                    value={row.qaQty}
-                    onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
-                    className="w-full text-center font-mono font-bold text-sm h-7 border"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Compact Comments */}
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold font-saira uppercase text-muted-foreground">
-              QA Comments
-            </Label>
-            <Textarea
-              value={row.qaComments}
-              onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
-              placeholder="Add review comments..."
-              className="min-h-[60px] font-neuton resize-none text-xs border focus:border-primary"
-            />
-          </div>
-        </div>
-
-        {/* Compact Footer */}
-        <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-t">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold font-saira uppercase text-muted-foreground">
-              Validation
-            </span>
-            <Badge 
-              variant={row.cuCheck && row.wfCheck && row.qtyCheck ? "default" : "secondary"}
-              className="font-semibold text-[9px] h-5"
-            >
-              {row.cuCheck && row.wfCheck && row.qtyCheck ? "All Pass" : "Review"}
-            </Badge>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex items-center gap-1 px-2 py-1 rounded bg-background border">
-              <span className="text-[9px] font-saira uppercase text-muted-foreground">CU</span>
-              {row.cuCheck ? (
-                <Check className="w-3 h-3 text-success" />
-              ) : (
-                <X className="w-3 h-3 text-destructive" />
-              )}
-            </div>
-            <div className="flex items-center gap-1 px-2 py-1 rounded bg-background border">
-              <span className="text-[9px] font-saira uppercase text-muted-foreground">WF</span>
+          {/* Inline WF & Qty */}
+          <div className="flex items-center gap-3 text-xs">
+            {/* WF */}
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-[10px] font-bold font-saira uppercase text-muted-foreground shrink-0">WF:</span>
+              <span className="font-mono font-semibold">{row.designerWF}</span>
+              <span className="text-muted-foreground">→</span>
+              <Select
+                value={row.qaWF}
+                onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
+              >
+                <SelectTrigger className="h-6 text-xs font-mono font-semibold w-16">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="I" className="font-mono text-xs">I</SelectItem>
+                  <SelectItem value="R" className="font-mono text-xs">R</SelectItem>
+                </SelectContent>
+              </Select>
               {row.wfCheck ? (
-                <Check className="w-3 h-3 text-success" />
+                <Check className="w-3.5 h-3.5 text-success shrink-0" />
               ) : (
-                <X className="w-3 h-3 text-destructive" />
+                <X className="w-3.5 h-3.5 text-destructive shrink-0" />
               )}
             </div>
-            <div className="flex items-center gap-1 px-2 py-1 rounded bg-background border">
-              <span className="text-[9px] font-saira uppercase text-muted-foreground">Qty</span>
+
+            <div className="h-4 w-px bg-border" />
+
+            {/* Qty */}
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-[10px] font-bold font-saira uppercase text-muted-foreground shrink-0">Qty:</span>
+              <span className="font-mono font-semibold">{row.designerQty}</span>
+              <span className="text-muted-foreground">→</span>
+              <Input
+                type="number"
+                value={row.qaQty}
+                onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
+                className="h-6 text-xs text-center font-mono font-semibold w-16"
+              />
               {row.qtyCheck ? (
-                <Check className="w-3 h-3 text-success" />
+                <Check className="w-3.5 h-3.5 text-success shrink-0" />
               ) : (
-                <X className="w-3 h-3 text-destructive" />
+                <X className="w-3.5 h-3.5 text-destructive shrink-0" />
               )}
             </div>
           </div>
+
+          {/* Comments */}
+          <Textarea
+            value={row.qaComments}
+            onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
+            placeholder="QA comments..."
+            className="min-h-[40px] text-[11px] resize-none focus-visible:ring-1"
+          />
         </div>
       </CardContent>
     </Card>
