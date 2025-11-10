@@ -133,17 +133,18 @@ const Index = () => {
       setStationPageMapping(pdfInfo.stationPageMapping);
       setCurrentPdfPage(1);
 
+      const mappedCount = Object.keys(pdfInfo.stationPageMapping).length;
       toast({
         title: "PDF loaded successfully",
-        description: `Mapped ${Object.keys(pdfInfo.stationPageMapping).length} work points`,
+        description: `Found ${pdfInfo.numPages} pages. Mapped ${mappedCount} work points.`,
       });
     } catch (error) {
+      console.error("Error parsing PDF:", error);
       toast({
         title: "Error loading PDF",
-        description: "Failed to parse the PDF file. Please check the format.",
+        description: error instanceof Error ? error.message : "Failed to parse the PDF file. Please check the format.",
         variant: "destructive",
       });
-      console.error("Error parsing PDF:", error);
     }
   };
 
