@@ -63,12 +63,6 @@ export function PDFViewer({
   }, [currentStation, initialWorkPointNotes]);
 
   useEffect(() => {
-    if (currentStation && stationPageMapping?.[currentStation]) {
-      onPageChange(stationPageMapping[currentStation]);
-    }
-  }, [currentStation, stationPageMapping, onPageChange]);
-
-  useEffect(() => {
     const updateWidth = () => {
       const container = document.getElementById("pdf-container");
       if (container) {

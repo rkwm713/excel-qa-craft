@@ -230,8 +230,12 @@ const Index = () => {
 
   // Jump to work point from context panel
   const handleJumpToWorkPoint = useCallback((station: string) => {
+    console.log(`Jumping to station ${station}`);
+    
     // Use flexible matching to find page
     const page = findMatchingStation(station, stationPageMapping);
+    console.log(`Found page ${page} for station ${station}`);
+    
     if (page) {
       setCurrentPdfPage(page);
     }
