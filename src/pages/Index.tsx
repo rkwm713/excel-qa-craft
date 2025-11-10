@@ -10,7 +10,7 @@ import { StationSidebar } from "@/components/StationSidebar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { Download, FileSpreadsheet, Map as MapIcon } from "lucide-react";
+import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp } from "lucide-react";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { parseKMZ } from "@/utils/kmzParser";
 import { QAReviewRow, DashboardMetrics, CULookupItem } from "@/types/qa-tool";
@@ -23,7 +23,7 @@ const Index = () => {
   const [fileName, setFileName] = useState<string>("");
   const [kmzPlacemarks, setKmzPlacemarks] = useState<any[]>([]);
   const [kmzFileName, setKmzFileName] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<string>("data");
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [googleApiKey, setGoogleApiKey] = useState<string>("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [streetViewLocation, setStreetViewLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
@@ -293,6 +293,10 @@ const Index = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="flex items-center justify-between">
               <TabsList>
+                <TabsTrigger value="dashboard" className="gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Dashboard
+                </TabsTrigger>
                 <TabsTrigger value="data" className="gap-2">
                   <FileSpreadsheet className="w-4 h-4" />
                   QA Data
@@ -325,6 +329,30 @@ const Index = () => {
               />
             </div>
 
+            <TabsContent value="dashboard" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold font-saira uppercase tracking-wide text-primary">
+                    QA Dashboard
+                  </h2>
+                  <p className="text-sm text-muted-foreground font-neuton">
+                    Overview of QA metrics and performance statistics
+                  </p>
+                </div>
+              </div>
+
+              {qaData.length > 0 && <Dashboard metrics={metrics} />}
+
+              {/* Future grading features will go here */}
+              <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
+                <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold font-saira mb-2">Future Grading Features</h3>
+                <p className="text-muted-foreground font-neuton">
+                  Advanced grading and analytics will be added here
+                </p>
+              </div>
+            </TabsContent>
+
             <TabsContent value="data" className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -341,8 +369,6 @@ const Index = () => {
                   Export QA Tool
                 </Button>
               </div>
-
-              {qaData.length > 0 && <Dashboard metrics={metrics} />}
 
               {qaData.length > 0 && (
                 <QAReviewTable
