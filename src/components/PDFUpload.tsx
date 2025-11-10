@@ -1,4 +1,5 @@
 import { Upload, FileText, X } from "lucide-react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +12,7 @@ interface PDFUploadProps {
 
 export function PDFUpload({ onFileSelect, fileName, onClear }: PDFUploadProps) {
   const { toast } = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -59,19 +61,22 @@ export function PDFUpload({ onFileSelect, fileName, onClear }: PDFUploadProps) {
                 Upload the PDF containing station diagrams and work points
               </p>
             </div>
-            <label htmlFor="pdf-upload" className="cursor-pointer">
-              <Button type="button" variant="outline" className="relative">
-                <Upload className="w-4 h-4 mr-2" />
-                Select PDF File
-              </Button>
-              <input
-                id="pdf-upload"
-                type="file"
-                accept="application/pdf,.pdf"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => inputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Select PDF File
+            </Button>
+            <input
+              ref={inputRef}
+              id="pdf-upload"
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={handleFileChange}
+              className="sr-only"
+            />
           </>
         ) : (
           <div className="flex items-center justify-between w-full">

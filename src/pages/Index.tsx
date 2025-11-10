@@ -428,7 +428,7 @@ const Index = () => {
                   const file = e.target.files?.[0];
                   if (file) handleFileSelect(file);
                 }}
-                className="hidden"
+                className="sr-only"
               />
               <input
                 id="kmz-upload"
@@ -438,7 +438,7 @@ const Index = () => {
                   const file = e.target.files?.[0];
                   if (file) handleKMZFileSelect(file);
                 }}
-                className="hidden"
+                className="sr-only"
               />
               <input
                 id="pdf-upload-later"
@@ -448,7 +448,7 @@ const Index = () => {
                   const file = e.target.files?.[0];
                   if (file) handlePDFFileSelect(file);
                 }}
-                className="hidden"
+                className="sr-only"
               />
             </div>
 
