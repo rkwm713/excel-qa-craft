@@ -16,6 +16,7 @@ import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText } from 
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { parseKMZ } from "@/utils/kmzParser";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
+import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
 import { QAReviewRow, DashboardMetrics, CULookupItem } from "@/types/qa-tool";
 import { useToast } from "@/hooks/use-toast";
 import techservLogo from "@/assets/techserv-logo.png";
@@ -206,24 +207,31 @@ const Index = () => {
   const handlePdfPageChange = useCallback((page: number) => {
     setCurrentPdfPage(page);
     
-    // Find station for this page
+    // Find station for this page using flexible matching
     const stationEntry = Object.entries(stationPageMapping).find(
       ([_, pageNum]) => pageNum === page
     );
     
     if (stationEntry) {
-      const [station] = stationEntry;
-      const workPoint = qaData.find(row => row.station === station);
+      const [workPointFromPdf] = stationEntry;
+      
+      // Find matching QA data row using normalization
+      const normalizedWP = normalizeStation(workPointFromPdf);
+      const workPoint = qaData.find(row => 
+        normalizeStation(row.station) === normalizedWP
+      );
+      
       if (workPoint) {
         setCurrentWorkPoint(workPoint);
-        setSelectedStation(station);
+        setSelectedStation(workPoint.station); // Use original station format
       }
     }
   }, [stationPageMapping, qaData]);
 
   // Jump to work point from context panel
   const handleJumpToWorkPoint = useCallback((station: string) => {
-    const page = stationPageMapping[station];
+    // Use flexible matching to find page
+    const page = findMatchingStation(station, stationPageMapping);
     if (page) {
       setCurrentPdfPage(page);
     }
@@ -245,8 +253,8 @@ const Index = () => {
       setCurrentWorkPoint(prevWorkPoint);
       setSelectedStation(prevWorkPoint.station);
       
-      // Jump PDF to corresponding page
-      const page = stationPageMapping[prevWorkPoint.station];
+      // Jump PDF using flexible matching
+      const page = findMatchingStation(prevWorkPoint.station, stationPageMapping);
       if (page) {
         setCurrentPdfPage(page);
       }
@@ -263,8 +271,8 @@ const Index = () => {
       setCurrentWorkPoint(nextWorkPoint);
       setSelectedStation(nextWorkPoint.station);
       
-      // Jump PDF to corresponding page
-      const page = stationPageMapping[nextWorkPoint.station];
+      // Jump PDF using flexible matching
+      const page = findMatchingStation(nextWorkPoint.station, stationPageMapping);
       if (page) {
         setCurrentPdfPage(page);
       }
@@ -278,8 +286,8 @@ const Index = () => {
       const firstWorkPoint = qaData[0];
       setCurrentWorkPoint(firstWorkPoint);
       
-      // Jump to first work point's page if mapping exists
-      const page = stationPageMapping[firstWorkPoint.station];
+      // Jump to first work point's page using flexible matching
+      const page = findMatchingStation(firstWorkPoint.station, stationPageMapping);
       if (page) {
         setCurrentPdfPage(page);
       }

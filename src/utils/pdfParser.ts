@@ -41,8 +41,14 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
 
       // Map work point to page number (station = work point)
       if (workPoint) {
+        // Store the original extracted work point
         stationPageMapping[workPoint] = pageNum;
-        console.log(`Found WP ${workPoint} on page ${pageNum}`);
+        
+        // ALSO store with leading zeros (pad to 4 digits) for Excel compatibility
+        const paddedWorkPoint = workPoint.padStart(4, '0');
+        stationPageMapping[paddedWorkPoint] = pageNum;
+        
+        console.log(`Found WP ${workPoint} on page ${pageNum} (also mapped as ${paddedWorkPoint})`);
       }
     }
 
