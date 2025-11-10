@@ -233,8 +233,8 @@ export function PDFViewer({
                 pageNumber={currentPage}
                 scale={scale}
                 width={pageWidth}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
               />
             </Document>
             <PDFCanvas
