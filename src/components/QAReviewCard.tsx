@@ -16,17 +16,20 @@ interface QAReviewCardProps {
 
 export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardProps) => {
   return (
-    <Card className="overflow-hidden hover:shadow-sm transition-shadow border-l-2" 
+    <Card className="overflow-hidden hover:shadow-md transition-all border-l-[3px] border" 
           style={{ borderLeftColor: row.issueType === "OK" ? "hsl(var(--success))" : "hsl(var(--destructive))" }}>
       <CardContent className="p-0">
-        {/* Ultra Compact Header */}
-        <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-muted/30 border-b">
+        {/* Minimal Header */}
+        <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/20">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <span className="text-xs font-bold font-saira text-primary shrink-0">{row.station}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide">Station</span>
+              <span className="text-sm font-bold font-saira text-foreground">{row.station}</span>
+            </div>
             {row.workSet && (
               <>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-xs font-medium text-muted-foreground truncate">{row.workSet}</span>
+                <div className="w-1 h-1 rounded-full bg-border" />
+                <span className="text-xs text-muted-foreground truncate">{row.workSet}</span>
               </>
             )}
           </div>
@@ -35,7 +38,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
             value={row.issueType}
             onValueChange={(value) => onUpdateRow(row.id, "issueType", value)}
           >
-            <SelectTrigger className="w-[120px] h-6 text-[10px] border">
+            <SelectTrigger className="w-[110px] h-7 text-[10px] border shadow-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -55,55 +58,57 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
           </Select>
         </div>
 
-        <div className="p-3 space-y-2">
-          {/* Inline CU Section */}
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-[10px] font-bold font-saira uppercase text-muted-foreground shrink-0">CU:</span>
-            <span className="font-mono font-semibold">{row.designerCU}</span>
-            <span className="text-muted-foreground">→</span>
-            <Select
-              value={row.qaCU}
-              onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
-            >
-              <SelectTrigger className="h-6 text-xs font-mono font-semibold flex-1 max-w-[120px]">
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {cuOptions.map((cu) => (
-                  <SelectItem key={cu} value={cu} className="font-mono text-xs">
-                    {cu}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {row.cuCheck ? (
-              <Check className="w-3.5 h-3.5 text-success shrink-0" />
-            ) : (
-              <X className="w-3.5 h-3.5 text-destructive shrink-0" />
-            )}
+        <div className="p-3 space-y-2.5">
+          {/* CU Row */}
+          <div className="flex items-center gap-2 py-1.5 px-2 rounded bg-muted/10 hover:bg-muted/20 transition-colors">
+            <span className="text-[9px] font-bold uppercase text-muted-foreground/60 w-6 shrink-0">CU</span>
+            <span className="font-mono text-xs font-semibold text-foreground min-w-[60px]">{row.designerCU}</span>
+            <div className="flex-1 flex items-center gap-2">
+              <Select
+                value={row.qaCU}
+                onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
+              >
+                <SelectTrigger className="h-7 text-xs font-mono font-semibold border-0 bg-background/50 shadow-sm">
+                  <SelectValue placeholder="Select CU" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {cuOptions.map((cu) => (
+                    <SelectItem key={cu} value={cu} className="font-mono text-xs">
+                      {cu}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full shrink-0 ${
+              row.cuCheck ? 'bg-success/10' : 'bg-destructive/10'
+            }`}>
+              {row.cuCheck ? (
+                <Check className="w-3.5 h-3.5 text-success" />
+              ) : (
+                <X className="w-3.5 h-3.5 text-destructive" />
+              )}
+            </div>
           </div>
 
           {/* Description */}
           {row.description && (
-            <div className="pl-2 border-l-2 border-accent/30 py-1">
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                {row.description}
-              </p>
+            <div className="text-[11px] text-muted-foreground leading-relaxed px-2 py-1">
+              {row.description}
             </div>
           )}
 
-          {/* Inline WF & Qty */}
-          <div className="flex items-center gap-3 text-xs">
+          {/* WF & Qty Row */}
+          <div className="grid grid-cols-2 gap-2">
             {/* WF */}
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-[10px] font-bold font-saira uppercase text-muted-foreground shrink-0">WF:</span>
-              <span className="font-mono font-semibold">{row.designerWF}</span>
-              <span className="text-muted-foreground">→</span>
+            <div className="flex items-center gap-1.5 py-1.5 px-2 rounded bg-muted/10 hover:bg-muted/20 transition-colors">
+              <span className="text-[9px] font-bold uppercase text-muted-foreground/60 w-5 shrink-0">WF</span>
+              <span className="font-mono text-xs font-semibold text-foreground w-4">{row.designerWF}</span>
               <Select
                 value={row.qaWF}
                 onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
               >
-                <SelectTrigger className="h-6 text-xs font-mono font-semibold w-16">
+                <SelectTrigger className="h-7 text-xs font-mono font-semibold border-0 bg-background/50 shadow-sm flex-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -111,31 +116,36 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
                   <SelectItem value="R" className="font-mono text-xs">R</SelectItem>
                 </SelectContent>
               </Select>
-              {row.wfCheck ? (
-                <Check className="w-3.5 h-3.5 text-success shrink-0" />
-              ) : (
-                <X className="w-3.5 h-3.5 text-destructive shrink-0" />
-              )}
+              <div className={`flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${
+                row.wfCheck ? 'bg-success/10' : 'bg-destructive/10'
+              }`}>
+                {row.wfCheck ? (
+                  <Check className="w-3 h-3 text-success" />
+                ) : (
+                  <X className="w-3 h-3 text-destructive" />
+                )}
+              </div>
             </div>
 
-            <div className="h-4 w-px bg-border" />
-
             {/* Qty */}
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-[10px] font-bold font-saira uppercase text-muted-foreground shrink-0">Qty:</span>
-              <span className="font-mono font-semibold">{row.designerQty}</span>
-              <span className="text-muted-foreground">→</span>
+            <div className="flex items-center gap-1.5 py-1.5 px-2 rounded bg-muted/10 hover:bg-muted/20 transition-colors">
+              <span className="text-[9px] font-bold uppercase text-muted-foreground/60 w-6 shrink-0">Qty</span>
+              <span className="font-mono text-xs font-semibold text-foreground w-4">{row.designerQty}</span>
               <Input
                 type="number"
                 value={row.qaQty}
                 onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
-                className="h-6 text-xs text-center font-mono font-semibold w-16"
+                className="h-7 text-xs text-center font-mono font-semibold border-0 bg-background/50 shadow-sm flex-1"
               />
-              {row.qtyCheck ? (
-                <Check className="w-3.5 h-3.5 text-success shrink-0" />
-              ) : (
-                <X className="w-3.5 h-3.5 text-destructive shrink-0" />
-              )}
+              <div className={`flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${
+                row.qtyCheck ? 'bg-success/10' : 'bg-destructive/10'
+              }`}>
+                {row.qtyCheck ? (
+                  <Check className="w-3 h-3 text-success" />
+                ) : (
+                  <X className="w-3 h-3 text-destructive" />
+                )}
+              </div>
             </div>
           </div>
 
@@ -143,8 +153,8 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
           <Textarea
             value={row.qaComments}
             onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
-            placeholder="QA comments..."
-            className="min-h-[40px] text-[11px] resize-none focus-visible:ring-1"
+            placeholder="Add QA comments..."
+            className="min-h-[50px] text-xs resize-none focus-visible:ring-1 bg-muted/10 border-0 shadow-sm placeholder:text-muted-foreground/40"
           />
         </div>
       </CardContent>
