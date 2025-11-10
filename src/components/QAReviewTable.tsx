@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { PDFViewer } from "./PDFViewer";
 
 interface QAReviewTableProps {
   data: QAReviewRowType[];
@@ -15,6 +17,10 @@ interface QAReviewTableProps {
   viewMode: "table" | "cards";
   setViewMode: (mode: "table" | "cards") => void;
   selectedStation: string | null;
+  pdfFile?: File | null;
+  currentPdfPage?: number;
+  onPdfPageChange?: (page: number) => void;
+  stationPageMapping?: Record<string, number>;
 }
 
 export const QAReviewTable = ({ 
@@ -23,7 +29,11 @@ export const QAReviewTable = ({
   cuOptions, 
   viewMode, 
   setViewMode, 
-  selectedStation 
+  selectedStation,
+  pdfFile,
+  currentPdfPage = 1,
+  onPdfPageChange,
+  stationPageMapping,
 }: QAReviewTableProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -60,8 +70,12 @@ export const QAReviewTable = ({
       ? totalSize - (virtualItems[virtualItems.length - 1]?.end || 0)
       : 0;
 
+  const showPdf = pdfFile && onPdfPageChange;
+
   return (
-    <div className="space-y-4">
+    <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-350px)]">
+      <ResizablePanel defaultSize={showPdf ? 60 : 100} minSize={30}>
+        <div className="space-y-4 pr-2 h-full">
       {/* View Mode Toggle */}
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -190,6 +204,25 @@ export const QAReviewTable = ({
           </div>
         </Card>
       )}
-    </div>
+        </div>
+      </ResizablePanel>
+      
+      {showPdf && (
+        <>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={40} minSize={20}>
+            <div className="h-full pl-2">
+              <PDFViewer
+                file={pdfFile}
+                currentPage={currentPdfPage}
+                onPageChange={onPdfPageChange}
+                stationPageMapping={stationPageMapping}
+                currentStation={selectedStation}
+              />
+            </div>
+          </ResizablePanel>
+        </>
+      )}
+    </ResizablePanelGroup>
   );
 };

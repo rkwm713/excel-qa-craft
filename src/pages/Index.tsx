@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { FileUpload } from "@/components/FileUpload";
 import { KMZUpload } from "@/components/KMZUpload";
+import { PDFUpload } from "@/components/PDFUpload";
 import { Dashboard } from "@/components/Dashboard";
 import { QAReviewTable } from "@/components/QAReviewTable";
 import { QAReviewSkeleton } from "@/components/QAReviewSkeleton";
@@ -14,6 +15,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp } from "lucide-react";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { parseKMZ } from "@/utils/kmzParser";
+import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { QAReviewRow, DashboardMetrics, CULookupItem } from "@/types/qa-tool";
 import { useToast } from "@/hooks/use-toast";
 import techservLogo from "@/assets/techserv-logo.png";
@@ -24,6 +26,7 @@ const Index = () => {
   const [fileName, setFileName] = useState<string>("");
   const [kmzPlacemarks, setKmzPlacemarks] = useState<any[]>([]);
   const [kmzFileName, setKmzFileName] = useState<string>("");
+  const [pdfFileName, setPdfFileName] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [googleApiKey, setGoogleApiKey] = useState<string>("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
@@ -32,6 +35,9 @@ const Index = () => {
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
   const [isLoading, setIsLoading] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [currentPdfPage, setCurrentPdfPage] = useState<number>(1);
+  const [stationPageMapping, setStationPageMapping] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -112,6 +118,33 @@ const Index = () => {
         variant: "destructive",
       });
       console.error("Error parsing KMZ:", error);
+    }
+  };
+
+  const handlePDFFileSelect = async (file: File) => {
+    try {
+      toast({
+        title: "Processing PDF...",
+        description: "Extracting work points from PDF file",
+      });
+
+      const pdfInfo = await parsePDFForWorkPoints(file);
+      setPdfFile(file);
+      setPdfFileName(file.name);
+      setStationPageMapping(pdfInfo.stationPageMapping);
+      setCurrentPdfPage(1);
+
+      toast({
+        title: "PDF loaded successfully",
+        description: `Mapped ${Object.keys(pdfInfo.stationPageMapping).length} work points`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error loading PDF",
+        description: "Failed to parse the PDF file. Please check the format.",
+        variant: "destructive",
+      });
+      console.error("Error parsing PDF:", error);
     }
   };
 
@@ -290,9 +323,18 @@ const Index = () => {
                 Scalability and Reliability When and Where You Need It
               </p>
             </div>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               <FileUpload onFileSelect={handleFileSelect} />
               <KMZUpload onFileSelect={handleKMZFileSelect} />
+              <PDFUpload 
+                onFileSelect={handlePDFFileSelect} 
+                fileName={pdfFileName}
+                onClear={() => {
+                  setPdfFile(null);
+                  setPdfFileName("");
+                  setStationPageMapping({});
+                }}
+              />
             </div>
           </div>
         ) : (
@@ -389,6 +431,10 @@ const Index = () => {
                     viewMode={viewMode}
                     setViewMode={setViewMode}
                     selectedStation={selectedStation}
+                    pdfFile={pdfFile}
+                    currentPdfPage={currentPdfPage}
+                    onPdfPageChange={setCurrentPdfPage}
+                    stationPageMapping={stationPageMapping}
                   />
                 )
               )}
