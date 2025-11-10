@@ -10,13 +10,12 @@ interface QAReviewRowProps {
   row: QAReviewRowType;
   onUpdateRow: (id: string, field: keyof QAReviewRowType, value: any) => void;
   cuOptions: string[];
-  style?: React.CSSProperties;
 }
 
-export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, style }: QAReviewRowProps) => {
+export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions }: QAReviewRowProps) => {
   return (
-    <tr className="hover:bg-muted/30 transition-colors border-b" style={style}>
-      <td className="px-4 py-3">
+    <tr className="hover:bg-muted/30 transition-colors border-b">
+      <td className="px-4 py-3 min-w-[180px]">
         <Select
           value={row.issueType}
           onValueChange={(value) => onUpdateRow(row.id, "issueType", value)}
@@ -38,10 +37,10 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, style }: QARevie
           </SelectContent>
         </Select>
       </td>
-      <td className="px-4 py-3 text-sm">{row.station}</td>
-      <td className="px-4 py-3 text-sm">{row.workSet}</td>
-      <td className="px-4 py-3 text-sm font-medium">{row.designerCU}</td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 text-sm min-w-[100px]">{row.station}</td>
+      <td className="px-4 py-3 text-sm min-w-[120px]">{row.workSet}</td>
+      <td className="px-4 py-3 text-sm font-medium min-w-[140px]">{row.designerCU}</td>
+      <td className="px-4 py-3 min-w-[180px]">
         <Select
           value={row.qaCU}
           onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
@@ -58,11 +57,11 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, style }: QARevie
           </SelectContent>
         </Select>
       </td>
-      <td className="px-4 py-3 text-sm max-w-xs truncate" title={row.description}>
+      <td className="px-4 py-3 text-sm max-w-xs truncate min-w-[250px]" title={row.description}>
         {row.description}
       </td>
-      <td className="px-4 py-3 text-sm">{row.designerWF}</td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 text-sm min-w-[120px]">{row.designerWF}</td>
+      <td className="px-4 py-3 min-w-[100px]">
         <Select
           value={row.qaWF}
           onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
@@ -76,16 +75,16 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, style }: QARevie
           </SelectContent>
         </Select>
       </td>
-      <td className="px-4 py-3 text-sm text-right">{row.designerQty}</td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 text-sm text-right min-w-[120px]">{row.designerQty}</td>
+      <td className="px-4 py-3 min-w-[120px]">
         <Input
           type="number"
           value={row.qaQty}
-          onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value))}
+          onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
           className="w-24 text-right"
         />
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 min-w-[220px]">
         <Textarea
           value={row.qaComments}
           onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
@@ -93,7 +92,7 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, style }: QARevie
           rows={1}
         />
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 min-w-[100px]">
         <div className="flex gap-2 justify-center">
           {row.cuCheck ? (
             <Check className="w-4 h-4 text-success" />
