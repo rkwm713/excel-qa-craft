@@ -1,9 +1,8 @@
-import { useRef, useCallback, useMemo, useState } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { QAReviewRow as QAReviewRowType } from "@/types/qa-tool";
 import { QAReviewRow } from "./QAReviewRow";
 import { QAReviewCard } from "./QAReviewCard";
-import { StationNavigator } from "./StationNavigator";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, LayoutGrid } from "lucide-react";
@@ -13,12 +12,20 @@ interface QAReviewTableProps {
   data: QAReviewRowType[];
   onUpdateRow: (id: string, field: keyof QAReviewRowType, value: any) => void;
   cuOptions: string[];
+  viewMode: "table" | "cards";
+  setViewMode: (mode: "table" | "cards") => void;
+  selectedStation: string | null;
 }
 
-export const QAReviewTable = ({ data, onUpdateRow, cuOptions }: QAReviewTableProps) => {
+export const QAReviewTable = ({ 
+  data, 
+  onUpdateRow, 
+  cuOptions, 
+  viewMode, 
+  setViewMode, 
+  selectedStation 
+}: QAReviewTableProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
-  const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
-  const [selectedStation, setSelectedStation] = useState<string | null>(null);
 
   // Memoize the update handler to prevent recreating it on every render
   const handleUpdateRow = useCallback(
@@ -30,24 +37,6 @@ export const QAReviewTable = ({ data, onUpdateRow, cuOptions }: QAReviewTablePro
 
   // Memoize cu options to prevent unnecessary re-renders
   const memoizedCuOptions = useMemo(() => cuOptions, [cuOptions]);
-
-  // Get unique stations and their counts
-  const { stations, stationCounts } = useMemo(() => {
-    const stationsSet = new Set<string>();
-    const counts: Record<string, number> = {};
-    
-    data.forEach(row => {
-      if (row.station) {
-        stationsSet.add(row.station);
-        counts[row.station] = (counts[row.station] || 0) + 1;
-      }
-    });
-    
-    return {
-      stations: Array.from(stationsSet).sort(),
-      stationCounts: counts,
-    };
-  }, [data]);
 
   // Filter data by selected station
   const filteredData = useMemo(() => {
@@ -73,16 +62,6 @@ export const QAReviewTable = ({ data, onUpdateRow, cuOptions }: QAReviewTablePro
 
   return (
     <div className="space-y-4">
-      {/* Station Navigator */}
-      {stations.length > 1 && (
-        <StationNavigator
-          stations={stations}
-          currentStation={selectedStation}
-          onStationChange={setSelectedStation}
-          stationCounts={stationCounts}
-        />
-      )}
-
       {/* View Mode Toggle */}
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-4">

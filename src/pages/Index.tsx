@@ -6,8 +6,10 @@ import { QAReviewTable } from "@/components/QAReviewTable";
 import { MapViewer } from "@/components/MapViewer";
 import { GoogleApiKeyInput } from "@/components/GoogleApiKeyInput";
 import { StreetViewModal } from "@/components/StreetViewModal";
+import { StationSidebar } from "@/components/StationSidebar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Download, FileSpreadsheet, Map as MapIcon } from "lucide-react";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { parseKMZ } from "@/utils/kmzParser";
@@ -26,6 +28,8 @@ const Index = () => {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [streetViewLocation, setStreetViewLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const [isStreetViewOpen, setIsStreetViewOpen] = useState(false);
+  const [selectedStation, setSelectedStation] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -189,6 +193,24 @@ const Index = () => {
     }
   };
 
+  // Get unique stations and their counts
+  const { stations, stationCounts } = useMemo(() => {
+    const stationsSet = new Set<string>();
+    const counts: Record<string, number> = {};
+    
+    qaData.forEach(row => {
+      if (row.station) {
+        stationsSet.add(row.station);
+        counts[row.station] = (counts[row.station] || 0) + 1;
+      }
+    });
+    
+    return {
+      stations: Array.from(stationsSet).sort(),
+      stationCounts: counts,
+    };
+  }, [qaData]);
+
   const metrics = useMemo((): DashboardMetrics => {
     const totalRows = qaData.length;
     const okCount = qaData.filter((r) => r.issueType === "OK").length;
@@ -208,32 +230,48 @@ const Index = () => {
   }, [qaData]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <img 
-                src={techservLogo} 
-                alt="TechServ" 
-                className="h-12 w-auto"
-              />
-              <div className="border-l border-border pl-6">
-                <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">QA Tool</h1>
-                <p className="text-sm text-muted-foreground font-neuton">Designer Upload Review System</p>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        {/* Sidebar - only show when data is loaded and has multiple stations */}
+        {qaData.length > 0 && stations.length > 1 && (
+          <StationSidebar
+            stations={stations}
+            currentStation={selectedStation}
+            onStationChange={setSelectedStation}
+            stationCounts={stationCounts}
+          />
+        )}
+
+        {/* Main Content */}
+        <SidebarInset className="flex-1">
+          <header className="sticky top-0 z-10 border-b bg-card shadow-sm">
+            <div className="flex items-center gap-4 px-6 py-4">
+              {qaData.length > 0 && stations.length > 1 && (
+                <SidebarTrigger className="-ml-1" />
+              )}
+              <div className="flex items-center justify-between flex-1">
+                <div className="flex items-center gap-6">
+                  <img 
+                    src={techservLogo} 
+                    alt="TechServ" 
+                    className="h-12 w-auto"
+                  />
+                  <div className="border-l border-border pl-6">
+                    <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">QA Tool</h1>
+                    <p className="text-sm text-muted-foreground font-neuton">Designer Upload Review System</p>
+                  </div>
+                </div>
+                {qaData.length > 0 && (
+                  <Button onClick={handleExport} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                    <Download className="w-4 h-4" />
+                    Export QA Tool
+                  </Button>
+                )}
               </div>
             </div>
-            {qaData.length > 0 && (
-              <Button onClick={handleExport} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                <Download className="w-4 h-4" />
-                Export QA Tool
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+          </header>
 
-      <main className="container mx-auto px-6 py-8">
+          <main className="container mx-auto px-6 py-8">
         {qaData.length === 0 && kmzPlacemarks.length === 0 ? (
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
@@ -311,6 +349,9 @@ const Index = () => {
                   data={qaData}
                   onUpdateRow={handleUpdateRow}
                   cuOptions={cuLookup.map((cu) => cu.code)}
+                  viewMode={viewMode}
+                  setViewMode={setViewMode}
+                  selectedStation={selectedStation}
                 />
               )}
             </TabsContent>
@@ -357,7 +398,9 @@ const Index = () => {
             </TabsContent>
           </Tabs>
         )}
-      </main>
+          </main>
+        </SidebarInset>
+      </div>
 
       <StreetViewModal
         isOpen={isStreetViewOpen}
@@ -365,7 +408,7 @@ const Index = () => {
         location={streetViewLocation}
         apiKey={googleApiKey}
       />
-    </div>
+    </SidebarProvider>
   );
 };
 
