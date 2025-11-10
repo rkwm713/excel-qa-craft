@@ -47,33 +47,55 @@ export function PDFWorkPointHighlight({
         // Normalize the station to match different formats (0001 vs 1)
         const normalizedStation = normalizeStation(currentStation);
 
-        // Search for various WP text patterns
-        const wpPatterns = [
-          new RegExp(`WP\\s*${normalizedStation}(?!\\d)`, 'i'),
-          new RegExp(`WP\\s*${currentStation}(?!\\d)`, 'i'),
-          new RegExp(`WP\\s*#?\\s*${normalizedStation}(?!\\d)`, 'i'),
-        ];
-
-        for (const item of textContent.items as any[]) {
+        // Build a more complete text context by combining adjacent text items
+        let foundMatch: { x: number; y: number; text: string } | null = null;
+        
+        for (let i = 0; i < textContent.items.length; i++) {
+          const item = textContent.items[i] as any;
           const text = item.str;
           
-          // Check if any pattern matches
-          const matchesPattern = wpPatterns.some(pattern => pattern.test(text));
-          
-          if (matchesPattern) {
-            // Get the position from the text item's transform
-            const transform = item.transform;
-            const x = transform[4];
-            const y = transform[5];
+          // Look for "WP" text
+          if (/WP/i.test(text)) {
+            // Build context string with next few items
+            let contextText = text;
+            for (let j = 1; j <= 3 && i + j < textContent.items.length; j++) {
+              contextText += ' ' + (textContent.items[i + j] as any).str;
+            }
+            
+            console.log(`Checking context: "${contextText}"`);
+            
+            // Check for exact matches with various formats
+            const patterns = [
+              // Match "WP 3" or "WP3" at start of context (not part of longer number)
+              new RegExp(`^WP\\s*${normalizedStation}(?![\\d])`, 'i'),
+              new RegExp(`^WP\\s*${currentStation}(?![\\d])`, 'i'),
+              // Match "WP 3 /" or "WP3/"
+              new RegExp(`^WP\\s*${normalizedStation}\\s*[\\/]`, 'i'),
+              new RegExp(`^WP\\s*${currentStation}\\s*[\\/]`, 'i'),
+            ];
+            
+            const matchesPattern = patterns.some(pattern => pattern.test(contextText));
+            
+            if (matchesPattern) {
+              // Get the position from the text item's transform
+              const transform = item.transform;
+              const x = transform[4];
+              const y = transform[5];
 
-            // Convert PDF coordinates to canvas coordinates
-            const canvasX = (x / viewport.width) * width;
-            const canvasY = ((viewport.height - y) / viewport.height) * (width * 1.414);
+              // Convert PDF coordinates to canvas coordinates
+              const canvasX = (x / viewport.width) * width;
+              const canvasY = ((viewport.height - y) / viewport.height) * (width * 1.414);
 
-            setHighlightPosition({ x: canvasX, y: canvasY });
-            console.log(`Found WP ${currentStation} at position:`, { x: canvasX, y: canvasY });
-            return;
+              foundMatch = { x: canvasX, y: canvasY, text: contextText };
+              console.log(`Found WP ${currentStation} - Context: "${contextText}" at position:`, { x: canvasX, y: canvasY });
+              break;
+            }
           }
+        }
+
+        if (foundMatch) {
+          setHighlightPosition({ x: foundMatch.x, y: foundMatch.y });
+          return;
         }
 
         // If not found, clear highlight
