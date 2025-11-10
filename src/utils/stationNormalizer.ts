@@ -106,3 +106,78 @@ export function findMatchingStation(
   
   return undefined;
 }
+
+/**
+ * Try to find spec number for a station with flexible formatting
+ * Supports both exact matching and normalized matching
+ * @param targetStation - The station to find in the mapping
+ * @param specMapping - Record mapping stations to spec numbers
+ * @returns Spec number if found, undefined otherwise
+ */
+export function findMatchingSpec(
+  targetStation: string,
+  specMapping: Record<string, string>
+): string | undefined {
+  if (!targetStation || !specMapping || Object.keys(specMapping).length === 0) {
+    return undefined;
+  }
+
+  // Normalize the target station to get the core numeric value
+  const normalized = normalizeStation(targetStation);
+  if (!normalized) {
+    return undefined;
+  }
+
+  // Try exact match first (highest priority)
+  if (specMapping[targetStation]) {
+    return specMapping[targetStation];
+  }
+  
+  // Try normalized match (e.g., "0001" -> "1")
+  if (specMapping[normalized]) {
+    return specMapping[normalized];
+  }
+  
+  // Try padded versions (with leading zeros) - only if target is short
+  if (normalized.length <= 4) {
+    const padded4 = normalized.padStart(4, '0');
+    if (specMapping[padded4]) {
+      return specMapping[padded4];
+    }
+    
+    const padded3 = normalized.padStart(3, '0');
+    if (specMapping[padded3]) {
+      return specMapping[padded3];
+    }
+  }
+  
+  // Try all keys with normalized comparison (bidirectional)
+  for (const [key, value] of Object.entries(specMapping)) {
+    const normalizedKey = normalizeStation(key);
+    if (normalizedKey === normalized) {
+      return value;
+    }
+  }
+  
+  // Try partial matching for numeric parts
+  for (const [key, value] of Object.entries(specMapping)) {
+    const normalizedKey = normalizeStation(key);
+    
+    const targetNumeric = normalized.match(/^\d+/)?.[0] || normalized;
+    const keyNumeric = normalizedKey.match(/^\d+/)?.[0] || normalizedKey;
+    
+    if (targetNumeric && keyNumeric && targetNumeric === keyNumeric) {
+      if (targetNumeric.length <= 4 && keyNumeric.length <= 4) {
+        const targetPadded = targetNumeric.padStart(4, '0');
+        const keyPadded = keyNumeric.padStart(4, '0');
+        if (targetPadded === keyPadded) {
+          return value;
+        }
+      } else {
+        return value;
+      }
+    }
+  }
+  
+  return undefined;
+}

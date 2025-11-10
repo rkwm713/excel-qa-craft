@@ -37,6 +37,8 @@ const Index = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [currentPdfPage, setCurrentPdfPage] = useState<number>(1);
   const [stationPageMapping, setStationPageMapping] = useState<Record<string, number>>({});
+  const [stationSpecMapping, setStationSpecMapping] = useState<Record<string, string>>({});
+  const [editedSpecMapping, setEditedSpecMapping] = useState<Record<string, string>>({});
   const [placemarkNotes, setPlacemarkNotes] = useState<Record<string, string>>({});
   const [mapDrawings, setMapDrawings] = useState<any[]>([]);
   const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
@@ -135,12 +137,14 @@ const Index = () => {
       setPdfFile(file);
       setPdfFileName(file.name);
       setStationPageMapping(pdfInfo.stationPageMapping);
+      setStationSpecMapping(pdfInfo.stationSpecMapping);
       setCurrentPdfPage(1);
 
       const mappedCount = Object.keys(pdfInfo.stationPageMapping).length;
+      const specCount = Object.keys(pdfInfo.stationSpecMapping).length;
       toast({
         title: "PDF loaded successfully",
-        description: `Found ${pdfInfo.numPages} pages. Mapped ${mappedCount} work points.`,
+        description: `Found ${pdfInfo.numPages} pages. Mapped ${mappedCount} work points${specCount > 0 ? ` and ${specCount} spec numbers` : ''}.`,
       });
     } catch (error) {
       console.error("Error parsing PDF:", error);
@@ -149,6 +153,7 @@ const Index = () => {
       setPdfFile(file);
       setPdfFileName(file.name);
       setStationPageMapping({});
+      setStationSpecMapping({});
       setCurrentPdfPage(1);
       
       toast({
@@ -195,6 +200,22 @@ const Index = () => {
 
   const handlePDFAnnotationsChange = (pageNumber: number, annotations: any[]) => {
     setPdfAnnotations(prev => new Map(prev).set(pageNumber, annotations));
+  };
+
+  const handleSpecNumberChange = (station: string, specNumber: string) => {
+    setEditedSpecMapping(prev => {
+      const trimmed = specNumber.trim();
+      if (trimmed === "") {
+        // Remove the entry if empty (revert to original)
+        const newMapping = { ...prev };
+        delete newMapping[station];
+        return newMapping;
+      }
+      return {
+        ...prev,
+        [station]: trimmed,
+      };
+    });
   };
 
   const handlePDFWorkPointNotesChange = (workPoint: string, notes: string) => {
@@ -299,20 +320,9 @@ const Index = () => {
     }
   }, [currentWorkPoint, qaData, stationPageMapping]);
 
-  // Initialize current work point when PDF loads
-  useEffect(() => {
-    if (pdfFile && qaData.length > 0 && !currentWorkPoint) {
-      // Set first work point as current
-      const firstWorkPoint = qaData[0];
-      setCurrentWorkPoint(firstWorkPoint);
-      
-      // Jump to first work point's page using flexible matching
-      const page = findMatchingStation(firstWorkPoint.station, stationPageMapping);
-      if (page) {
-        setCurrentPdfPage(page);
-      }
-    }
-  }, [pdfFile, qaData, stationPageMapping, currentWorkPoint]);
+  // Initialize current work point when PDF loads - removed auto-selection
+  // Users will manually select work points by clicking on rows
+  // This prevents the first row from being automatically highlighted
 
   const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
     setQaData((prev) => {
@@ -515,32 +525,44 @@ const Index = () => {
               {hasUploadedFiles && (
                 <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="flex gap-1 bg-muted p-1 rounded-md">
+                    <div className="flex gap-1 bg-muted/50 p-1.5 rounded-lg border border-border/50 shadow-sm">
                       <Button
                         variant={activeTab === "dashboard" ? "default" : "ghost"}
                         size="sm"
                         onClick={() => setActiveTab("dashboard")}
-                        className="gap-2"
+                        className={`gap-2 transition-all duration-200 ${
+                          activeTab === "dashboard" 
+                            ? "bg-primary text-primary-foreground shadow-md font-semibold" 
+                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
                       >
-                        <TrendingUp className="w-4 h-4" />
+                        <TrendingUp className={`w-4 h-4 transition-transform ${activeTab === "dashboard" ? "scale-110" : ""}`} />
                         Dashboard
                       </Button>
                       <Button
                         variant={activeTab === "data" ? "default" : "ghost"}
                         size="sm"
                         onClick={() => setActiveTab("data")}
-                        className="gap-2"
+                        className={`gap-2 transition-all duration-200 ${
+                          activeTab === "data" 
+                            ? "bg-primary text-primary-foreground shadow-md font-semibold" 
+                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
                       >
-                        <FileSpreadsheet className="w-4 h-4" />
+                        <FileSpreadsheet className={`w-4 h-4 transition-transform ${activeTab === "data" ? "scale-110" : ""}`} />
                         QA Data
                       </Button>
                       <Button
                         variant={activeTab === "map" ? "default" : "ghost"}
                         size="sm"
                         onClick={() => setActiveTab("map")}
-                        className="gap-2"
+                        className={`gap-2 transition-all duration-200 ${
+                          activeTab === "map" 
+                            ? "bg-primary text-primary-foreground shadow-md font-semibold" 
+                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
                       >
-                        <MapIcon className="w-4 h-4" />
+                        <MapIcon className={`w-4 h-4 transition-transform ${activeTab === "map" ? "scale-110" : ""}`} />
                         Map View
                       </Button>
                     </div>
@@ -626,6 +648,7 @@ const Index = () => {
                   setPdfFile(null);
                   setPdfFileName("");
                   setStationPageMapping({});
+                  setStationSpecMapping({});
                 }}
               />
             </div>
@@ -722,6 +745,9 @@ const Index = () => {
                     currentPdfPage={currentPdfPage}
                     onPdfPageChange={handlePdfPageChange}
                     stationPageMapping={stationPageMapping}
+                    stationSpecMapping={stationSpecMapping}
+                    editedSpecMapping={editedSpecMapping}
+                    onSpecNumberChange={handleSpecNumberChange}
                     onAnnotationsChange={handlePDFAnnotationsChange}
                     initialAnnotations={pdfAnnotations}
                     onWorkPointNotesChange={handlePDFWorkPointNotesChange}

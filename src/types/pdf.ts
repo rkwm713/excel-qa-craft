@@ -29,4 +29,5 @@ export interface PDFDocumentInfo {
   numPages: number;
   pages: PDFPageInfo[];
   stationPageMapping: Record<string, number>;
+  stationSpecMapping: Record<string, string>;
 }

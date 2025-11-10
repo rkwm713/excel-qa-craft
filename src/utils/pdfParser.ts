@@ -19,8 +19,9 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
     const numPages = pdf.numPages;
     const pages: PDFPageInfo[] = [];
     const stationPageMapping: Record<string, number> = {};
+    const stationSpecMapping: Record<string, string> = {};
 
-    // Parse each page to extract WP (Work Point) numbers
+    // Parse each page to extract WP (Work Point) numbers and Spec Numbers
     for (let pageNum = 1; pageNum <= numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
@@ -33,10 +34,15 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
       // Look for patterns like "WP: 1440859", "WP 1440859", "WP 2 / 108-705", "WP26", etc.
       // Priority: Try formats with separators first (more specific), then general formats
       let wpMatch = null;
+      let specNumber: string | null = null;
       
-      // First, try "WP 2 / 108-705" format - extract just the first number before the slash
+      // First, try "WP 2 / 108-705" format - extract both WP and spec number
       // This is the most common format based on the user's example
-      wpMatch = text.match(/WP[:\s]+(\d+)\s*\/\s*\d+/i);
+      const wpWithSpecMatch = text.match(/WP[:\s]+(\d+)\s*\/\s*(\d+-\d+)/i);
+      if (wpWithSpecMatch) {
+        wpMatch = wpWithSpecMatch;
+        specNumber = wpWithSpecMatch[2]; // Extract spec number (e.g., "108-705")
+      }
       
       if (!wpMatch) {
         // Try "WP: 1440859" or "WP 1440859" (standard format)
@@ -51,6 +57,16 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
       if (!wpMatch) {
         // Try "Work Point 26" or "WorkPoint 26"
         wpMatch = text.match(/Work\s*Point[:\s]+(\d+)/i);
+      }
+      
+      // If we didn't find spec number in the WP pattern, try to find it separately
+      // Look for patterns like "108-705" near the WP text
+      if (!specNumber && wpMatch) {
+        // Try to find spec number pattern near the WP (within reasonable distance)
+        const specMatch = text.match(/(\d+-\d+)/);
+        if (specMatch) {
+          specNumber = specMatch[1];
+        }
       }
       
       const workPoint = wpMatch ? wpMatch[1] : null;
@@ -83,11 +99,21 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
           stationPageMapping[normalizedPadded4] = pageNum;
         }
         
-        console.log(`Found WP ${workPoint} on page ${pageNum} (mapped as: ${workPoint}, ${normalized}, ${padded4}, ${normalizedPadded4})`);
+        // Map spec number to work point (using all variations)
+        if (specNumber) {
+          stationSpecMapping[workPoint] = specNumber;
+          stationSpecMapping[normalized] = specNumber;
+          stationSpecMapping[padded4] = specNumber;
+          stationSpecMapping[normalizedPadded4] = specNumber;
+          console.log(`Found WP ${workPoint} with Spec ${specNumber} on page ${pageNum}`);
+        } else {
+          console.log(`Found WP ${workPoint} on page ${pageNum} (no spec number found)`);
+        }
       }
     }
 
     console.log("PDF parsing complete. Total work points found:", Object.keys(stationPageMapping).length);
+    console.log("Total spec numbers mapped:", Object.keys(stationSpecMapping).length);
 
     return {
       file,
@@ -95,6 +121,7 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
       numPages,
       pages,
       stationPageMapping,
+      stationSpecMapping,
     };
   } catch (error) {
     console.error("PDF parsing error:", error);

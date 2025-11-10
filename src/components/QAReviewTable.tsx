@@ -4,12 +4,15 @@ import { QAReviewRow as QAReviewRowType } from "@/types/qa-tool";
 import { QAReviewRow } from "./QAReviewRow";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Maximize2, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { FileText, Maximize2, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { PDFViewer } from "./PDFViewer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { findMatchingSpec } from "@/utils/stationNormalizer";
+import { Edit2, Check, X } from "lucide-react";
 
 interface QAReviewTableProps {
   data: QAReviewRowType[];
@@ -23,6 +26,9 @@ interface QAReviewTableProps {
   currentPdfPage?: number;
   onPdfPageChange?: (page: number) => void;
   stationPageMapping?: Record<string, number>;
+  stationSpecMapping?: Record<string, string>;
+  editedSpecMapping?: Record<string, string>;
+  onSpecNumberChange?: (station: string, specNumber: string) => void;
   onAnnotationsChange?: (pageNumber: number, annotations: any[]) => void;
   initialAnnotations?: Map<number, any[]>;
   onWorkPointNotesChange?: (workPoint: string, notes: string) => void;
@@ -48,6 +54,9 @@ export const QAReviewTable = ({
   currentPdfPage = 1,
   onPdfPageChange,
   stationPageMapping,
+  stationSpecMapping,
+  editedSpecMapping,
+  onSpecNumberChange,
   onAnnotationsChange,
   initialAnnotations,
   onWorkPointNotesChange,
@@ -65,6 +74,15 @@ export const QAReviewTable = ({
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [showOnlyNeedsCorrection, setShowOnlyNeedsCorrection] = useState(false);
+  const [editingSpec, setEditingSpec] = useState<string | null>(null);
+  const [editingSpecValue, setEditingSpecValue] = useState<string>("");
+
+  // Reset editing state when station changes
+  useEffect(() => {
+    setEditingSpec(null);
+    setEditingSpecValue("");
+  }, [selectedStation]);
 
   // Memoize the update handler to prevent recreating it on every render
   const handleUpdateRow = useCallback(
@@ -105,6 +123,11 @@ export const QAReviewTable = ({
   // Filter and sort data by selected station
   const filteredData = useMemo(() => {
     let filtered = data.filter(row => row.station === selectedStation);
+    
+    // Filter to show only rows that need correction
+    if (showOnlyNeedsCorrection) {
+      filtered = filtered.filter(row => !row.cuCheck || !row.wfCheck || !row.qtyCheck);
+    }
     
     if (sortColumn) {
       filtered = [...filtered].sort((a, b) => {
@@ -156,7 +179,7 @@ export const QAReviewTable = ({
     }
     
     return filtered;
-  }, [data, selectedStation, sortColumn, sortDirection]);
+  }, [data, selectedStation, sortColumn, sortDirection, showOnlyNeedsCorrection]);
 
   const rowVirtualizer = useVirtualizer({
     count: filteredData.length,
@@ -267,9 +290,127 @@ export const QAReviewTable = ({
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
-            <Badge variant="outline" className="font-saira">
-              {filteredData.length} {filteredData.length === 1 ? 'record' : 'records'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-saira">
+                {filteredData.length} {filteredData.length === 1 ? 'record' : 'records'}
+              </Badge>
+              {selectedStation && (() => {
+                // Get spec number - prioritize edited over original
+                // If editedSpec is empty string, it means user cleared it, so use original
+                const editedSpec = editedSpecMapping?.[selectedStation];
+                const originalSpec = stationSpecMapping ? findMatchingSpec(selectedStation, stationSpecMapping) : null;
+                const specNumber = (editedSpec !== undefined && editedSpec !== "") ? editedSpec : originalSpec;
+                const isEdited = editedSpec !== undefined && editedSpec !== "" && editedSpec !== originalSpec;
+                
+                if (editingSpec === selectedStation) {
+                  // Edit mode
+                  return (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={editingSpecValue}
+                        onChange={(e) => setEditingSpecValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            if (onSpecNumberChange && selectedStation) {
+                              const trimmedValue = editingSpecValue.trim();
+                              // If empty, we'll clear the edited spec by storing empty string
+                              onSpecNumberChange(selectedStation, trimmedValue);
+                            }
+                            setEditingSpec(null);
+                            setEditingSpecValue("");
+                          } else if (e.key === 'Escape') {
+                            setEditingSpec(null);
+                            setEditingSpecValue("");
+                          }
+                        }}
+                        placeholder="Enter spec number"
+                        className="h-7 w-32 text-sm font-saira text-center"
+                        autoFocus
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => {
+                          if (onSpecNumberChange && selectedStation) {
+                            const trimmedValue = editingSpecValue.trim();
+                            onSpecNumberChange(selectedStation, trimmedValue);
+                          }
+                          setEditingSpec(null);
+                          setEditingSpecValue("");
+                        }}
+                      >
+                        <Check className="w-4 h-4 text-green-600" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => {
+                          setEditingSpec(null);
+                          setEditingSpecValue("");
+                        }}
+                      >
+                        <X className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
+                  );
+                }
+                
+                // Display mode
+                return specNumber ? (
+                  <div className="flex items-center gap-1">
+                    <Badge 
+                      variant={isEdited ? "default" : "secondary"} 
+                      className={`font-saira cursor-pointer hover:opacity-80 transition-opacity ${
+                        isEdited ? 'bg-orange-500 hover:bg-orange-600' : ''
+                      }`}
+                      onClick={() => {
+                        setEditingSpec(selectedStation);
+                        setEditingSpecValue(specNumber);
+                      }}
+                    >
+                      Spec: {specNumber}
+                      {isEdited && <span className="ml-1 text-xs">(edited)</span>}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      onClick={() => {
+                        setEditingSpec(selectedStation);
+                        setEditingSpecValue(specNumber);
+                      }}
+                      title="Edit spec number"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 font-saira text-xs"
+                    onClick={() => {
+                      setEditingSpec(selectedStation);
+                      setEditingSpecValue("");
+                    }}
+                  >
+                    <Edit2 className="w-3 h-3 mr-1" />
+                    Add Spec
+                  </Button>
+                );
+              })()}
+            </div>
+            <Button
+              variant={showOnlyNeedsCorrection ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowOnlyNeedsCorrection(!showOnlyNeedsCorrection)}
+              className="gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              {showOnlyNeedsCorrection ? "Show All" : "Needs Correction"}
+            </Button>
             {onAddRow && (
               <Button
                 variant="outline"
@@ -318,10 +459,10 @@ export const QAReviewTable = ({
             <thead className="bg-muted/50 sticky top-0 z-10">
               <tr>
                 <th 
-                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[140px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  className="px-4 py-3 text-center text-sm font-semibold border-b bg-primary/10 border-r border-primary/20 min-w-[140px] font-saira uppercase tracking-wide cursor-pointer hover:bg-primary/20 transition-colors select-none"
                   onClick={() => handleSort("designerCU")}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     Designer CU
                     {sortColumn === "designerCU" ? (
                       sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
@@ -331,10 +472,10 @@ export const QAReviewTable = ({
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[180px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  className="px-4 py-3 text-center text-sm font-semibold border-b bg-muted/50 min-w-[180px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
                   onClick={() => handleSort("qaCU")}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     QA CU
                     {sortColumn === "qaCU" ? (
                       sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
@@ -344,10 +485,10 @@ export const QAReviewTable = ({
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  className="px-4 py-3 text-center text-sm font-semibold border-b bg-primary/10 border-r border-primary/20 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-primary/20 transition-colors select-none"
                   onClick={() => handleSort("designerWF")}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     D - WF
                     {sortColumn === "designerWF" ? (
                       sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
@@ -357,10 +498,10 @@ export const QAReviewTable = ({
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[100px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  className="px-4 py-3 text-center text-sm font-semibold border-b bg-muted/50 min-w-[100px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
                   onClick={() => handleSort("qaWF")}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     QA WF
                     {sortColumn === "qaWF" ? (
                       sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
@@ -370,10 +511,10 @@ export const QAReviewTable = ({
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  className="px-4 py-3 text-center text-sm font-semibold border-b bg-primary/10 border-r border-primary/20 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-primary/20 transition-colors select-none"
                   onClick={() => handleSort("designerQty")}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     D - QTY
                     {sortColumn === "designerQty" ? (
                       sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
@@ -383,10 +524,10 @@ export const QAReviewTable = ({
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  className="px-4 py-3 text-center text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
                   onClick={() => handleSort("qaQty")}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     QA Qty
                     {sortColumn === "qaQty" ? (
                       sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
