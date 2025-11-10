@@ -48,6 +48,8 @@ const Index = () => {
     }
   }, []);
 
+  const [hasUploadedFiles, setHasUploadedFiles] = useState(false);
+
   const handleFileSelect = async (file: File) => {
     try {
       setIsLoading(true);
@@ -108,9 +110,6 @@ const Index = () => {
       if (!googleApiKey && !localStorage.getItem("googleMapsApiKey")) {
         setShowApiKeyInput(true);
       }
-
-      // Switch to map tab
-      setActiveTab("map");
     } catch (error) {
       toast({
         title: "Error loading KMZ",
@@ -312,20 +311,35 @@ const Index = () => {
 
           <main className="container mx-auto px-6 py-8">
         {qaData.length === 0 && kmzPlacemarks.length === 0 ? (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <FileSpreadsheet className="w-16 h-16 text-primary mx-auto mb-4" />
               <h2 className="text-3xl font-bold mb-2 font-saira uppercase tracking-wide text-primary">Welcome to TechServ QA Tool</h2>
               <p className="text-muted-foreground font-neuton text-lg">
-                Upload your Designer Upload Excel file and KMZ work points to begin the QA review process
+                Upload your Designer Upload Excel file, KMZ work points, and PDF diagrams to begin the QA review process
               </p>
               <p className="text-sm text-muted-foreground mt-2 font-neuton italic">
                 Scalability and Reliability When and Where You Need It
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-6">
-              <FileUpload onFileSelect={handleFileSelect} />
-              <KMZUpload onFileSelect={handleKMZFileSelect} />
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <FileUpload 
+                onFileSelect={handleFileSelect} 
+                fileName={fileName}
+                onClear={() => {
+                  setQaData([]);
+                  setFileName("");
+                  setCuLookup([]);
+                }}
+              />
+              <KMZUpload 
+                onFileSelect={handleKMZFileSelect} 
+                fileName={kmzFileName}
+                onClear={() => {
+                  setKmzPlacemarks([]);
+                  setKmzFileName("");
+                }}
+              />
               <PDFUpload 
                 onFileSelect={handlePDFFileSelect} 
                 fileName={pdfFileName}
@@ -336,6 +350,20 @@ const Index = () => {
                 }}
               />
             </div>
+            {(fileName || kmzFileName || pdfFileName) && (
+              <div className="text-center">
+                <Button
+                  onClick={() => {
+                    setHasUploadedFiles(true);
+                    setActiveTab("dashboard");
+                  }}
+                  size="lg"
+                  className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8"
+                >
+                  Start QA Review
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
