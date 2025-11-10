@@ -151,8 +151,11 @@ export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
           streetViewBtn.style.cursor = "pointer";
           streetViewBtn.style.fontFamily = "'Saira', sans-serif";
           streetViewBtn.onclick = () => {
+            // Use the simpler Google Maps URL format for Street View
+            const lat = placemark.coordinates.lat;
+            const lng = placemark.coordinates.lng;
             window.open(
-              `https://www.google.com/maps/@${placemark.coordinates.lat},${placemark.coordinates.lng},3a,75y,0h,90t/data=!3m4!1e1!3m2!1s0!2e0`,
+              `https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0`,
               '_blank'
             );
           };
