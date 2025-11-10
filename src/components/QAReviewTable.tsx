@@ -94,10 +94,9 @@ export const QAReviewTable = ({
   const showPdf = pdfFile && onPdfPageChange;
   const isPdfReviewMode = showPdf && currentWorkPoint;
 
-  return (
-    <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-350px)]">
-      <ResizablePanel defaultSize={isPdfReviewMode ? 75 : (showPdf ? 60 : 100)} minSize={30}>
-        <div className="space-y-4 pr-2 h-full">
+  // Render function for table/cards content
+  const renderTableContent = () => (
+    <div className="space-y-4 pr-2 h-full">
       {/* View Mode Toggle */}
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -226,39 +225,73 @@ export const QAReviewTable = ({
           </div>
         </Card>
       )}
-        </div>
+    </div>
+  );
+
+  // PDF Review Mode: PDF (75%) + Context Panel (25%)
+  if (isPdfReviewMode) {
+    return (
+      <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-350px)]">
+        <ResizablePanel defaultSize={75} minSize={50}>
+          <div className="h-full pr-2">
+            <PDFViewer
+              file={pdfFile}
+              currentPage={currentPdfPage}
+              onPageChange={onPdfPageChange}
+              stationPageMapping={stationPageMapping}
+              currentStation={selectedStation}
+              onAnnotationsChange={onAnnotationsChange}
+              initialAnnotations={initialAnnotations}
+              onWorkPointNotesChange={onWorkPointNotesChange}
+              initialWorkPointNotes={initialWorkPointNotes}
+            />
+          </div>
+        </ResizablePanel>
+        
+        <ResizableHandle withHandle />
+        
+        <ResizablePanel defaultSize={25} minSize={20}>
+          <div className="h-full pl-2">
+            <PDFReviewContextPanel
+              data={data}
+              currentWorkPoint={currentWorkPoint}
+              onUpdateRow={onUpdateRow}
+              cuOptions={cuOptions}
+              onJumpToWorkPoint={onJumpToWorkPoint!}
+              onPreviousWorkPoint={onPreviousWorkPoint!}
+              onNextWorkPoint={onNextWorkPoint!}
+              canGoPrevious={canGoPrevious}
+              canGoNext={canGoNext}
+            />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    );
+  }
+
+  // Default mode: Table/Cards + optional PDF
+  return (
+    <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-350px)]">
+      <ResizablePanel defaultSize={showPdf ? 60 : 100} minSize={30}>
+        {renderTableContent()}
       </ResizablePanel>
       
       {showPdf && (
         <>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={isPdfReviewMode ? 25 : 40} minSize={20}>
+          <ResizablePanel defaultSize={40} minSize={20}>
             <div className="h-full pl-2">
-              {isPdfReviewMode ? (
-                <PDFReviewContextPanel
-                  data={data}
-                  currentWorkPoint={currentWorkPoint}
-                  onUpdateRow={onUpdateRow}
-                  cuOptions={cuOptions}
-                  onJumpToWorkPoint={onJumpToWorkPoint!}
-                  onPreviousWorkPoint={onPreviousWorkPoint!}
-                  onNextWorkPoint={onNextWorkPoint!}
-                  canGoPrevious={canGoPrevious}
-                  canGoNext={canGoNext}
-                />
-              ) : (
-                <PDFViewer
-                  file={pdfFile}
-                  currentPage={currentPdfPage}
-                  onPageChange={onPdfPageChange}
-                  stationPageMapping={stationPageMapping}
-                  currentStation={selectedStation}
-                  onAnnotationsChange={onAnnotationsChange}
-                  initialAnnotations={initialAnnotations}
-                  onWorkPointNotesChange={onWorkPointNotesChange}
-                  initialWorkPointNotes={initialWorkPointNotes}
-                />
-              )}
+              <PDFViewer
+                file={pdfFile}
+                currentPage={currentPdfPage}
+                onPageChange={onPdfPageChange}
+                stationPageMapping={stationPageMapping}
+                currentStation={selectedStation}
+                onAnnotationsChange={onAnnotationsChange}
+                initialAnnotations={initialAnnotations}
+                onWorkPointNotesChange={onWorkPointNotesChange}
+                initialWorkPointNotes={initialWorkPointNotes}
+              />
             </div>
           </ResizablePanel>
         </>
