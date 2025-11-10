@@ -4,8 +4,6 @@ import { KMZUpload } from "@/components/KMZUpload";
 import { Dashboard } from "@/components/Dashboard";
 import { QAReviewTable } from "@/components/QAReviewTable";
 import { MapViewer } from "@/components/MapViewer";
-import { GoogleMapsLoader } from "@/components/GoogleMapsLoader";
-import { ApiKeyInput } from "@/components/ApiKeyInput";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, FileSpreadsheet, Map as MapIcon } from "lucide-react";
@@ -21,7 +19,6 @@ const Index = () => {
   const [fileName, setFileName] = useState<string>("");
   const [kmzPlacemarks, setKmzPlacemarks] = useState<any[]>([]);
   const [kmzFileName, setKmzFileName] = useState<string>("");
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("data");
   const { toast } = useToast();
 
@@ -293,20 +290,11 @@ const Index = () => {
                 </div>
               </div>
 
-              {!googleMapsApiKey ? (
-                <ApiKeyInput onApiKeySubmit={setGoogleMapsApiKey} />
-              ) : kmzPlacemarks.length > 0 ? (
-                <GoogleMapsLoader apiKey={googleMapsApiKey}>
-                  {(loaded) =>
-                    loaded ? (
-                      <MapViewer
-                        placemarks={kmzPlacemarks}
-                        apiKey={googleMapsApiKey}
-                        onStationClick={handleStationClick}
-                      />
-                    ) : null
-                  }
-                </GoogleMapsLoader>
+              {kmzPlacemarks.length > 0 ? (
+                <MapViewer
+                  placemarks={kmzPlacemarks}
+                  onStationClick={handleStationClick}
+                />
               ) : (
                 <div className="text-center py-12">
                   <MapIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
