@@ -443,7 +443,7 @@ const Index = () => {
               <input
                 id="pdf-upload-later"
                 type="file"
-                accept=".pdf"
+                accept="application/pdf,.pdf"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handlePDFFileSelect(file);
