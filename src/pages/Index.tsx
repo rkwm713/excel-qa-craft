@@ -12,7 +12,7 @@ import { StationSidebar } from "@/components/StationSidebar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp } from "lucide-react";
+import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText } from "lucide-react";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { parseKMZ } from "@/utils/kmzParser";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
@@ -311,7 +311,7 @@ const Index = () => {
           </header>
 
           <main className="container mx-auto px-6 py-8">
-        {qaData.length === 0 && kmzPlacemarks.length === 0 ? (
+        {!hasUploadedFiles ? (
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <FileSpreadsheet className="w-16 h-16 text-primary mx-auto mb-4" />
@@ -384,16 +384,46 @@ const Index = () => {
                 </TabsTrigger>
               </TabsList>
               <div className="flex gap-2">
+                {!fileName && (
+                  <Button variant="outline" onClick={() => document.getElementById("excel-upload-later")?.click()} className="gap-2">
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Add Excel
+                  </Button>
+                )}
                 {!kmzPlacemarks.length && (
                   <Button variant="outline" onClick={() => document.getElementById("kmz-upload")?.click()} className="gap-2">
                     <MapIcon className="w-4 h-4" />
                     Add KMZ
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => { setQaData([]); setKmzPlacemarks([]); }}>
+                {!pdfFileName && (
+                  <Button variant="outline" onClick={() => document.getElementById("pdf-upload-later")?.click()} className="gap-2">
+                    <FileText className="w-4 h-4" />
+                    Add PDF
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => { 
+                  setQaData([]); 
+                  setKmzPlacemarks([]);
+                  setPdfFile(null);
+                  setFileName("");
+                  setKmzFileName("");
+                  setPdfFileName("");
+                  setHasUploadedFiles(false);
+                }}>
                   Upload New Files
                 </Button>
               </div>
+              <input
+                id="excel-upload-later"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileSelect(file);
+                }}
+                className="hidden"
+              />
               <input
                 id="kmz-upload"
                 type="file"
@@ -401,6 +431,16 @@ const Index = () => {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleKMZFileSelect(file);
+                }}
+                className="hidden"
+              />
+              <input
+                id="pdf-upload-later"
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePDFFileSelect(file);
                 }}
                 className="hidden"
               />
