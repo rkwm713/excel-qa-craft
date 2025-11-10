@@ -38,6 +38,8 @@ const Index = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [currentPdfPage, setCurrentPdfPage] = useState<number>(1);
   const [stationPageMapping, setStationPageMapping] = useState<Record<string, number>>({});
+  const [placemarkNotes, setPlacemarkNotes] = useState<Record<string, string>>({});
+  const [mapDrawings, setMapDrawings] = useState<any[]>([]);
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -176,6 +178,17 @@ const Index = () => {
 
   const handleSkipApiKey = () => {
     setShowApiKeyInput(false);
+  };
+
+  const handlePlacemarkNotesChange = (placemarkId: string, notes: string) => {
+    setPlacemarkNotes(prev => ({
+      ...prev,
+      [placemarkId]: notes
+    }));
+  };
+
+  const handleMapDrawingsChange = (drawings: any[]) => {
+    setMapDrawings(drawings);
   };
 
   const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
@@ -540,6 +553,10 @@ const Index = () => {
                   onStationClick={handleStationClick}
                   onStreetViewClick={handleStreetViewClick}
                   hasGoogleApiKey={!!googleApiKey}
+                  onNotesChange={handlePlacemarkNotesChange}
+                  initialNotes={placemarkNotes}
+                  onDrawingsChange={handleMapDrawingsChange}
+                  initialDrawings={mapDrawings}
                 />
               ) : (
                 <div className="text-center py-12">

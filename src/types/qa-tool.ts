@@ -22,6 +22,7 @@ export interface QAReviewRow {
   designerQty: number;
   qaQty: number;
   qaComments: string;
+  mapNotes?: string;
   cuCheck: boolean;
   wfCheck: boolean;
   qtyCheck: boolean;

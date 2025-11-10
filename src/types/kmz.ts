@@ -7,6 +7,8 @@ export interface KMZPlacemark {
     alt?: number;
   };
   station?: string;
+  notes?: string;
+  qaComments?: string;
 }
 
 export interface KMZData {
