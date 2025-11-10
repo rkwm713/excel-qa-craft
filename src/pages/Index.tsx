@@ -1,9 +1,11 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { FileUpload } from "@/components/FileUpload";
 import { KMZUpload } from "@/components/KMZUpload";
 import { Dashboard } from "@/components/Dashboard";
 import { QAReviewTable } from "@/components/QAReviewTable";
 import { MapViewer } from "@/components/MapViewer";
+import { GoogleApiKeyInput } from "@/components/GoogleApiKeyInput";
+import { StreetViewModal } from "@/components/StreetViewModal";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, FileSpreadsheet, Map as MapIcon } from "lucide-react";
@@ -20,7 +22,19 @@ const Index = () => {
   const [kmzPlacemarks, setKmzPlacemarks] = useState<any[]>([]);
   const [kmzFileName, setKmzFileName] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("data");
+  const [googleApiKey, setGoogleApiKey] = useState<string>("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [streetViewLocation, setStreetViewLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
+  const [isStreetViewOpen, setIsStreetViewOpen] = useState(false);
   const { toast } = useToast();
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem("googleMapsApiKey");
+    if (savedKey) {
+      setGoogleApiKey(savedKey);
+    }
+  }, []);
 
   const handleFileSelect = async (file: File) => {
     try {
@@ -74,6 +88,11 @@ const Index = () => {
         description: `Found ${kmzData.placemarks.length} work points`,
       });
 
+      // Show API key input if not already set
+      if (!googleApiKey && !localStorage.getItem("googleMapsApiKey")) {
+        setShowApiKeyInput(true);
+      }
+
       // Switch to map tab
       setActiveTab("map");
     } catch (error) {
@@ -90,6 +109,24 @@ const Index = () => {
     // Switch to data tab and scroll to station
     setActiveTab("data");
     // Could add logic to filter/highlight the station in the table
+  };
+
+  const handleStreetViewClick = (location: { lat: number; lng: number; name: string }) => {
+    setStreetViewLocation(location);
+    setIsStreetViewOpen(true);
+  };
+
+  const handleApiKeySubmit = (apiKey: string) => {
+    setGoogleApiKey(apiKey);
+    setShowApiKeyInput(false);
+    toast({
+      title: "Street View enabled",
+      description: "You can now view locations in Google Street View",
+    });
+  };
+
+  const handleSkipApiKey = () => {
+    setShowApiKeyInput(false);
   };
 
   const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
@@ -290,10 +327,19 @@ const Index = () => {
                 </div>
               </div>
 
+              {showApiKeyInput && (
+                <GoogleApiKeyInput
+                  onSubmit={handleApiKeySubmit}
+                  onSkip={handleSkipApiKey}
+                />
+              )}
+
               {kmzPlacemarks.length > 0 ? (
                 <MapViewer
                   placemarks={kmzPlacemarks}
                   onStationClick={handleStationClick}
+                  onStreetViewClick={handleStreetViewClick}
+                  hasGoogleApiKey={!!googleApiKey}
                 />
               ) : (
                 <div className="text-center py-12">
@@ -312,6 +358,13 @@ const Index = () => {
           </Tabs>
         )}
       </main>
+
+      <StreetViewModal
+        isOpen={isStreetViewOpen}
+        onClose={() => setIsStreetViewOpen(false)}
+        location={streetViewLocation}
+        apiKey={googleApiKey}
+      />
     </div>
   );
 };

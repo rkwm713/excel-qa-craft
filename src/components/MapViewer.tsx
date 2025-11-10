@@ -21,9 +21,11 @@ L.Icon.Default.mergeOptions({
 interface MapViewerProps {
   placemarks: any[];
   onStationClick?: (station: string) => void;
+  onStreetViewClick?: (location: { lat: number; lng: number; name: string }) => void;
+  hasGoogleApiKey?: boolean;
 }
 
-export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
+export const MapViewer = ({ placemarks, onStationClick, onStreetViewClick, hasGoogleApiKey }: MapViewerProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -87,66 +89,108 @@ export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
           popupAnchor: [0, -16],
         });
 
-        // Create popup content
-        const popupContent = `
-          <div style="font-family: 'Neuton', serif; padding: 8px; min-width: 200px;">
-            <h3 style="font-family: 'Saira', sans-serif; font-weight: bold; font-size: 16px; margin: 0 0 8px 0; color: #04458D;">
-              ${placemark.name}
-            </h3>
-            ${placemark.station ? `<p style="margin: 4px 0;"><strong>Station:</strong> ${placemark.station}</p>` : ""}
-            ${placemark.description ? `<p style="margin: 4px 0; font-size: 13px; color: #666;">${placemark.description}</p>` : ""}
-            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-              <a
-                href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${placemark.coordinates.lat},${placemark.coordinates.lng}"
-                target="_blank"
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  gap: 6px;
-                  padding: 8px 12px;
-                  background: #FFFF00;
-                  color: #282A30;
-                  text-decoration: none;
-                  border-radius: 4px;
-                  font-weight: 600;
-                  font-size: 13px;
-                  border: none;
-                "
-              >
-                Open Street View
-              </a>
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=${placemark.coordinates.lat},${placemark.coordinates.lng}"
-                target="_blank"
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  gap: 6px;
-                  padding: 8px 12px;
-                  background: white;
-                  color: #04458D;
-                  text-decoration: none;
-                  border-radius: 4px;
-                  font-weight: 600;
-                  font-size: 13px;
-                  border: 1px solid #04458D;
-                "
-              >
-                Get Directions
-              </a>
-            </div>
-            <p style="font-size: 11px; color: #999; margin-top: 8px;">
-              Lat: ${placemark.coordinates.lat.toFixed(6)}, Lng: ${placemark.coordinates.lng.toFixed(6)}
-            </p>
-          </div>
-        `;
+        // Create popup container
+        const popupContainer = document.createElement("div");
+        popupContainer.style.fontFamily = "'Neuton', serif";
+        popupContainer.style.padding = "8px";
+        popupContainer.style.minWidth = "200px";
+
+        // Title
+        const title = document.createElement("h3");
+        title.style.fontFamily = "'Saira', sans-serif";
+        title.style.fontWeight = "bold";
+        title.style.fontSize = "16px";
+        title.style.margin = "0 0 8px 0";
+        title.style.color = "#04458D";
+        title.textContent = placemark.name;
+        popupContainer.appendChild(title);
+
+        // Station info
+        if (placemark.station) {
+          const stationP = document.createElement("p");
+          stationP.style.margin = "4px 0";
+          stationP.innerHTML = `<strong>Station:</strong> ${placemark.station}`;
+          popupContainer.appendChild(stationP);
+        }
+
+        // Description
+        if (placemark.description) {
+          const descP = document.createElement("p");
+          descP.style.margin = "4px 0";
+          descP.style.fontSize = "13px";
+          descP.style.color = "#666";
+          descP.textContent = placemark.description;
+          popupContainer.appendChild(descP);
+        }
+
+        // Button container
+        const btnContainer = document.createElement("div");
+        btnContainer.style.marginTop = "12px";
+        btnContainer.style.display = "flex";
+        btnContainer.style.flexDirection = "column";
+        btnContainer.style.gap = "8px";
+
+        // Street View button
+        const streetViewBtn = document.createElement("button");
+        streetViewBtn.textContent = hasGoogleApiKey ? "🗺️ Open Street View" : "🗺️ Open in Google Maps";
+        streetViewBtn.style.padding = "8px 12px";
+        streetViewBtn.style.background = "#FFFF00";
+        streetViewBtn.style.color = "#282A30";
+        streetViewBtn.style.border = "none";
+        streetViewBtn.style.borderRadius = "4px";
+        streetViewBtn.style.fontWeight = "600";
+        streetViewBtn.style.fontSize = "13px";
+        streetViewBtn.style.cursor = "pointer";
+        streetViewBtn.style.width = "100%";
+        streetViewBtn.onclick = () => {
+          if (hasGoogleApiKey && onStreetViewClick) {
+            onStreetViewClick({
+              lat: placemark.coordinates.lat,
+              lng: placemark.coordinates.lng,
+              name: placemark.name,
+            });
+          } else {
+            window.open(
+              `https://www.google.com/maps/@${placemark.coordinates.lat},${placemark.coordinates.lng},3a,75y,0h,90t/data=!3m4!1e1!3m2!1s0!2e0`,
+              "_blank"
+            );
+          }
+        };
+        btnContainer.appendChild(streetViewBtn);
+
+        // Directions button
+        const directionsBtn = document.createElement("button");
+        directionsBtn.textContent = "🧭 Get Directions";
+        directionsBtn.style.padding = "8px 12px";
+        directionsBtn.style.background = "white";
+        directionsBtn.style.color = "#04458D";
+        directionsBtn.style.border = "1px solid #04458D";
+        directionsBtn.style.borderRadius = "4px";
+        directionsBtn.style.fontWeight = "600";
+        directionsBtn.style.fontSize = "13px";
+        directionsBtn.style.cursor = "pointer";
+        directionsBtn.style.width = "100%";
+        directionsBtn.onclick = () => {
+          window.open(
+            `https://www.google.com/maps/search/?api=1&query=${placemark.coordinates.lat},${placemark.coordinates.lng}`,
+            "_blank"
+          );
+        };
+        btnContainer.appendChild(directionsBtn);
+        popupContainer.appendChild(btnContainer);
+
+        // Coordinates
+        const coords = document.createElement("p");
+        coords.style.fontSize = "11px";
+        coords.style.color = "#999";
+        coords.style.marginTop = "8px";
+        coords.textContent = `Lat: ${placemark.coordinates.lat.toFixed(6)}, Lng: ${placemark.coordinates.lng.toFixed(6)}`;
+        popupContainer.appendChild(coords);
 
         // Create marker with popup
         const marker = L.marker(position, { icon: customIcon })
           .addTo(map)
-          .bindPopup(popupContent);
+          .bindPopup(popupContainer);
 
         // Handle marker click
         marker.on("click", () => {
@@ -168,10 +212,10 @@ export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
-        mapRef.current = null;
+      mapRef.current = null;
       }
     };
-  }, [placemarks, onStationClick]);
+  }, [placemarks, onStationClick, onStreetViewClick, hasGoogleApiKey]);
 
   return (
     <Card className="overflow-hidden">
@@ -183,6 +227,7 @@ export const MapViewer = ({ placemarks, onStationClick }: MapViewerProps) => {
             </h3>
             <p className="text-sm text-muted-foreground font-neuton">
               {placemarks.length} locations • Click markers for details
+              {hasGoogleApiKey && " • Street View enabled"}
             </p>
           </div>
         </div>
