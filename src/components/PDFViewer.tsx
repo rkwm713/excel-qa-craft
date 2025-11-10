@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { PDFAnnotationToolbar } from "@/components/PDFAnnotationToolbar";
 import { PDFCanvas } from "@/components/PDFCanvas";
+import { PDFWorkPointHighlight } from "@/components/PDFWorkPointHighlight";
 import { PDFAnnotation } from "@/types/pdf";
 
 // Configure PDF.js worker
@@ -254,6 +255,13 @@ export function PDFViewer({
               onAnnotationAdd={handleAnnotationAdd}
               onAnnotationUpdate={handleAnnotationUpdate}
               scale={scale}
+            />
+            <PDFWorkPointHighlight
+              file={file}
+              currentPage={currentPage}
+              currentStation={currentStation}
+              scale={scale}
+              width={pageWidth}
             />
           </div>
         </div>
