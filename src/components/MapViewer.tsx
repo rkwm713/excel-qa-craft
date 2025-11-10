@@ -321,11 +321,12 @@ export const MapViewer = ({
 
         // Description
         if (placemark.description) {
-          const descP = document.createElement("p");
-          descP.style.margin = "4px 0";
+          const descP = document.createElement("div");
+          descP.style.margin = "8px 0";
           descP.style.fontSize = "13px";
-          descP.style.color = "#666";
-          descP.textContent = placemark.description;
+          descP.style.color = "#333";
+          descP.style.lineHeight = "1.5";
+          descP.innerHTML = placemark.description;
           popupContainer.appendChild(descP);
         }
 
