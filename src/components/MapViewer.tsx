@@ -211,8 +211,9 @@ export const MapViewer = ({ placemarks, onStationClick, onStreetViewClick, hasGo
     // Cleanup
     return () => {
       if (mapRef.current) {
+        mapRef.current.off();
         mapRef.current.remove();
-      mapRef.current = null;
+        mapRef.current = null;
       }
     };
   }, [placemarks, onStationClick, onStreetViewClick, hasGoogleApiKey]);

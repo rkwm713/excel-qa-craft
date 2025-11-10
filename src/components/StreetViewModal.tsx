@@ -29,6 +29,7 @@ export const StreetViewModal = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasStreetView, setHasStreetView] = useState(true);
+  const [useStaticImage, setUseStaticImage] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !location || !apiKey || !panoramaRef.current) return;
@@ -39,12 +40,15 @@ export const StreetViewModal = ({
 
     const initializePanorama = async () => {
       try {
-        // Ensure API is loaded
+        // Try to use interactive panorama first
         googleMapsLoader.setApiKey(apiKey);
         await googleMapsLoader.load();
 
         if (!panoramaRef.current || !location || !window.google?.maps) {
-          throw new Error("Failed to initialize Google Maps");
+          // Fall back to static image
+          setUseStaticImage(true);
+          setIsLoading(false);
+          return;
         }
 
         // Check if Street View is available at this location
@@ -58,32 +62,29 @@ export const StreetViewModal = ({
           },
           (data, status) => {
             if (status === google.maps.StreetViewStatus.OK && data) {
-              // Street View is available
-              panoramaInstance.current = new google.maps.StreetViewPanorama(
-                panoramaRef.current!,
-                {
-                  position: data.location?.latLng,
-                  pov: { 
-                    heading: google.maps.geometry?.spherical 
-                      ? google.maps.geometry.spherical.computeHeading(
-                          data.location!.latLng!,
-                          new google.maps.LatLng(location.lat, location.lng)
-                        )
-                      : 0, 
-                    pitch: 0 
-                  },
-                  zoom: 1,
-                  addressControl: true,
-                  linksControl: true,
-                  panControl: true,
-                  enableCloseButton: false,
-                  motionTracking: false,
-                  motionTrackingControl: false,
-                }
-              );
+              // Street View is available - create interactive panorama
+              if (panoramaRef.current) {
+                panoramaInstance.current = new google.maps.StreetViewPanorama(
+                  panoramaRef.current,
+                  {
+                    position: data.location?.latLng,
+                    pov: { 
+                      heading: 0, 
+                      pitch: 0 
+                    },
+                    zoom: 1,
+                    addressControl: true,
+                    linksControl: true,
+                    panControl: true,
+                    enableCloseButton: false,
+                    motionTracking: false,
+                    motionTrackingControl: false,
+                  }
+                );
+              }
               setIsLoading(false);
             } else {
-              // Street View not available
+              // Street View not available at this location
               setHasStreetView(false);
               setIsLoading(false);
             }
@@ -91,11 +92,8 @@ export const StreetViewModal = ({
         );
       } catch (err) {
         console.error("Street View initialization error:", err);
-        setError(
-          err instanceof Error 
-            ? err.message 
-            : "Failed to load Street View. Please check your API key and try again."
-        );
+        // Fall back to static image on error
+        setUseStaticImage(true);
         setIsLoading(false);
       }
     };
@@ -103,7 +101,10 @@ export const StreetViewModal = ({
     initializePanorama();
 
     return () => {
-      panoramaInstance.current = null;
+      if (panoramaInstance.current) {
+        panoramaInstance.current.setVisible(false);
+        panoramaInstance.current = null;
+      }
     };
   }, [isOpen, location, apiKey]);
 
@@ -157,10 +158,23 @@ export const StreetViewModal = ({
             </div>
           )}
 
+          {useStaticImage && hasStreetView && !isLoading && !error && (
+            <div className="w-full h-full flex items-center justify-center bg-muted/10 rounded-md overflow-hidden">
+              <img
+                src={`https://maps.googleapis.com/maps/api/streetview?size=1200x800&location=${location.lat},${location.lng}&fov=90&heading=0&pitch=0&key=${apiKey}`}
+                alt="Street View"
+                className="w-full h-full object-contain"
+                onError={() => {
+                  setHasStreetView(false);
+                }}
+              />
+            </div>
+          )}
+
           <div 
             ref={panoramaRef} 
             className="w-full h-full rounded-md overflow-hidden bg-muted/10"
-            style={{ display: isLoading || error || !hasStreetView ? 'none' : 'block' }}
+            style={{ display: isLoading || error || !hasStreetView || useStaticImage ? 'none' : 'block' }}
           />
         </div>
         
