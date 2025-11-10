@@ -16,14 +16,17 @@ interface QAReviewCardProps {
 
 export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardProps) => {
   return (
-    <Card className="overflow-hidden hover:shadow-sm transition-shadow border-l-[3px]" 
-          style={{ borderLeftColor: row.issueType === "OK" ? "hsl(var(--success))" : "hsl(var(--destructive))" }}>
+    <Card className="overflow-hidden hover:shadow-md transition-all duration-200 border-l-[4px] shadow-sm" 
+          style={{ 
+            borderLeftColor: row.issueType === "OK" ? "hsl(var(--success))" : "hsl(var(--destructive))",
+            boxShadow: row.issueType === "NEEDS REVISIONS" ? "0 0 0 1px hsl(var(--destructive) / 0.1)" : undefined
+          }}>
       <CardContent className="p-0">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/10 border-b">
+        <div className="flex items-center justify-between gap-2 px-4 py-3 bg-muted/20 border-b-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="text-[9px] font-bold uppercase text-muted-foreground/50 tracking-wide">Station</span>
-            <span className="text-sm font-bold font-saira text-foreground">{row.station}</span>
+            <span className="text-base font-bold font-saira text-foreground">{row.station}</span>
             {row.workSet && (
               <>
                 <div className="w-0.5 h-0.5 rounded-full bg-border mx-1" />
@@ -59,7 +62,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
         <div className="p-3 space-y-3">
           {/* Description */}
           {row.description && (
-            <div className="text-[10px] text-muted-foreground/70 leading-snug">
+            <div className="text-[11px] text-muted-foreground/70 leading-relaxed">
               {row.description}
             </div>
           )}
@@ -68,21 +71,21 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
           <div className="grid grid-cols-3 gap-2">
             {/* CU Column */}
             <div className="space-y-1.5">
-              <div className="text-[8px] font-bold uppercase text-muted-foreground/50 text-center pb-1">CU</div>
+              <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">CU</div>
               <div className="space-y-1">
-                <div className="bg-muted/10 rounded px-2 py-1.5 border border-border/30">
-                  <div className="text-[8px] text-muted-foreground/60 uppercase mb-0.5">Designer</div>
+                <div className="bg-muted/20 rounded px-2 py-1.5 border border-border/30">
+                  <div className="text-[9px] text-muted-foreground/60 uppercase mb-0.5 font-medium">Designer</div>
                   <div className="font-mono text-[11px] font-semibold text-foreground text-center">
                     {row.designerCU}
                   </div>
                 </div>
-                <div className="bg-background rounded border border-border/50 shadow-sm">
-                  <div className="text-[8px] text-muted-foreground/60 uppercase px-2 pt-1">QA</div>
+                <div className="bg-background rounded border border-border/50 shadow-sm hover:border-primary/30 transition-colors">
+                  <div className="text-[9px] text-muted-foreground/60 uppercase px-2 pt-1 font-medium">QA</div>
                   <Select
                     value={row.qaCU}
                     onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
                   >
-                    <SelectTrigger className="h-7 text-[11px] font-mono font-semibold border-0">
+                    <SelectTrigger className="h-8 text-[11px] font-mono font-semibold border-0">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
@@ -95,13 +98,13 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
                   </Select>
                 </div>
                 <div className="flex justify-center pt-0.5">
-                  <div className={`flex items-center justify-center w-5 h-5 rounded-full ${
+                  <div className={`flex items-center justify-center w-5 h-5 rounded-full transition-all ${
                     row.cuCheck ? 'bg-success/10' : 'bg-destructive/10'
                   }`}>
                     {row.cuCheck ? (
-                      <Check className="w-3 h-3 text-success" />
+                      <Check className="w-3.5 h-3.5 text-success" />
                     ) : (
-                      <X className="w-3 h-3 text-destructive" />
+                      <X className="w-3.5 h-3.5 text-destructive" />
                     )}
                   </div>
                 </div>
@@ -110,21 +113,21 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
 
             {/* WF Column */}
             <div className="space-y-1.5">
-              <div className="text-[8px] font-bold uppercase text-muted-foreground/50 text-center pb-1">WF</div>
+              <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">WF</div>
               <div className="space-y-1">
-                <div className="bg-muted/10 rounded px-2 py-1.5 border border-border/30">
-                  <div className="text-[8px] text-muted-foreground/60 uppercase mb-0.5">Designer</div>
+                <div className="bg-muted/20 rounded px-2 py-1.5 border border-border/30">
+                  <div className="text-[9px] text-muted-foreground/60 uppercase mb-0.5 font-medium">Designer</div>
                   <div className="font-mono text-[11px] font-semibold text-foreground text-center">
                     {row.designerWF}
                   </div>
                 </div>
-                <div className="bg-background rounded border border-border/50 shadow-sm">
-                  <div className="text-[8px] text-muted-foreground/60 uppercase px-2 pt-1">QA</div>
+                <div className="bg-background rounded border border-border/50 shadow-sm hover:border-primary/30 transition-colors">
+                  <div className="text-[9px] text-muted-foreground/60 uppercase px-2 pt-1 font-medium">QA</div>
                   <Select
                     value={row.qaWF}
                     onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
                   >
-                    <SelectTrigger className="h-7 text-[11px] font-mono font-semibold border-0">
+                    <SelectTrigger className="h-8 text-[11px] font-mono font-semibold border-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -134,13 +137,13 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
                   </Select>
                 </div>
                 <div className="flex justify-center pt-0.5">
-                  <div className={`flex items-center justify-center w-5 h-5 rounded-full ${
+                  <div className={`flex items-center justify-center w-5 h-5 rounded-full transition-all ${
                     row.wfCheck ? 'bg-success/10' : 'bg-destructive/10'
                   }`}>
                     {row.wfCheck ? (
-                      <Check className="w-3 h-3 text-success" />
+                      <Check className="w-3.5 h-3.5 text-success" />
                     ) : (
-                      <X className="w-3 h-3 text-destructive" />
+                      <X className="w-3.5 h-3.5 text-destructive" />
                     )}
                   </div>
                 </div>
@@ -149,31 +152,31 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
 
             {/* QTY Column */}
             <div className="space-y-1.5">
-              <div className="text-[8px] font-bold uppercase text-muted-foreground/50 text-center pb-1">QTY</div>
+              <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">QTY</div>
               <div className="space-y-1">
-                <div className="bg-muted/10 rounded px-2 py-1.5 border border-border/30">
-                  <div className="text-[8px] text-muted-foreground/60 uppercase mb-0.5">Designer</div>
+                <div className="bg-muted/20 rounded px-2 py-1.5 border border-border/30">
+                  <div className="text-[9px] text-muted-foreground/60 uppercase mb-0.5 font-medium">Designer</div>
                   <div className="font-mono text-[11px] font-semibold text-foreground text-center">
                     {row.designerQty}
                   </div>
                 </div>
-                <div className="bg-background rounded border border-border/50 shadow-sm">
-                  <div className="text-[8px] text-muted-foreground/60 uppercase px-2 pt-1">QA</div>
+                <div className="bg-background rounded border border-border/50 shadow-sm hover:border-primary/30 transition-colors">
+                  <div className="text-[9px] text-muted-foreground/60 uppercase px-2 pt-1 font-medium">QA</div>
                   <Input
                     type="number"
                     value={row.qaQty}
                     onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
-                    className="h-7 text-[11px] text-center font-mono font-semibold border-0"
+                    className="h-8 text-[11px] text-center font-mono font-semibold border-0"
                   />
                 </div>
                 <div className="flex justify-center pt-0.5">
-                  <div className={`flex items-center justify-center w-5 h-5 rounded-full ${
+                  <div className={`flex items-center justify-center w-5 h-5 rounded-full transition-all ${
                     row.qtyCheck ? 'bg-success/10' : 'bg-destructive/10'
                   }`}>
                     {row.qtyCheck ? (
-                      <Check className="w-3 h-3 text-success" />
+                      <Check className="w-3.5 h-3.5 text-success" />
                     ) : (
-                      <X className="w-3 h-3 text-destructive" />
+                      <X className="w-3.5 h-3.5 text-destructive" />
                     )}
                   </div>
                 </div>
@@ -182,12 +185,14 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
           </div>
 
           {/* Comments */}
-          <Textarea
-            value={row.qaComments}
-            onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
-            placeholder="Add QA comments..."
-            className="min-h-[50px] text-[10px] resize-none focus-visible:ring-1 bg-muted/5 border-border/50 placeholder:text-muted-foreground/30"
-          />
+          <div className="pt-2 border-t border-border/20">
+            <Textarea
+              value={row.qaComments}
+              onChange={(e) => onUpdateRow(row.id, "qaComments", e.target.value)}
+              placeholder="Add QA comments..."
+              className="min-h-[60px] text-[11px] resize-none focus-visible:ring-2 focus-visible:ring-primary bg-muted/5 border-border/50 placeholder:text-muted-foreground/40 transition-all"
+            />
+          </div>
         </div>
       </CardContent>
     </Card>
