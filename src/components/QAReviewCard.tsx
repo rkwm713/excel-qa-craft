@@ -71,7 +71,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
           <div className="grid grid-cols-3 gap-2">
             {/* CU Column */}
             <div className="space-y-1.5">
-              <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">CU</div>
+              <div className="text-[10px] font-extrabold uppercase text-foreground/80 text-center pb-1.5 tracking-wider">CU</div>
               <div className="space-y-1">
                 <div className="bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
                   <div className="text-[9px] text-primary/70 uppercase mb-0.5 font-medium">Designer</div>
@@ -113,7 +113,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
 
             {/* WF Column */}
             <div className="space-y-1.5">
-              <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">WF</div>
+              <div className="text-[10px] font-extrabold uppercase text-foreground/80 text-center pb-1.5 tracking-wider">WF</div>
               <div className="space-y-1">
                 <div className="bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
                   <div className="text-[9px] text-primary/70 uppercase mb-0.5 font-medium">Designer</div>
@@ -152,7 +152,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
 
             {/* QTY Column */}
             <div className="space-y-1.5">
-              <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">QTY</div>
+              <div className="text-[10px] font-extrabold uppercase text-foreground/80 text-center pb-1.5 tracking-wider">QTY</div>
               <div className="space-y-1">
                 <div className="bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
                   <div className="text-[9px] text-primary/70 uppercase mb-0.5 font-medium">Designer</div>
