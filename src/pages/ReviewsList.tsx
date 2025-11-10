@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { reviewsAPI, ReviewListItem } from "@/services/api";
 import { authAPI, removeAuthToken } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Search, LogOut, User, Plus, Trash2, TrendingUp, Calendar, FileSpreadsheet, Map as MapIcon } from "lucide-react";
+import { FileText, Search, LogOut, User, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -19,10 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { LoginDialog } from "@/components/LoginDialog";
-import techservLogo from "@/assets/techserv-logo.png";
 
-export default function Index() {
+export default function ReviewsList() {
   const [reviews, setReviews] = useState<ReviewListItem[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<ReviewListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,7 +28,6 @@ export default function Index() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -61,6 +58,7 @@ export default function Index() {
       const response = await authAPI.getCurrentUser();
       setCurrentUser(response.user);
     } catch (error) {
+      // Not logged in
       setCurrentUser(null);
     }
   };
@@ -80,12 +78,6 @@ export default function Index() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleLoginSuccess = (user: any) => {
-    setCurrentUser(user);
-    setShowLoginDialog(false);
-    loadReviews();
   };
 
   const handleLogout = () => {
@@ -122,106 +114,41 @@ export default function Index() {
     setDeleteDialogOpen(true);
   };
 
-  // Calculate stats
-  const stats = {
-    total: reviews.length,
-    recent: reviews.filter(r => {
-      const daysSince = (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24);
-      return daysSince <= 7;
-    }).length,
-    myReviews: currentUser ? reviews.filter(r => r.created_by === currentUser.id).length : 0,
-  };
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-card shadow-sm">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <img 
-                src={techservLogo} 
-                alt="TechServ" 
-                className="h-12 w-auto"
-              />
-              <div>
-                <h1 className="text-3xl font-bold font-saira uppercase tracking-wide text-primary">
-                  QA Tool Dashboard
-                </h1>
-                <p className="text-sm text-muted-foreground font-neuton">
-                  Manage and review all QA review sessions
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              {currentUser && (
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="w-4 h-4" />
-                  <span className="font-semibold">{currentUser.username}</span>
-                </div>
-              )}
-              <Button
-                onClick={() => navigate("/new-review")}
-                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-              >
-                <Plus className="w-4 h-4" />
-                New Review
-              </Button>
-              {currentUser ? (
-                <Button variant="outline" onClick={handleLogout} className="gap-2">
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={() => setShowLoginDialog(true)} className="gap-2">
-                  <User className="w-4 h-4" />
-                  Login
-                </Button>
-              )}
-            </div>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold font-saira uppercase tracking-wide text-primary">
+              QA Reviews
+            </h1>
+            <p className="text-muted-foreground font-neuton mt-1">
+              View and manage all QA review sessions
+            </p>
           </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium font-saira">Total Reviews</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold font-saira">{stats.total}</div>
-              <p className="text-xs text-muted-foreground font-neuton">
-                All QA review sessions
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium font-saira">Recent Reviews</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold font-saira">{stats.recent}</div>
-              <p className="text-xs text-muted-foreground font-neuton">
-                Updated in last 7 days
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium font-saira">My Reviews</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold font-saira">{stats.myReviews}</div>
-              <p className="text-xs text-muted-foreground font-neuton">
-                {currentUser ? "Reviews you created" : "Login to see your reviews"}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-4">
+            {currentUser && (
+              <div className="flex items-center gap-2 text-sm">
+                <User className="w-4 h-4" />
+                <span className="font-semibold">{currentUser.username}</span>
+              </div>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => navigate("/")}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Review
+            </Button>
+            {currentUser && (
+              <Button variant="outline" onClick={handleLogout} className="gap-2">
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Search */}
@@ -238,7 +165,7 @@ export default function Index() {
         {/* Reviews Grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3].map((i) => (
               <Card key={i} className="animate-pulse">
                 <CardHeader>
                   <div className="h-4 bg-muted rounded w-3/4"></div>
@@ -255,29 +182,20 @@ export default function Index() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center mb-4">
+              <p className="text-muted-foreground text-center">
                 {searchQuery ? "No reviews match your search" : "No reviews yet. Create your first review!"}
               </p>
-              {!searchQuery && (
-                <Button
-                  onClick={() => navigate("/new-review")}
-                  className="gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create New Review
-                </Button>
-              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredReviews.map((review) => (
-              <Card key={review.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/review/${review.id}`)}>
+              <Card key={review.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-saira mb-1">{review.title}</CardTitle>
-                      <CardDescription className="mt-1 line-clamp-2">
+                      <CardTitle className="text-lg font-saira">{review.title}</CardTitle>
+                      <CardDescription className="mt-1">
                         {review.description || "No description"}
                       </CardDescription>
                     </div>
@@ -285,10 +203,7 @@ export default function Index() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openDeleteDialog(review.id);
-                        }}
+                        onClick={() => openDeleteDialog(review.id)}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -300,39 +215,26 @@ export default function Index() {
                   <div className="flex flex-wrap gap-2">
                     {review.file_name && (
                       <Badge variant="outline" className="text-xs">
-                        <FileSpreadsheet className="w-3 h-3 mr-1" />
                         {review.file_name}
                       </Badge>
                     )}
                     {review.pdf_file_name && (
                       <Badge variant="outline" className="text-xs">
-                        <FileText className="w-3 h-3 mr-1" />
-                        PDF
-                      </Badge>
-                    )}
-                    {review.kmz_file_name && (
-                      <Badge variant="outline" className="text-xs">
-                        <MapIcon className="w-3 h-3 mr-1" />
-                        KMZ
+                        PDF: {review.pdf_file_name}
                       </Badge>
                     )}
                   </div>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      <span className="font-semibold">{review.username || review.full_name || "Unknown"}</span>
+                  <div className="text-sm text-muted-foreground">
+                    <p>
+                      Created by: <span className="font-semibold">{review.username || review.full_name || "Unknown"}</span>
                     </p>
-                    <p className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Updated: {format(new Date(review.updated_at), "MMM d, yyyy")}
+                    <p>
+                      Updated: {format(new Date(review.updated_at), "MMM d, yyyy 'at' h:mm a")}
                     </p>
                   </div>
                   <Button
                     className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/review/${review.id}`);
-                    }}
+                    onClick={() => navigate(`/review/${review.id}`)}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     View Review
@@ -342,7 +244,7 @@ export default function Index() {
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -361,13 +263,7 @@ export default function Index() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Login Dialog */}
-      <LoginDialog
-        open={showLoginDialog}
-        onOpenChange={setShowLoginDialog}
-        onLoginSuccess={handleLoginSuccess}
-      />
     </div>
   );
 }
+
