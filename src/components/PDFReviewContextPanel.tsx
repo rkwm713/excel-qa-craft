@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { CompactWorkPointCard } from "./CompactWorkPointCard";
-import { WorkPointEditor } from "./WorkPointEditor";
-import { ChevronLeft, ChevronRight, Search, Flag, CheckCircle2, XCircle } from "lucide-react";
+import { CompactWorkPointRow } from "./CompactWorkPointRow";
+import { ChevronLeft, ChevronRight, Search, Flag } from "lucide-react";
 
 interface PDFReviewContextPanelProps {
   data: QAReviewRow[];
@@ -110,111 +110,72 @@ export function PDFReviewContextPanel({
             </TabsList>
           </div>
 
-          {/* Current Tab - Show all work points for current station */}
+          {/* Current Tab - Compact column/row view */}
           <TabsContent value="current" className="flex-1 flex flex-col min-h-0 mt-0">
-            <ScrollArea className="flex-1 px-4">
-              {currentWorkPoint ? (
-                <div className="py-4 space-y-3">
-                  <div className="pb-2 border-b">
-                    <h3 className="font-semibold text-lg">Station {currentWorkPoint.station}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {currentStationWorkPoints.length} {currentStationWorkPoints.length === 1 ? 'work point' : 'work points'}
-                    </p>
+            {currentWorkPoint ? (
+              <>
+                {/* Station Header - Fixed */}
+                <div className="px-4 py-3 border-b bg-muted/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-base">Station {currentWorkPoint.station}</h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {currentStationWorkPoints.filter(r => r.issueType === "OK").length}/{currentStationWorkPoints.length} OK
+                    </Badge>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {currentStationWorkPoints.length} work {currentStationWorkPoints.length === 1 ? 'point' : 'points'}
+                  </p>
+                </div>
 
-                  {/* List of all work points for this station */}
-                  {currentStationWorkPoints.map((row, idx) => (
-                    <div key={row.id} className="border rounded-lg p-3 space-y-3 bg-card">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">#{idx + 1}</span>
-                          <Badge
-                            variant={row.issueType === "OK" ? "default" : "destructive"}
-                            className="text-xs"
-                          >
-                            {row.issueType}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                          <div className="flex items-center gap-1">
-                            {row.cuCheck ? (
-                              <CheckCircle2 className="w-3 h-3 text-green-600" />
-                            ) : (
-                              <XCircle className="w-3 h-3 text-red-600" />
-                            )}
-                            <span>CU</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {row.wfCheck ? (
-                              <CheckCircle2 className="w-3 h-3 text-green-600" />
-                            ) : (
-                              <XCircle className="w-3 h-3 text-red-600" />
-                            )}
-                            <span>WF</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {row.qtyCheck ? (
-                              <CheckCircle2 className="w-3 h-3 text-green-600" />
-                            ) : (
-                              <XCircle className="w-3 h-3 text-red-600" />
-                            )}
-                            <span>QTY</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="text-xs text-muted-foreground">Work Set:</span>
-                          <p className="font-medium">{row.workSet}</p>
-                        </div>
-                        <div>
-                          <span className="text-xs text-muted-foreground">Description:</span>
-                          <p className="text-xs">{row.description}</p>
-                        </div>
-                      </div>
-
-                      <WorkPointEditor
+                {/* Scrollable Work Points List */}
+                <ScrollArea className="flex-1">
+                  <div className="divide-y">
+                    {currentStationWorkPoints.map((row, idx) => (
+                      <CompactWorkPointRow
+                        key={row.id}
                         row={row}
+                        rowNumber={idx + 1}
                         onUpdateRow={onUpdateRow}
                         cuOptions={cuOptions}
                       />
-                    </div>
-                  ))}
-                  
-                  {/* Station Navigation */}
-                  <div className="flex items-center justify-between pt-4 border-t">
+                    ))}
+                  </div>
+                </ScrollArea>
+
+                {/* Station Navigation - Fixed at bottom */}
+                <div className="px-4 py-2 border-t bg-muted/20">
+                  <div className="flex items-center justify-between">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={onPreviousWorkPoint}
                       disabled={!canGoPrevious}
-                      className="gap-1"
+                      className="gap-1 h-8"
                     >
-                      <ChevronLeft className="w-4 h-4" />
-                      Prev Station
+                      <ChevronLeft className="w-3 h-3" />
+                      Prev
                     </Button>
-                    <span className="text-xs text-muted-foreground">
-                      Station {currentIndex + 1} of {uniqueStations.length}
+                    <span className="text-xs text-muted-foreground font-medium">
+                      Station {currentIndex + 1} / {uniqueStations.length}
                     </span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={onNextWorkPoint}
                       disabled={!canGoNext}
-                      className="gap-1"
+                      className="gap-1 h-8"
                     >
-                      Next Station
-                      <ChevronRight className="w-4 h-4" />
+                      Next
+                      <ChevronRight className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                  No station selected
-                </div>
-              )}
-            </ScrollArea>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                No station selected
+              </div>
+            )}
           </TabsContent>
 
           {/* All Stations Tab */}
