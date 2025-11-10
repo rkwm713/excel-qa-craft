@@ -58,7 +58,7 @@ export const QAReviewTable = ({ data, onUpdateRow, cuOptions }: QAReviewTablePro
   const rowVirtualizer = useVirtualizer({
     count: filteredData.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => viewMode === "cards" ? 240 : 65,
+    estimateSize: () => viewMode === "cards" ? 260 : 65,
     overscan: 5,
   });
 
@@ -146,7 +146,7 @@ export const QAReviewTable = ({ data, onUpdateRow, cuOptions }: QAReviewTablePro
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <div className="pb-4">
+                  <div className="pb-6">
                     <QAReviewCard
                       row={row}
                       onUpdateRow={handleUpdateRow}
