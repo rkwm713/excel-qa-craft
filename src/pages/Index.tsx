@@ -40,6 +40,8 @@ const Index = () => {
   const [stationPageMapping, setStationPageMapping] = useState<Record<string, number>>({});
   const [placemarkNotes, setPlacemarkNotes] = useState<Record<string, string>>({});
   const [mapDrawings, setMapDrawings] = useState<any[]>([]);
+  const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
+  const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -189,6 +191,14 @@ const Index = () => {
 
   const handleMapDrawingsChange = (drawings: any[]) => {
     setMapDrawings(drawings);
+  };
+
+  const handlePDFAnnotationsChange = (pageNumber: number, annotations: any[]) => {
+    setPdfAnnotations(prev => new Map(prev).set(pageNumber, annotations));
+  };
+
+  const handlePDFWorkPointNotesChange = (workPoint: string, notes: string) => {
+    setPdfWorkPointNotes(prev => ({ ...prev, [workPoint]: notes }));
   };
 
   const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
@@ -523,6 +533,10 @@ const Index = () => {
                     currentPdfPage={currentPdfPage}
                     onPdfPageChange={setCurrentPdfPage}
                     stationPageMapping={stationPageMapping}
+                    onAnnotationsChange={handlePDFAnnotationsChange}
+                    initialAnnotations={pdfAnnotations}
+                    onWorkPointNotesChange={handlePDFWorkPointNotesChange}
+                    initialWorkPointNotes={pdfWorkPointNotes}
                   />
                 )
               )}

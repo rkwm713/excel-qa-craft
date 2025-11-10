@@ -21,6 +21,10 @@ interface QAReviewTableProps {
   currentPdfPage?: number;
   onPdfPageChange?: (page: number) => void;
   stationPageMapping?: Record<string, number>;
+  onAnnotationsChange?: (pageNumber: number, annotations: any[]) => void;
+  initialAnnotations?: Map<number, any[]>;
+  onWorkPointNotesChange?: (workPoint: string, notes: string) => void;
+  initialWorkPointNotes?: Record<string, string>;
 }
 
 export const QAReviewTable = ({ 
@@ -34,6 +38,10 @@ export const QAReviewTable = ({
   currentPdfPage = 1,
   onPdfPageChange,
   stationPageMapping,
+  onAnnotationsChange,
+  initialAnnotations,
+  onWorkPointNotesChange,
+  initialWorkPointNotes,
 }: QAReviewTableProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -218,6 +226,10 @@ export const QAReviewTable = ({
                 onPageChange={onPdfPageChange}
                 stationPageMapping={stationPageMapping}
                 currentStation={selectedStation}
+                onAnnotationsChange={onAnnotationsChange}
+                initialAnnotations={initialAnnotations}
+                onWorkPointNotesChange={onWorkPointNotesChange}
+                initialWorkPointNotes={initialWorkPointNotes}
               />
             </div>
           </ResizablePanel>
