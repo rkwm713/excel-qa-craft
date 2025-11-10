@@ -42,6 +42,7 @@ const Index = () => {
   const [mapDrawings, setMapDrawings] = useState<any[]>([]);
   const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
   const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, string>>({});
+  const [currentWorkPoint, setCurrentWorkPoint] = useState<QAReviewRow | null>(null);
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -200,6 +201,90 @@ const Index = () => {
   const handlePDFWorkPointNotesChange = (workPoint: string, notes: string) => {
     setPdfWorkPointNotes(prev => ({ ...prev, [workPoint]: notes }));
   };
+
+  // Auto-sync: Update current work point when PDF page changes
+  const handlePdfPageChange = useCallback((page: number) => {
+    setCurrentPdfPage(page);
+    
+    // Find station for this page
+    const stationEntry = Object.entries(stationPageMapping).find(
+      ([_, pageNum]) => pageNum === page
+    );
+    
+    if (stationEntry) {
+      const [station] = stationEntry;
+      const workPoint = qaData.find(row => row.station === station);
+      if (workPoint) {
+        setCurrentWorkPoint(workPoint);
+        setSelectedStation(station);
+      }
+    }
+  }, [stationPageMapping, qaData]);
+
+  // Jump to work point from context panel
+  const handleJumpToWorkPoint = useCallback((station: string) => {
+    const page = stationPageMapping[station];
+    if (page) {
+      setCurrentPdfPage(page);
+    }
+    
+    const workPoint = qaData.find(row => row.station === station);
+    if (workPoint) {
+      setCurrentWorkPoint(workPoint);
+      setSelectedStation(station);
+    }
+  }, [stationPageMapping, qaData]);
+
+  // Navigate to previous work point
+  const handlePreviousWorkPoint = useCallback(() => {
+    if (!currentWorkPoint) return;
+    
+    const currentIndex = qaData.findIndex(row => row.id === currentWorkPoint.id);
+    if (currentIndex > 0) {
+      const prevWorkPoint = qaData[currentIndex - 1];
+      setCurrentWorkPoint(prevWorkPoint);
+      setSelectedStation(prevWorkPoint.station);
+      
+      // Jump PDF to corresponding page
+      const page = stationPageMapping[prevWorkPoint.station];
+      if (page) {
+        setCurrentPdfPage(page);
+      }
+    }
+  }, [currentWorkPoint, qaData, stationPageMapping]);
+
+  // Navigate to next work point
+  const handleNextWorkPoint = useCallback(() => {
+    if (!currentWorkPoint) return;
+    
+    const currentIndex = qaData.findIndex(row => row.id === currentWorkPoint.id);
+    if (currentIndex < qaData.length - 1) {
+      const nextWorkPoint = qaData[currentIndex + 1];
+      setCurrentWorkPoint(nextWorkPoint);
+      setSelectedStation(nextWorkPoint.station);
+      
+      // Jump PDF to corresponding page
+      const page = stationPageMapping[nextWorkPoint.station];
+      if (page) {
+        setCurrentPdfPage(page);
+      }
+    }
+  }, [currentWorkPoint, qaData, stationPageMapping]);
+
+  // Initialize current work point when PDF loads
+  useEffect(() => {
+    if (pdfFile && qaData.length > 0 && !currentWorkPoint) {
+      // Set first work point as current
+      const firstWorkPoint = qaData[0];
+      setCurrentWorkPoint(firstWorkPoint);
+      
+      // Jump to first work point's page if mapping exists
+      const page = stationPageMapping[firstWorkPoint.station];
+      if (page) {
+        setCurrentPdfPage(page);
+      }
+    }
+  }, [pdfFile, qaData, stationPageMapping, currentWorkPoint]);
 
   const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
     setQaData((prev) => {
@@ -531,12 +616,18 @@ const Index = () => {
                     selectedStation={selectedStation}
                     pdfFile={pdfFile}
                     currentPdfPage={currentPdfPage}
-                    onPdfPageChange={setCurrentPdfPage}
+                    onPdfPageChange={handlePdfPageChange}
                     stationPageMapping={stationPageMapping}
                     onAnnotationsChange={handlePDFAnnotationsChange}
                     initialAnnotations={pdfAnnotations}
                     onWorkPointNotesChange={handlePDFWorkPointNotesChange}
                     initialWorkPointNotes={pdfWorkPointNotes}
+                    currentWorkPoint={currentWorkPoint}
+                    onJumpToWorkPoint={handleJumpToWorkPoint}
+                    onPreviousWorkPoint={handlePreviousWorkPoint}
+                    onNextWorkPoint={handleNextWorkPoint}
+                    canGoPrevious={currentWorkPoint ? qaData.findIndex(r => r.id === currentWorkPoint.id) > 0 : false}
+                    canGoNext={currentWorkPoint ? qaData.findIndex(r => r.id === currentWorkPoint.id) < qaData.length - 1 : false}
                   />
                 )
               )}

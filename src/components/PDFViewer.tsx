@@ -148,6 +148,15 @@ export function PDFViewer({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Current Station Indicator */}
+      {currentStation && (
+        <div className="mb-2 px-2 py-1 bg-primary/10 border border-primary/20 rounded-md flex items-center justify-center">
+          <span className="text-xs font-medium text-primary">
+            📍 Reviewing: Station {currentStation}
+          </span>
+        </div>
+      )}
+      
       {/* Annotation Toolbar */}
       <div className="mb-2">
         <PDFAnnotationToolbar

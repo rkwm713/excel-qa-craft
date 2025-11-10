@@ -9,6 +9,7 @@ import { Table, LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { PDFViewer } from "./PDFViewer";
+import { PDFReviewContextPanel } from "./PDFReviewContextPanel";
 
 interface QAReviewTableProps {
   data: QAReviewRowType[];
@@ -25,6 +26,12 @@ interface QAReviewTableProps {
   initialAnnotations?: Map<number, any[]>;
   onWorkPointNotesChange?: (workPoint: string, notes: string) => void;
   initialWorkPointNotes?: Record<string, string>;
+  currentWorkPoint?: QAReviewRowType | null;
+  onJumpToWorkPoint?: (station: string) => void;
+  onPreviousWorkPoint?: () => void;
+  onNextWorkPoint?: () => void;
+  canGoPrevious?: boolean;
+  canGoNext?: boolean;
 }
 
 export const QAReviewTable = ({ 
@@ -42,6 +49,12 @@ export const QAReviewTable = ({
   initialAnnotations,
   onWorkPointNotesChange,
   initialWorkPointNotes,
+  currentWorkPoint,
+  onJumpToWorkPoint,
+  onPreviousWorkPoint,
+  onNextWorkPoint,
+  canGoPrevious = false,
+  canGoNext = false,
 }: QAReviewTableProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -79,10 +92,11 @@ export const QAReviewTable = ({
       : 0;
 
   const showPdf = pdfFile && onPdfPageChange;
+  const isPdfReviewMode = showPdf && currentWorkPoint;
 
   return (
     <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-350px)]">
-      <ResizablePanel defaultSize={showPdf ? 60 : 100} minSize={30}>
+      <ResizablePanel defaultSize={isPdfReviewMode ? 75 : (showPdf ? 60 : 100)} minSize={30}>
         <div className="space-y-4 pr-2 h-full">
       {/* View Mode Toggle */}
       <Card className="p-4">
@@ -218,19 +232,33 @@ export const QAReviewTable = ({
       {showPdf && (
         <>
           <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={40} minSize={20}>
+          <ResizablePanel defaultSize={isPdfReviewMode ? 25 : 40} minSize={20}>
             <div className="h-full pl-2">
-              <PDFViewer
-                file={pdfFile}
-                currentPage={currentPdfPage}
-                onPageChange={onPdfPageChange}
-                stationPageMapping={stationPageMapping}
-                currentStation={selectedStation}
-                onAnnotationsChange={onAnnotationsChange}
-                initialAnnotations={initialAnnotations}
-                onWorkPointNotesChange={onWorkPointNotesChange}
-                initialWorkPointNotes={initialWorkPointNotes}
-              />
+              {isPdfReviewMode ? (
+                <PDFReviewContextPanel
+                  data={data}
+                  currentWorkPoint={currentWorkPoint}
+                  onUpdateRow={onUpdateRow}
+                  cuOptions={cuOptions}
+                  onJumpToWorkPoint={onJumpToWorkPoint!}
+                  onPreviousWorkPoint={onPreviousWorkPoint!}
+                  onNextWorkPoint={onNextWorkPoint!}
+                  canGoPrevious={canGoPrevious}
+                  canGoNext={canGoNext}
+                />
+              ) : (
+                <PDFViewer
+                  file={pdfFile}
+                  currentPage={currentPdfPage}
+                  onPageChange={onPdfPageChange}
+                  stationPageMapping={stationPageMapping}
+                  currentStation={selectedStation}
+                  onAnnotationsChange={onAnnotationsChange}
+                  initialAnnotations={initialAnnotations}
+                  onWorkPointNotesChange={onWorkPointNotesChange}
+                  initialWorkPointNotes={initialWorkPointNotes}
+                />
+              )}
             </div>
           </ResizablePanel>
         </>
