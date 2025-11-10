@@ -73,8 +73,8 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
             <div className="space-y-1.5">
               <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">CU</div>
               <div className="space-y-1">
-                <div className="bg-muted/20 rounded px-2 py-1.5 border border-border/30">
-                  <div className="text-[9px] text-muted-foreground/60 uppercase mb-0.5 font-medium">Designer</div>
+                <div className="bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
+                  <div className="text-[9px] text-primary/70 uppercase mb-0.5 font-medium">Designer</div>
                   <div className="font-mono text-[11px] font-semibold text-foreground text-center">
                     {row.designerCU}
                   </div>
@@ -115,8 +115,8 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
             <div className="space-y-1.5">
               <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">WF</div>
               <div className="space-y-1">
-                <div className="bg-muted/20 rounded px-2 py-1.5 border border-border/30">
-                  <div className="text-[9px] text-muted-foreground/60 uppercase mb-0.5 font-medium">Designer</div>
+                <div className="bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
+                  <div className="text-[9px] text-primary/70 uppercase mb-0.5 font-medium">Designer</div>
                   <div className="font-mono text-[11px] font-semibold text-foreground text-center">
                     {row.designerWF}
                   </div>
@@ -154,8 +154,8 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions }: QAReviewCardP
             <div className="space-y-1.5">
               <div className="text-[9px] font-bold uppercase text-muted-foreground/50 text-center pb-1 tracking-wider">QTY</div>
               <div className="space-y-1">
-                <div className="bg-muted/20 rounded px-2 py-1.5 border border-border/30">
-                  <div className="text-[9px] text-muted-foreground/60 uppercase mb-0.5 font-medium">Designer</div>
+                <div className="bg-primary/10 rounded px-2 py-1.5 border border-primary/20">
+                  <div className="text-[9px] text-primary/70 uppercase mb-0.5 font-medium">Designer</div>
                   <div className="font-mono text-[11px] font-semibold text-foreground text-center">
                     {row.designerQty}
                   </div>
