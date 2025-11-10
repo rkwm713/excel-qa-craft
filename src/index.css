@@ -141,3 +141,30 @@ All colors MUST be HSL.
     letter-spacing: 0.05em;
   }
 }
+
+/* Rich Text Editor Styles */
+.rich-text-editor .ql-container {
+  font-family: 'Neuton', serif;
+  font-size: 14px;
+  border-bottom-left-radius: calc(var(--radius) - 2px);
+  border-bottom-right-radius: calc(var(--radius) - 2px);
+}
+
+.rich-text-editor .ql-toolbar {
+  border-top-left-radius: calc(var(--radius) - 2px);
+  border-top-right-radius: calc(var(--radius) - 2px);
+  border-color: hsl(var(--border));
+}
+
+.rich-text-editor .ql-container.ql-snow {
+  border-color: hsl(var(--border));
+}
+
+.rich-text-editor .ql-editor {
+  min-height: 150px;
+}
+
+.rich-text-editor .ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+  font-style: normal;
+}

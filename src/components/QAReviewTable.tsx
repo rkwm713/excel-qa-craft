@@ -4,8 +4,9 @@ import { QAReviewRow as QAReviewRowType } from "@/types/qa-tool";
 import { QAReviewRow } from "./QAReviewRow";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileText, Maximize2, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { PDFViewer } from "./PDFViewer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 interface QAReviewTableProps {
   data: QAReviewRowType[];
   onUpdateRow: (id: string, field: keyof QAReviewRowType, value: any) => void;
+  onAddRow?: (station: string) => void;
   cuOptions: string[];
   selectedStation: string;
   stations?: string[];
@@ -36,7 +38,8 @@ interface QAReviewTableProps {
 
 export const QAReviewTable = ({ 
   data, 
-  onUpdateRow, 
+  onUpdateRow,
+  onAddRow,
   cuOptions, 
   selectedStation,
   stations = [],
@@ -60,6 +63,8 @@ export const QAReviewTable = ({
   const parentRef = useRef<HTMLDivElement>(null);
   const [pdfViewMode, setPdfViewMode] = useState<"hidden" | "split" | "modal">("hidden");
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Memoize the update handler to prevent recreating it on every render
   const handleUpdateRow = useCallback(
@@ -85,10 +90,73 @@ export const QAReviewTable = ({
   // Memoize cu options to prevent unnecessary re-renders
   const memoizedCuOptions = useMemo(() => cuOptions, [cuOptions]);
 
-  // Filter data by selected station
+  // Handle column sorting
+  const handleSort = useCallback((column: string) => {
+    if (sortColumn === column) {
+      // Toggle direction if clicking the same column
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      // Set new column and default to ascending
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  }, [sortColumn]);
+
+  // Filter and sort data by selected station
   const filteredData = useMemo(() => {
-    return data.filter(row => row.station === selectedStation);
-  }, [data, selectedStation]);
+    let filtered = data.filter(row => row.station === selectedStation);
+    
+    if (sortColumn) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+        
+        switch (sortColumn) {
+          case "designerCU":
+            aValue = a.designerCU || "";
+            bValue = b.designerCU || "";
+            break;
+          case "qaCU":
+            aValue = a.qaCU || "";
+            bValue = b.qaCU || "";
+            break;
+          case "designerWF":
+            aValue = a.designerWF || "";
+            bValue = b.designerWF || "";
+            break;
+          case "qaWF":
+            aValue = a.qaWF || "";
+            bValue = b.qaWF || "";
+            break;
+          case "designerQty":
+            aValue = typeof a.designerQty === "number" ? a.designerQty : parseFloat(a.designerQty?.toString() || "0") || 0;
+            bValue = typeof b.designerQty === "number" ? b.designerQty : parseFloat(b.designerQty?.toString() || "0") || 0;
+            break;
+          case "qaQty":
+            aValue = typeof a.qaQty === "number" ? a.qaQty : parseFloat(a.qaQty?.toString() || "0") || 0;
+            bValue = typeof b.qaQty === "number" ? b.qaQty : parseFloat(b.qaQty?.toString() || "0") || 0;
+            break;
+          default:
+            return 0;
+        }
+        
+        // Compare values
+        if (typeof aValue === "number" && typeof bValue === "number") {
+          return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+        } else {
+          const aStr = String(aValue).toLowerCase();
+          const bStr = String(bValue).toLowerCase();
+          if (sortDirection === "asc") {
+            return aStr.localeCompare(bStr);
+          } else {
+            return bStr.localeCompare(aStr);
+          }
+        }
+      });
+    }
+    
+    return filtered;
+  }, [data, selectedStation, sortColumn, sortDirection]);
 
   const rowVirtualizer = useVirtualizer({
     count: filteredData.length,
@@ -163,9 +231,6 @@ export const QAReviewTable = ({
       <Card className="p-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="font-saira">
-              {filteredData.length} {filteredData.length === 1 ? 'record' : 'records'}
-            </Badge>
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
@@ -176,9 +241,22 @@ export const QAReviewTable = ({
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <Badge variant="secondary" className="font-saira">
-                WP {selectedStation}
-              </Badge>
+              {onStationChange && stations.length > 0 && (
+                <Select value={selectedStation} onValueChange={onStationChange}>
+                  <SelectTrigger className="w-[140px] h-7 border-primary/30 bg-primary/10 hover:bg-primary/20 font-saira font-semibold text-primary">
+                    <SelectValue placeholder="Select WP">
+                      WP {selectedStation}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stations.map((station) => (
+                      <SelectItem key={station} value={station}>
+                        WP {station}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -189,6 +267,20 @@ export const QAReviewTable = ({
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
+            <Badge variant="outline" className="font-saira">
+              {filteredData.length} {filteredData.length === 1 ? 'record' : 'records'}
+            </Badge>
+            {onAddRow && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAddRow(selectedStation)}
+                className="gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Row
+              </Button>
+            )}
           </div>
           {showPdf && (
             <div className="flex gap-2">
@@ -225,12 +317,84 @@ export const QAReviewTable = ({
           <table className="w-full border-collapse">
             <thead className="bg-muted/50 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[140px] font-saira uppercase tracking-wide">Designer CU</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[180px] font-saira uppercase tracking-wide">QA CU</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide">D - WF</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[100px] font-saira uppercase tracking-wide">QA WF</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide">D - QTY</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide">QA Qty</th>
+                <th 
+                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[140px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  onClick={() => handleSort("designerCU")}
+                >
+                  <div className="flex items-center gap-2">
+                    Designer CU
+                    {sortColumn === "designerCU" ? (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-50" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[180px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  onClick={() => handleSort("qaCU")}
+                >
+                  <div className="flex items-center gap-2">
+                    QA CU
+                    {sortColumn === "qaCU" ? (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-50" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  onClick={() => handleSort("designerWF")}
+                >
+                  <div className="flex items-center gap-2">
+                    D - WF
+                    {sortColumn === "designerWF" ? (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-50" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[100px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  onClick={() => handleSort("qaWF")}
+                >
+                  <div className="flex items-center gap-2">
+                    QA WF
+                    {sortColumn === "qaWF" ? (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-50" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  onClick={() => handleSort("designerQty")}
+                >
+                  <div className="flex items-center gap-2">
+                    D - QTY
+                    {sortColumn === "designerQty" ? (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-50" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide cursor-pointer hover:bg-muted/70 transition-colors select-none"
+                  onClick={() => handleSort("qaQty")}
+                >
+                  <div className="flex items-center gap-2">
+                    QA Qty
+                    {sortColumn === "qaQty" ? (
+                      sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-50" />
+                    )}
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>

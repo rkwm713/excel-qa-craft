@@ -340,7 +340,7 @@ export const MapViewer = ({
         notesHeader.style.fontSize = "12px";
         notesHeader.style.fontWeight = "600";
         notesHeader.style.marginBottom = "6px";
-        notesHeader.textContent = "📝 QA Notes";
+        notesHeader.textContent = "QA Notes";
         notesSection.appendChild(notesHeader);
 
         const notesContainer = document.createElement("div");

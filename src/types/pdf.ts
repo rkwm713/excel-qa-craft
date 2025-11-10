@@ -6,7 +6,7 @@ export interface PDFPageInfo {
 
 export interface PDFAnnotation {
   id: string;
-  type: 'freehand' | 'rectangle' | 'circle' | 'text';
+  type: 'freehand' | 'rectangle' | 'text';
   color: string;
   lineWidth: number;
   points?: { x: number; y: number }[];

@@ -5,15 +5,17 @@ interface PDFCanvasProps {
   width: number;
   height: number;
   annotations: PDFAnnotation[];
-  activeTool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'circle' | 'text';
-  color: string;
-  lineWidth: number;
+  activeTool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'text';
   showAnnotations: boolean;
   onAnnotationAdd: (annotation: PDFAnnotation) => void;
   onAnnotationUpdate: (annotationId: string, updates: Partial<PDFAnnotation>) => void;
   scale: number;
-  baseWidth: number; // Base PDF page width (without scale)
-  baseHeight: number; // Base PDF page height (without scale)
+  baseWidth: number; // Fixed reference width for storing annotations (always 700)
+  baseHeight: number; // Fixed reference height for storing annotations (always 990)
+  displayWidth: number; // Actual display width (varies by view mode)
+  displayHeight: number; // Actual display height (varies by view mode)
+  onZoom?: (delta: number, centerX: number, centerY: number) => void;
+  pdfPageRef?: React.RefObject<HTMLDivElement>;
 }
 
 export function PDFCanvas({
@@ -21,15 +23,20 @@ export function PDFCanvas({
   height,
   annotations,
   activeTool,
-  color,
-  lineWidth,
   showAnnotations,
   onAnnotationAdd,
   onAnnotationUpdate,
   scale,
   baseWidth,
   baseHeight,
+  displayWidth,
+  displayHeight,
+  onZoom,
+  pdfPageRef,
 }: PDFCanvasProps) {
+  // Hardcoded to red color and medium line width
+  const color = '#FF0000';
+  const lineWidth = 4;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPoints, setCurrentPoints] = useState<{ x: number; y: number }[]>([]);
@@ -40,20 +47,63 @@ export function PDFCanvas({
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
   const [panScrollStart, setPanScrollStart] = useState<{ x: number; y: number } | null>(null);
+  const [textInput, setTextInput] = useState<{ x: number; y: number; visible: boolean } | null>(null);
+  const [textInputValue, setTextInputValue] = useState<string>('');
+  const textInputRef = useRef<HTMLInputElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Attach wheel event listener directly to canvas to allow preventDefault
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !onZoom) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (activeTool === 'pan') {
+        e.preventDefault();
+        const container = document.getElementById('pdf-container');
+        if (!container) return;
+        
+        // Get mouse position relative to the container
+        const containerRect = container.getBoundingClientRect();
+        const centerX = e.clientX - containerRect.left;
+        const centerY = e.clientY - containerRect.top;
+        
+        // Zoom in/out based on wheel direction
+        // Negative deltaY means scrolling up (zoom in), positive means scrolling down (zoom out)
+        // Use a smaller multiplier for smoother, more controlled zooming
+        const zoomDelta = -e.deltaY * 0.0005;
+        onZoom(zoomDelta, centerX, centerY);
+      }
+    };
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      canvas.removeEventListener('wheel', handleWheel);
+    };
+  }, [activeTool, onZoom]);
 
   // Convert normalized coordinates (0-1) to canvas coordinates
+  // Normalized coordinates are ALWAYS relative to baseWidth/baseHeight (fixed 700x990 reference)
+  // Canvas internal resolution is always baseWidth/baseHeight, so conversion is direct
   const normalizedToCanvas = (normX: number, normY: number) => {
+    // Canvas internal resolution is always baseWidth/baseHeight
+    // So normalized (0-1) maps directly to canvas coordinates
     return {
-      x: normX * baseWidth * scale,
-      y: normY * baseHeight * scale,
+      x: normX * baseWidth,
+      y: normY * baseHeight,
     };
   };
 
   // Convert canvas coordinates to normalized coordinates (0-1)
+  // Normalized coordinates should ALWAYS be relative to baseWidth/baseHeight (fixed 700x990)
+  // Canvas internal resolution is always baseWidth/baseHeight, so conversion is direct
   const canvasToNormalized = (canvasX: number, canvasY: number) => {
+    // Canvas internal resolution is always baseWidth/baseHeight
+    // So canvas coordinates map directly to normalized (0-1)
     return {
-      x: canvasX / (baseWidth * scale),
-      y: canvasY / (baseHeight * scale),
+      x: canvasX / baseWidth,
+      y: canvasY / baseHeight,
     };
   };
 
@@ -71,10 +121,12 @@ export function PDFCanvas({
     if (!showAnnotations) return;
 
       // Draw all annotations - convert from normalized to canvas coordinates
+      // Canvas internal resolution is always baseWidth/baseHeight, so scaling is direct
       annotations.forEach((annotation) => {
         ctx.strokeStyle = annotation.color;
         // Convert normalized line width back to canvas pixels
-        ctx.lineWidth = (annotation.lineWidth * baseWidth) * scale;
+        // Line width is normalized relative to baseWidth, canvas is at baseWidth resolution
+        ctx.lineWidth = annotation.lineWidth * baseWidth;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
@@ -91,25 +143,18 @@ export function PDFCanvas({
         ctx.stroke();
       } else if (annotation.type === 'rectangle' && annotation.x !== undefined && annotation.y !== undefined) {
         const canvasPos = normalizedToCanvas(annotation.x, annotation.y);
+        // Convert normalized dimensions to canvas coordinates
+        // Dimensions are normalized relative to base size, canvas is at base size resolution
         const canvasSize = {
-          width: (annotation.width || 0) * baseWidth * scale,
-          height: (annotation.height || 0) * baseHeight * scale,
+          width: (annotation.width || 0) * baseWidth,
+          height: (annotation.height || 0) * baseHeight,
         };
         ctx.strokeRect(canvasPos.x, canvasPos.y, canvasSize.width, canvasSize.height);
-      } else if (annotation.type === 'circle' && annotation.x !== undefined && annotation.y !== undefined) {
-        const canvasPos = normalizedToCanvas(annotation.x, annotation.y);
-        const canvasSize = {
-          width: (annotation.width || 0) * baseWidth * scale,
-          height: (annotation.height || 0) * baseHeight * scale,
-        };
-        const radius = Math.sqrt(Math.pow(canvasSize.width, 2) + Math.pow(canvasSize.height, 2)) / 2;
-        ctx.beginPath();
-        ctx.arc(canvasPos.x + canvasSize.width / 2, canvasPos.y + canvasSize.height / 2, radius, 0, Math.PI * 2);
-        ctx.stroke();
       } else if (annotation.type === 'text' && annotation.text && annotation.x !== undefined && annotation.y !== undefined) {
         const canvasPos = normalizedToCanvas(annotation.x, annotation.y);
         // Convert normalized font size back to canvas pixels
-        const fontSize = (annotation.fontSize || 16 / baseHeight) * baseHeight * scale;
+        // Font size is normalized relative to baseHeight, canvas is at baseHeight resolution
+        const fontSize = (annotation.fontSize || 16 / baseHeight) * baseHeight;
         ctx.font = `${fontSize}px sans-serif`;
         ctx.fillStyle = annotation.color;
         ctx.fillText(annotation.text, canvasPos.x, canvasPos.y);
@@ -131,48 +176,38 @@ export function PDFCanvas({
         }
       });
       ctx.stroke();
-    } else if (isDrawing && startPoint && (activeTool === 'rectangle' || activeTool === 'circle')) {
+    } else if (isDrawing && startPoint && activeTool === 'rectangle') {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const currentX = (lastMouseX - rect.left) * (canvas.width / rect.width);
-      const currentY = (lastMouseY - rect.top) * (canvas.height / rect.height);
+      const currentX = (lastMouseXRef.current - rect.left) * (canvas.width / rect.width);
+      const currentY = (lastMouseYRef.current - rect.top) * (canvas.height / rect.height);
 
       ctx.strokeStyle = color;
       ctx.lineWidth = lineWidth * scale;
 
-      if (activeTool === 'rectangle') {
-        const width = currentX - startPoint.x;
-        const height = currentY - startPoint.y;
-        ctx.strokeRect(startPoint.x, startPoint.y, width, height);
-      } else if (activeTool === 'circle') {
-        const radius = Math.sqrt(
-          Math.pow(currentX - startPoint.x, 2) + Math.pow(currentY - startPoint.y, 2)
-        ) / 2;
-        ctx.beginPath();
-        ctx.arc(
-          startPoint.x + (currentX - startPoint.x) / 2,
-          startPoint.y + (currentY - startPoint.y) / 2,
-          radius,
-          0,
-          Math.PI * 2
-        );
-        ctx.stroke();
-      }
+      const width = currentX - startPoint.x;
+      const height = currentY - startPoint.y;
+      ctx.strokeRect(startPoint.x, startPoint.y, width, height);
     }
-  }, [annotations, showAnnotations, isDrawing, currentPoints, startPoint, activeTool, color, lineWidth, scale, baseWidth, baseHeight]);
+  }, [annotations, showAnnotations, isDrawing, currentPoints, startPoint, activeTool, color, lineWidth, baseWidth, baseHeight]);
 
-  let lastMouseX = 0;
-  let lastMouseY = 0;
+  const lastMouseXRef = useRef<number>(0);
+  const lastMouseYRef = useRef<number>(0);
 
   const getCanvasPoint = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
 
     const rect = canvas.getBoundingClientRect();
+    // Canvas internal resolution is baseWidth/baseHeight, CSS size may be different due to zoom
+    // Convert from CSS coordinates to canvas internal coordinates
+    // Use the actual canvas dimensions to ensure accurate conversion
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     return {
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height),
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
     };
   };
 
@@ -199,14 +234,6 @@ export function PDFCanvas({
         normalizedPoint.y >= annotation.y &&
         normalizedPoint.y <= annotation.y + (annotation.height || 0)
       );
-    } else if (annotation.type === 'circle' && annotation.x !== undefined && annotation.y !== undefined) {
-      const centerX = annotation.x + (annotation.width || 0) / 2;
-      const centerY = annotation.y + (annotation.height || 0) / 2;
-      const radius = Math.sqrt(
-        Math.pow(annotation.width || 0, 2) + Math.pow(annotation.height || 0, 2)
-      ) / 2;
-      const dist = Math.sqrt(Math.pow(normalizedPoint.x - centerX, 2) + Math.pow(normalizedPoint.y - centerY, 2));
-      return dist <= radius;
     } else if (annotation.type === 'text' && annotation.x !== undefined && annotation.y !== undefined) {
       // Font size is stored normalized, convert to get text dimensions
       const fontSize = (annotation.fontSize || 16 / baseHeight) * baseHeight;
@@ -282,24 +309,26 @@ export function PDFCanvas({
 
     if (activeTool === 'freehand') {
       setCurrentPoints([canvasPoint]); // Store canvas points for drawing, convert to normalized on save
-    } else if (activeTool === 'rectangle' || activeTool === 'circle') {
+    } else if (activeTool === 'rectangle') {
       setStartPoint(canvasPoint); // Store canvas points for drawing, convert to normalized on save
-      lastMouseX = e.clientX;
-      lastMouseY = e.clientY;
+      lastMouseXRef.current = e.clientX;
+      lastMouseYRef.current = e.clientY;
     } else if (activeTool === 'text') {
-      const text = prompt('Enter text:');
-      if (text) {
-        const annotation: PDFAnnotation = {
-          id: `text-${Date.now()}`,
-          type: 'text',
-          color,
-          lineWidth: lineWidth / baseWidth, // Store line width as normalized
-          x: normalizedPoint.x, // Store in normalized coordinates
-          y: normalizedPoint.y,
-          text,
-          fontSize: 16 / baseHeight, // Store font size as normalized (relative to page height)
-        };
-        onAnnotationAdd(annotation);
+      // Show inline text input at click position
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const container = document.getElementById('pdf-container');
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        setTextInput({
+          x: e.clientX - containerRect.left + container.scrollLeft,
+          y: e.clientY - containerRect.top + container.scrollTop,
+          visible: true
+        });
+        setTextInputValue('');
+        // Focus input after state update
+        setTimeout(() => textInputRef.current?.focus(), 0);
       }
     }
   };
@@ -342,11 +371,22 @@ export function PDFCanvas({
 
     if (!isDrawing) return;
 
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
+    lastMouseXRef.current = e.clientX;
+    lastMouseYRef.current = e.clientY;
 
     if (activeTool === 'freehand') {
       setCurrentPoints((prev) => [...prev, canvasPoint]);
+    } else if (activeTool === 'rectangle' && startPoint) {
+      // Use requestAnimationFrame for smooth rectangle drawing
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      lastMouseXRef.current = e.clientX;
+      lastMouseYRef.current = e.clientY;
+      animationFrameRef.current = requestAnimationFrame(() => {
+        // Trigger re-render to update rectangle preview
+        // Force a re-render by updating a state if needed
+      });
     }
   };
 
@@ -377,7 +417,7 @@ export function PDFCanvas({
       };
       onAnnotationAdd(annotation);
       setCurrentPoints([]);
-    } else if ((activeTool === 'rectangle' || activeTool === 'circle') && startPoint) {
+    } else if (activeTool === 'rectangle' && startPoint) {
       const canvasPoint = getCanvasPoint(e.clientX, e.clientY);
       const startNormalized = canvasToNormalized(startPoint.x, startPoint.y);
       const endNormalized = canvasToNormalized(canvasPoint.x, canvasPoint.y);
@@ -386,8 +426,8 @@ export function PDFCanvas({
       const height = endNormalized.y - startNormalized.y;
 
       const annotation: PDFAnnotation = {
-        id: `${activeTool}-${Date.now()}`,
-        type: activeTool,
+        id: `rectangle-${Date.now()}`,
+        type: 'rectangle',
         color,
         lineWidth: lineWidth / baseWidth, // Store line width as normalized
         x: startNormalized.x,
@@ -397,6 +437,10 @@ export function PDFCanvas({
       };
       onAnnotationAdd(annotation);
       setStartPoint(null);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
     }
 
     setIsDrawing(false);
@@ -418,10 +462,15 @@ export function PDFCanvas({
     }
   };
 
-  const canvasWidth = Math.min(baseWidth * scale, 1000);
-  const canvasHeight = Math.min(baseHeight * scale, 1414);
+  // Canvas internal resolution is always fixed at baseWidth/baseHeight
+  // CSS width/height scale the display, but coordinates stay consistent
+  const canvasWidth = baseWidth;
+  const canvasHeight = baseHeight;
+  const canvasDisplayWidth = width;
+  const canvasDisplayHeight = height;
 
   return (
+    <>
     <canvas
       ref={canvasRef}
       width={canvasWidth}
@@ -430,14 +479,14 @@ export function PDFCanvas({
         position: 'absolute',
         top: 0,
         left: 0,
-        width: canvasWidth,
-        height: canvasHeight,
+        width: canvasDisplayWidth,
+        height: canvasDisplayHeight,
         maxWidth: '100%',
         maxHeight: '100%',
         cursor: activeTool === 'pan' 
           ? (isPanning ? 'grabbing' : 'grab') 
           : activeTool === 'select' 
-            ? (isDragging ? 'grabbing' : 'grab') 
+            ? (isDragging ? 'grabbing' : 'pointer') 
             : 'crosshair',
         pointerEvents: 'auto',
       }}
@@ -446,5 +495,99 @@ export function PDFCanvas({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
     />
+    {textInput && textInput.visible && (
+      <input
+        ref={textInputRef}
+        type="text"
+        value={textInputValue}
+        onChange={(e) => setTextInputValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (textInputValue.trim()) {
+              const container = document.getElementById('pdf-container');
+              if (container && textInput) {
+                const containerRect = container.getBoundingClientRect();
+                const relativeX = textInput.x - container.scrollLeft;
+                const relativeY = textInput.y - container.scrollTop;
+                const canvas = canvasRef.current;
+                if (canvas) {
+                  const canvasRect = canvas.getBoundingClientRect();
+                  const canvasPoint = {
+                    x: ((relativeX - (canvasRect.left - containerRect.left)) / canvasRect.width) * canvas.width,
+                    y: ((relativeY - (canvasRect.top - containerRect.top)) / canvasRect.height) * canvas.height,
+                  };
+                  const normalizedPoint = canvasToNormalized(canvasPoint.x, canvasPoint.y);
+                  const annotation: PDFAnnotation = {
+                    id: `text-${Date.now()}`,
+                    type: 'text',
+                    color,
+                    lineWidth: lineWidth / baseWidth,
+                    x: normalizedPoint.x,
+                    y: normalizedPoint.y,
+                    text: textInputValue,
+                    fontSize: 16 / baseHeight,
+                  };
+                  onAnnotationAdd(annotation);
+                }
+              }
+            }
+            setTextInput(null);
+            setTextInputValue('');
+          } else if (e.key === 'Escape') {
+            setTextInput(null);
+            setTextInputValue('');
+          }
+        }}
+        onBlur={() => {
+          if (textInputValue.trim()) {
+            const container = document.getElementById('pdf-container');
+            if (container && textInput) {
+              const containerRect = container.getBoundingClientRect();
+              const relativeX = textInput.x - container.scrollLeft;
+              const relativeY = textInput.y - container.scrollTop;
+              const canvas = canvasRef.current;
+              if (canvas) {
+                const canvasRect = canvas.getBoundingClientRect();
+                const canvasPoint = {
+                  x: ((relativeX - (canvasRect.left - containerRect.left)) / canvasRect.width) * canvas.width,
+                  y: ((relativeY - (canvasRect.top - containerRect.top)) / canvasRect.height) * canvas.height,
+                };
+                const normalizedPoint = canvasToNormalized(canvasPoint.x, canvasPoint.y);
+                const annotation: PDFAnnotation = {
+                  id: `text-${Date.now()}`,
+                  type: 'text',
+                  color,
+                  lineWidth: lineWidth / baseWidth,
+                  x: normalizedPoint.x,
+                  y: normalizedPoint.y,
+                  text: textInputValue,
+                  fontSize: 16 / baseHeight,
+                };
+                onAnnotationAdd(annotation);
+              }
+            }
+          }
+          setTextInput(null);
+          setTextInputValue('');
+        }}
+        style={{
+          position: 'absolute',
+          left: `${textInput.x}px`,
+          top: `${textInput.y}px`,
+          border: '2px solid #FF0000',
+          padding: '4px 8px',
+          fontSize: '16px',
+          fontFamily: 'sans-serif',
+          outline: 'none',
+          backgroundColor: 'white',
+          zIndex: 1000,
+          minWidth: '100px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}
+        autoFocus
+      />
+    )}
+    </>
   );
 }

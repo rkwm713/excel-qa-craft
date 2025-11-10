@@ -58,16 +58,53 @@ export async function exportDesignerPackage(
   XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
   
   // Work Point Notes Sheet
+  // Helper function to strip HTML tags and convert to plain text
+  const stripHtml = (html: string): string => {
+    if (!html) return '';
+    // Create a temporary div element to parse HTML
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
   const notesData = Object.entries(pdfWorkPointNotes)
     .filter(([_, notes]) => notes.trim().length > 0)
     .map(([wp, notes]) => ({
       'WP': wp,
-      'QA Notes': notes,
+      'QA Notes': stripHtml(notes), // Convert HTML to plain text for Excel
     }));
   
   if (notesData.length > 0) {
     const notesSheet = XLSX.utils.json_to_sheet(notesData);
     XLSX.utils.book_append_sheet(workbook, notesSheet, 'WP Notes');
+  }
+
+  // Station QA Comments Sheet - Aggregate all row-level QA comments by station
+  const stationCommentsMap = new Map<string, string[]>();
+  
+  qaData.forEach((row) => {
+    if (row.qaComments && row.qaComments.trim().length > 0) {
+      const station = row.station;
+      if (!stationCommentsMap.has(station)) {
+        stationCommentsMap.set(station, []);
+      }
+      const comments = stationCommentsMap.get(station)!;
+      // Add comment with context (Work Set, CU, etc.)
+      const commentWithContext = `[${row.workSet || 'N/A'}] ${row.designerCU || 'N/A'}: ${row.qaComments}`;
+      comments.push(commentWithContext);
+    }
+  });
+
+  if (stationCommentsMap.size > 0) {
+    const stationCommentsData = Array.from(stationCommentsMap.entries())
+      .map(([wp, comments]) => ({
+        'WP': wp,
+        'QA Comments': comments.join('\n\n'), // Join multiple comments with double newline
+        'Comment Count': comments.length,
+      }));
+    
+    const stationCommentsSheet = XLSX.utils.json_to_sheet(stationCommentsData);
+    XLSX.utils.book_append_sheet(workbook, stationCommentsSheet, 'Station QA Comments');
   }
   
   // Convert workbook to buffer

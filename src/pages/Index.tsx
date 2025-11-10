@@ -8,10 +8,8 @@ import { QAReviewSkeleton } from "@/components/QAReviewSkeleton";
 import { MapViewer } from "@/components/MapViewer";
 import { GoogleApiKeyInput } from "@/components/GoogleApiKeyInput";
 import { StreetViewModal } from "@/components/StreetViewModal";
-import { StationSidebar } from "@/components/StationSidebar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText } from "lucide-react";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { exportDesignerPackage } from "@/utils/exportPackage";
@@ -350,6 +348,31 @@ const Index = () => {
     });
   }, []);
 
+  const handleAddRow = useCallback((station: string) => {
+    const newRow: QAReviewRow = {
+      id: `qa-added-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      issueType: "NEEDS REVISIONS",
+      station: station,
+      workSet: "",
+      designerCU: "",
+      qaCU: "",
+      description: "",
+      designerWF: "",
+      qaWF: "I",
+      designerQty: 0,
+      qaQty: 0,
+      qaComments: "QA-added entry - designer missed this item",
+      cuCheck: false,
+      wfCheck: false,
+      qtyCheck: false,
+    };
+    
+    setQaData((prev) => [...prev, newRow]);
+    
+    // Set as current work point and scroll to it
+    setCurrentWorkPoint(newRow);
+  }, []);
+
   const handleExport = async () => {
     if (qaData.length === 0) {
       toast({
@@ -460,27 +483,13 @@ const Index = () => {
   }, [qaData]);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        {/* Sidebar - show when data is loaded, has stations, and user has started QA Review */}
-        {hasUploadedFiles && qaData.length > 0 && stations.length > 0 && selectedStation && (
-          <StationSidebar
-            stations={stations}
-            currentStation={selectedStation}
-            onStationChange={handleStationSelect}
-            stationCounts={stationCounts}
-          />
-        )}
-
-        {/* Main Content */}
-        <SidebarInset className="flex-1">
+    <div className="min-h-screen flex w-full bg-background">
+      {/* Main Content */}
+      <div className="flex-1 w-full">
           <header className="sticky top-0 z-10 border-b bg-card shadow-sm">
             <div className="flex flex-col gap-3 px-4 py-3">
               {/* Top row: Logo and Export */}
               <div className="flex items-center gap-4">
-                {hasUploadedFiles && qaData.length > 0 && stations.length > 0 && selectedStation && (
-                  <SidebarTrigger className="-ml-1" />
-                )}
                 <div className="flex items-center justify-between flex-1">
                   <div className="flex items-center gap-6">
                     <img 
@@ -704,6 +713,7 @@ const Index = () => {
                   <QAReviewTable
                     data={qaData}
                     onUpdateRow={handleUpdateRow}
+                    onAddRow={handleAddRow}
                     cuOptions={cuLookup.map((cu) => cu.code)}
                     selectedStation={selectedStation}
                     stations={stations}
@@ -775,7 +785,6 @@ const Index = () => {
           </Tabs>
         )}
           </main>
-        </SidebarInset>
       </div>
 
       <StreetViewModal
@@ -784,7 +793,7 @@ const Index = () => {
         location={streetViewLocation}
         apiKey={googleApiKey}
       />
-    </SidebarProvider>
+    </div>
   );
 };
 
