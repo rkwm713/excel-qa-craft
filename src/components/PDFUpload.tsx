@@ -15,19 +15,33 @@ export function PDFUpload({ onFileSelect, fileName, onClear }: PDFUploadProps) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.type === "application/pdf") {
-        onFileSelect(file);
-        toast({
-          title: "PDF Uploaded",
-          description: `${file.name} has been loaded successfully.`,
-        });
-      } else {
+      // Check if file is PDF by MIME type or extension
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      
+      if (!isPdf) {
         toast({
           title: "Invalid File Type",
           description: "Please upload a PDF file.",
           variant: "destructive",
         });
+        return;
       }
+
+      // Check file size (20MB limit)
+      if (file.size > 20 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "PDF file must be smaller than 20MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      onFileSelect(file);
+      toast({
+        title: "PDF Uploaded",
+        description: `${file.name} has been loaded successfully.`,
+      });
     }
   };
 
@@ -53,7 +67,7 @@ export function PDFUpload({ onFileSelect, fileName, onClear }: PDFUploadProps) {
               <input
                 id="pdf-upload"
                 type="file"
-                accept=".pdf"
+                accept="application/pdf,.pdf"
                 onChange={handleFileChange}
                 className="hidden"
               />

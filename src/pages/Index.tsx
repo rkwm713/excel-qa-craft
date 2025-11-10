@@ -140,10 +140,16 @@ const Index = () => {
       });
     } catch (error) {
       console.error("Error parsing PDF:", error);
+      
+      // Still attach the file so the viewer works, even if parsing failed
+      setPdfFile(file);
+      setPdfFileName(file.name);
+      setStationPageMapping({});
+      setCurrentPdfPage(1);
+      
       toast({
-        title: "Error loading PDF",
-        description: error instanceof Error ? error.message : "Failed to parse the PDF file. Please check the format.",
-        variant: "destructive",
+        title: "PDF loaded (mapping unavailable)",
+        description: "We couldn't extract work points from the PDF, but you can still view the document.",
       });
     }
   };
