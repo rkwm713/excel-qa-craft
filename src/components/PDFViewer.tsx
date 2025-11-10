@@ -219,7 +219,7 @@ export function PDFViewer({
       </Card>
       <Card className="flex-1 overflow-auto" id="pdf-container">
         <div className="flex justify-center p-4">
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}>
             <Document
               file={file}
               onLoadSuccess={onDocumentLoadSuccess}
