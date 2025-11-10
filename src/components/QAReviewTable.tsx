@@ -46,7 +46,7 @@ export const QAReviewTable = ({
 
   const rowVirtualizer = useVirtualizer({
     count: filteredData.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => typeof window !== 'undefined' ? window.document.body : null,
     estimateSize: () => viewMode === "cards" ? 380 : 65,
     overscan: 5,
   });
@@ -100,11 +100,7 @@ export const QAReviewTable = ({
 
       {/* Content */}
       {viewMode === "cards" ? (
-        <div
-          ref={parentRef}
-          className="overflow-auto"
-          style={{ maxHeight: "calc(100vh - 400px)", minHeight: "500px" }}
-        >
+        <div ref={parentRef} className="relative">
           <div
             style={{
               height: `${totalSize}px`,
@@ -141,11 +137,7 @@ export const QAReviewTable = ({
         </div>
       ) : (
         <Card className="overflow-hidden">
-          <div
-            ref={parentRef}
-            className="overflow-auto"
-            style={{ maxHeight: "600px" }}
-          >
+          <div ref={parentRef} className="relative">
             <table className="w-full border-collapse">
               <thead className="bg-muted/50 sticky top-0 z-10">
                 <tr>
