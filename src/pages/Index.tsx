@@ -3,6 +3,7 @@ import { FileUpload } from "@/components/FileUpload";
 import { KMZUpload } from "@/components/KMZUpload";
 import { Dashboard } from "@/components/Dashboard";
 import { QAReviewTable } from "@/components/QAReviewTable";
+import { QAReviewSkeleton } from "@/components/QAReviewSkeleton";
 import { MapViewer } from "@/components/MapViewer";
 import { GoogleApiKeyInput } from "@/components/GoogleApiKeyInput";
 import { StreetViewModal } from "@/components/StreetViewModal";
@@ -30,6 +31,7 @@ const Index = () => {
   const [isStreetViewOpen, setIsStreetViewOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -42,6 +44,7 @@ const Index = () => {
 
   const handleFileSelect = async (file: File) => {
     try {
+      setIsLoading(true);
       toast({
         title: "Processing file...",
         description: "Parsing your Designer Upload file",
@@ -66,7 +69,10 @@ const Index = () => {
         title: "File loaded successfully",
         description: `Processed ${qaRows.length} records`,
       });
+      
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       toast({
         title: "Error loading file",
         description: "Failed to parse the Excel file. Please check the format.",
@@ -344,13 +350,15 @@ const Index = () => {
               {qaData.length > 0 && <Dashboard metrics={metrics} />}
 
               {/* Future grading features will go here */}
-              <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
-                <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold font-saira mb-2">Future Grading Features</h3>
-                <p className="text-muted-foreground font-neuton">
-                  Advanced grading and analytics will be added here
-                </p>
-              </div>
+              {!isLoading && (
+                <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
+                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold font-saira mb-2">Future Grading Features</h3>
+                  <p className="text-muted-foreground font-neuton">
+                    Advanced grading and analytics will be added here
+                  </p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="data" className="space-y-6">
@@ -370,15 +378,19 @@ const Index = () => {
                 </Button>
               </div>
 
-              {qaData.length > 0 && (
-                <QAReviewTable
-                  data={qaData}
-                  onUpdateRow={handleUpdateRow}
-                  cuOptions={cuLookup.map((cu) => cu.code)}
-                  viewMode={viewMode}
-                  setViewMode={setViewMode}
-                  selectedStation={selectedStation}
-                />
+              {isLoading ? (
+                <QAReviewSkeleton count={5} />
+              ) : (
+                qaData.length > 0 && (
+                  <QAReviewTable
+                    data={qaData}
+                    onUpdateRow={handleUpdateRow}
+                    cuOptions={cuLookup.map((cu) => cu.code)}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    selectedStation={selectedStation}
+                  />
+                )
               )}
             </TabsContent>
 
