@@ -8,44 +8,54 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* TechServ Brand Colors */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 210 14% 17%; /* TechServ Black */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 210 14% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 210 14% 17%;
 
-    --primary: 217 91% 60%;
+    --primary: 209 95% 28%; /* TechServ Blue #04458D */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 212 48% 92%; /* Sky Blue */
+    --secondary-foreground: 209 95% 28%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 6% 90%; /* Conduit Gray */
+    --muted-foreground: 210 7% 33%; /* TechServ Gray */
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 60 100% 50%; /* Safety Yellow */
+    --accent-foreground: 210 14% 17%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 60 100% 50%; /* Safety Yellow */
+    --warning-foreground: 210 14% 17%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 217 91% 60%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 209 95% 28%;
 
     --radius: 0.5rem;
     
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 70%) 100%);
+    /* TechServ specific colors */
+    --techserv-blue: 209 95% 28%;
+    --techserv-gray: 210 7% 33%;
+    --techserv-black: 210 14% 17%;
+    --storm-blue: 211 78% 18%;
+    --sky-blue: 212 48% 92%;
+    --safety-yellow: 60 100% 50%;
+    --conduit-gray: 240 6% 90%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(209 95% 28%), hsl(209 95% 38%));
+    --gradient-hero: linear-gradient(135deg, hsl(209 95% 28%) 0%, hsl(211 78% 18%) 100%);
     
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
@@ -71,39 +81,39 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 210 14% 17%; /* TechServ Black */
+    --foreground: 0 0% 100%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 210 7% 25%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 14% 17%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 217 91% 60%;
+    --primary: 209 95% 38%; /* Lighter TechServ Blue for dark mode */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 211 78% 18%; /* Storm Blue */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 210 7% 25%;
+    --muted-foreground: 240 6% 70%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 60 100% 50%; /* Safety Yellow */
+    --accent-foreground: 210 14% 17%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 60 100% 50%;
+    --warning-foreground: 210 14% 17%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 217 91% 60%;
+    --border: 210 7% 25%;
+    --input: 210 7% 25%;
+    --ring: 209 95% 38%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -122,5 +132,12 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Neuton', serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Saira', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.05em;
   }
 }

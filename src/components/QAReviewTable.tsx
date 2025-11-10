@@ -50,18 +50,18 @@ export const QAReviewTable = ({ data, onUpdateRow, cuOptions }: QAReviewTablePro
         <table className="w-full border-collapse">
           <thead className="bg-muted/50 sticky top-0 z-10">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[180px]">Status</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[100px]">Station</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px]">Work Set</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[140px]">Designer CU</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[180px]">QA CU</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[250px]">Description</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px]">Designer WF</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[100px]">QA WF</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px]">Designer Qty</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px]">QA Qty</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[220px]">Comments</th>
-              <th className="px-4 py-3 text-center text-sm font-semibold border-b bg-muted/50 min-w-[100px]">Checks</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[180px] font-saira uppercase tracking-wide">Status</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[100px] font-saira uppercase tracking-wide">Station</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide">Work Set</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[140px] font-saira uppercase tracking-wide">Designer CU</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[180px] font-saira uppercase tracking-wide">QA CU</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[250px] font-saira uppercase tracking-wide">Description</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide">Designer WF</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[100px] font-saira uppercase tracking-wide">QA WF</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide">Designer Qty</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[120px] font-saira uppercase tracking-wide">QA Qty</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold border-b bg-muted/50 min-w-[220px] font-saira uppercase tracking-wide">Comments</th>
+              <th className="px-4 py-3 text-center text-sm font-semibold border-b bg-muted/50 min-w-[100px] font-saira uppercase tracking-wide">Checks</th>
             </tr>
           </thead>
           <tbody>

@@ -13,6 +13,12 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'saira': ['Saira', 'sans-serif'],
+        'neuton': ['Neuton', 'serif'],
+        sans: ['Saira', 'sans-serif'],
+        serif: ['Neuton', 'serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -54,6 +60,15 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        techserv: {
+          blue: "hsl(var(--techserv-blue))",
+          gray: "hsl(var(--techserv-gray))",
+          black: "hsl(var(--techserv-black))",
+          storm: "hsl(var(--storm-blue))",
+          sky: "hsl(var(--sky-blue))",
+          yellow: "hsl(var(--safety-yellow))",
+          conduit: "hsl(var(--conduit-gray))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

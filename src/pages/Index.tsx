@@ -7,6 +7,7 @@ import { Download, FileSpreadsheet } from "lucide-react";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { QAReviewRow, DashboardMetrics, CULookupItem } from "@/types/qa-tool";
 import { useToast } from "@/hooks/use-toast";
+import techservLogo from "@/assets/techserv-logo.png";
 
 const Index = () => {
   const [qaData, setQaData] = useState<QAReviewRow[]>([]);
@@ -130,15 +131,22 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
+      <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">SRP QA Tool</h1>
-              <p className="text-sm text-muted-foreground">Designer Upload Review System</p>
+            <div className="flex items-center gap-6">
+              <img 
+                src={techservLogo} 
+                alt="TechServ" 
+                className="h-12 w-auto"
+              />
+              <div className="border-l border-border pl-6">
+                <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">QA Tool</h1>
+                <p className="text-sm text-muted-foreground font-neuton">Designer Upload Review System</p>
+              </div>
             </div>
             {qaData.length > 0 && (
-              <Button onClick={handleExport} className="gap-2">
+              <Button onClick={handleExport} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
                 <Download className="w-4 h-4" />
                 Export QA Tool
               </Button>
@@ -152,9 +160,12 @@ const Index = () => {
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-8">
               <FileSpreadsheet className="w-16 h-16 text-primary mx-auto mb-4" />
-              <h2 className="text-3xl font-bold mb-2">Welcome to SRP QA Tool</h2>
-              <p className="text-muted-foreground">
+              <h2 className="text-3xl font-bold mb-2 font-saira uppercase tracking-wide text-primary">Welcome to TechServ QA Tool</h2>
+              <p className="text-muted-foreground font-neuton text-lg">
                 Upload your Designer Upload Excel file to begin the QA review process
+              </p>
+              <p className="text-sm text-muted-foreground mt-2 font-neuton italic">
+                Scalability and Reliability When and Where You Need It
               </p>
             </div>
             <FileUpload onFileSelect={handleFileSelect} />
@@ -163,12 +174,12 @@ const Index = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold">QA Review: {fileName}</h2>
-                <p className="text-sm text-muted-foreground">
+                <h2 className="text-xl font-semibold font-saira uppercase tracking-wide text-primary">QA Review: {fileName}</h2>
+                <p className="text-sm text-muted-foreground font-neuton">
                   Review and validate designer data entries
                 </p>
               </div>
-              <Button variant="outline" onClick={() => setQaData([])}>
+              <Button variant="outline" onClick={() => setQaData([])} className="font-semibold">
                 Upload New File
               </Button>
             </div>

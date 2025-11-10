@@ -37,9 +37,9 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions }: QAReviewRowPro
           </SelectContent>
         </Select>
       </td>
-      <td className="px-4 py-3 text-sm min-w-[100px]">{row.station}</td>
-      <td className="px-4 py-3 text-sm min-w-[120px]">{row.workSet}</td>
-      <td className="px-4 py-3 text-sm font-medium min-w-[140px]">{row.designerCU}</td>
+      <td className="px-4 py-3 text-sm min-w-[100px] font-neuton">{row.station}</td>
+      <td className="px-4 py-3 text-sm min-w-[120px] font-neuton">{row.workSet}</td>
+      <td className="px-4 py-3 text-sm font-medium min-w-[140px] font-neuton">{row.designerCU}</td>
       <td className="px-4 py-3 min-w-[180px]">
         <Select
           value={row.qaCU}
@@ -57,10 +57,10 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions }: QAReviewRowPro
           </SelectContent>
         </Select>
       </td>
-      <td className="px-4 py-3 text-sm max-w-xs truncate min-w-[250px]" title={row.description}>
+      <td className="px-4 py-3 text-sm max-w-xs truncate min-w-[250px] font-neuton" title={row.description}>
         {row.description}
       </td>
-      <td className="px-4 py-3 text-sm min-w-[120px]">{row.designerWF}</td>
+      <td className="px-4 py-3 text-sm min-w-[120px] font-neuton">{row.designerWF}</td>
       <td className="px-4 py-3 min-w-[100px]">
         <Select
           value={row.qaWF}
@@ -75,7 +75,7 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions }: QAReviewRowPro
           </SelectContent>
         </Select>
       </td>
-      <td className="px-4 py-3 text-sm text-right min-w-[120px]">{row.designerQty}</td>
+      <td className="px-4 py-3 text-sm text-right min-w-[120px] font-neuton">{row.designerQty}</td>
       <td className="px-4 py-3 min-w-[120px]">
         <Input
           type="number"

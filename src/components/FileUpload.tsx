@@ -35,9 +35,9 @@ export const FileUpload = ({ onFileSelect }: FileUploadProps) => {
       onDragOver={(e) => e.preventDefault()}
     >
       <label className="flex flex-col items-center justify-center py-12 px-6 cursor-pointer">
-        <Upload className="w-12 h-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Upload Designer Upload File</h3>
-        <p className="text-sm text-muted-foreground text-center mb-4">
+        <Upload className="w-12 h-12 text-primary mb-4" />
+        <h3 className="text-lg font-semibold mb-2 font-saira uppercase tracking-wide">Upload Designer Upload File</h3>
+        <p className="text-sm text-muted-foreground text-center mb-4 font-neuton">
           Drag and drop your Excel file here, or click to browse
         </p>
         <input
@@ -46,7 +46,7 @@ export const FileUpload = ({ onFileSelect }: FileUploadProps) => {
           onChange={handleFileInput}
           className="hidden"
         />
-        <span className="text-xs text-muted-foreground">Supports .xlsx files</span>
+        <span className="text-xs text-muted-foreground font-neuton">Supports .xlsx files</span>
       </label>
     </Card>
   );
