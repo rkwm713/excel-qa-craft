@@ -1,10 +1,16 @@
 import { useState, useCallback, useMemo } from "react";
 import { FileUpload } from "@/components/FileUpload";
+import { KMZUpload } from "@/components/KMZUpload";
 import { Dashboard } from "@/components/Dashboard";
 import { QAReviewTable } from "@/components/QAReviewTable";
+import { MapViewer } from "@/components/MapViewer";
+import { GoogleMapsLoader } from "@/components/GoogleMapsLoader";
+import { ApiKeyInput } from "@/components/ApiKeyInput";
 import { Button } from "@/components/ui/button";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Download, FileSpreadsheet, Map as MapIcon } from "lucide-react";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
+import { parseKMZ } from "@/utils/kmzParser";
 import { QAReviewRow, DashboardMetrics, CULookupItem } from "@/types/qa-tool";
 import { useToast } from "@/hooks/use-toast";
 import techservLogo from "@/assets/techserv-logo.png";
@@ -13,6 +19,10 @@ const Index = () => {
   const [qaData, setQaData] = useState<QAReviewRow[]>([]);
   const [cuLookup, setCuLookup] = useState<CULookupItem[]>([]);
   const [fileName, setFileName] = useState<string>("");
+  const [kmzPlacemarks, setKmzPlacemarks] = useState<any[]>([]);
+  const [kmzFileName, setKmzFileName] = useState<string>("");
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("data");
   const { toast } = useToast();
 
   const handleFileSelect = async (file: File) => {
@@ -49,6 +59,40 @@ const Index = () => {
       });
       console.error("Error parsing file:", error);
     }
+  };
+
+  const handleKMZFileSelect = async (file: File) => {
+    try {
+      toast({
+        title: "Processing KMZ...",
+        description: "Extracting work points from KMZ file",
+      });
+
+      const kmzData = await parseKMZ(file);
+      setKmzPlacemarks(kmzData.placemarks);
+      setKmzFileName(file.name);
+
+      toast({
+        title: "KMZ loaded successfully",
+        description: `Found ${kmzData.placemarks.length} work points`,
+      });
+
+      // Switch to map tab
+      setActiveTab("map");
+    } catch (error) {
+      toast({
+        title: "Error loading KMZ",
+        description: "Failed to parse the KMZ file. Please check the format.",
+        variant: "destructive",
+      });
+      console.error("Error parsing KMZ:", error);
+    }
+  };
+
+  const handleStationClick = (station: string) => {
+    // Switch to data tab and scroll to station
+    setActiveTab("data");
+    // Could add logic to filter/highlight the station in the table
   };
 
   const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
@@ -156,42 +200,128 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        {qaData.length === 0 ? (
-          <div className="max-w-2xl mx-auto">
+        {qaData.length === 0 && kmzPlacemarks.length === 0 ? (
+          <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
               <FileSpreadsheet className="w-16 h-16 text-primary mx-auto mb-4" />
               <h2 className="text-3xl font-bold mb-2 font-saira uppercase tracking-wide text-primary">Welcome to TechServ QA Tool</h2>
               <p className="text-muted-foreground font-neuton text-lg">
-                Upload your Designer Upload Excel file to begin the QA review process
+                Upload your Designer Upload Excel file and KMZ work points to begin the QA review process
               </p>
               <p className="text-sm text-muted-foreground mt-2 font-neuton italic">
                 Scalability and Reliability When and Where You Need It
               </p>
             </div>
-            <FileUpload onFileSelect={handleFileSelect} />
+            <div className="grid md:grid-cols-2 gap-6">
+              <FileUpload onFileSelect={handleFileSelect} />
+              <KMZUpload onFileSelect={handleKMZFileSelect} />
+            </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold font-saira uppercase tracking-wide text-primary">QA Review: {fileName}</h2>
-                <p className="text-sm text-muted-foreground font-neuton">
-                  Review and validate designer data entries
-                </p>
+              <TabsList>
+                <TabsTrigger value="data" className="gap-2">
+                  <FileSpreadsheet className="w-4 h-4" />
+                  QA Data
+                </TabsTrigger>
+                <TabsTrigger value="map" className="gap-2">
+                  <MapIcon className="w-4 h-4" />
+                  Map View
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex gap-2">
+                {!kmzPlacemarks.length && (
+                  <Button variant="outline" onClick={() => document.getElementById("kmz-upload")?.click()} className="gap-2">
+                    <MapIcon className="w-4 h-4" />
+                    Add KMZ
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => { setQaData([]); setKmzPlacemarks([]); }}>
+                  Upload New Files
+                </Button>
               </div>
-              <Button variant="outline" onClick={() => setQaData([])} className="font-semibold">
-                Upload New File
-              </Button>
+              <input
+                id="kmz-upload"
+                type="file"
+                accept=".kmz"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleKMZFileSelect(file);
+                }}
+                className="hidden"
+              />
             </div>
 
-            <Dashboard metrics={metrics} />
+            <TabsContent value="data" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold font-saira uppercase tracking-wide text-primary">
+                    QA Review: {fileName}
+                  </h2>
+                  <p className="text-sm text-muted-foreground font-neuton">
+                    Review and validate designer data entries
+                    {kmzPlacemarks.length > 0 && ` • ${kmzPlacemarks.length} work points mapped`}
+                  </p>
+                </div>
+                <Button onClick={handleExport} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                  <Download className="w-4 h-4" />
+                  Export QA Tool
+                </Button>
+              </div>
 
-            <QAReviewTable
-              data={qaData}
-              onUpdateRow={handleUpdateRow}
-              cuOptions={cuLookup.map((cu) => cu.code)}
-            />
-          </div>
+              {qaData.length > 0 && <Dashboard metrics={metrics} />}
+
+              {qaData.length > 0 && (
+                <QAReviewTable
+                  data={qaData}
+                  onUpdateRow={handleUpdateRow}
+                  cuOptions={cuLookup.map((cu) => cu.code)}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="map" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold font-saira uppercase tracking-wide text-primary">
+                    Work Points Map: {kmzFileName || "No KMZ loaded"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground font-neuton">
+                    View work points on map with Street View integration
+                  </p>
+                </div>
+              </div>
+
+              {!googleMapsApiKey ? (
+                <ApiKeyInput onApiKeySubmit={setGoogleMapsApiKey} />
+              ) : kmzPlacemarks.length > 0 ? (
+                <GoogleMapsLoader apiKey={googleMapsApiKey}>
+                  {(loaded) =>
+                    loaded ? (
+                      <MapViewer
+                        placemarks={kmzPlacemarks}
+                        apiKey={googleMapsApiKey}
+                        onStationClick={handleStationClick}
+                      />
+                    ) : null
+                  }
+                </GoogleMapsLoader>
+              ) : (
+                <div className="text-center py-12">
+                  <MapIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold font-saira mb-2">No KMZ File Loaded</h3>
+                  <p className="text-muted-foreground font-neuton mb-4">
+                    Upload a KMZ file to view work points on the map
+                  </p>
+                  <Button onClick={() => document.getElementById("kmz-upload")?.click()} className="gap-2">
+                    <MapIcon className="w-4 h-4" />
+                    Upload KMZ
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         )}
       </main>
     </div>
