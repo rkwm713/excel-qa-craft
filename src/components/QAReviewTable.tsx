@@ -1,15 +1,16 @@
-import { useRef, useCallback, useMemo } from "react";
+import { useRef, useCallback, useMemo, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { QAReviewRow as QAReviewRowType } from "@/types/qa-tool";
 import { QAReviewRow } from "./QAReviewRow";
 import { QAReviewCard } from "./QAReviewCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, LayoutGrid } from "lucide-react";
+import { Table, LayoutGrid, FileText, Maximize2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { PDFViewer } from "./PDFViewer";
 import { PDFReviewContextPanel } from "./PDFReviewContextPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface QAReviewTableProps {
   data: QAReviewRowType[];
@@ -57,6 +58,8 @@ export const QAReviewTable = ({
   canGoNext = false,
 }: QAReviewTableProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
+  const [pdfViewMode, setPdfViewMode] = useState<"hidden" | "split" | "modal">("hidden");
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Memoize the update handler to prevent recreating it on every render
   const handleUpdateRow = useCallback(
@@ -93,6 +96,21 @@ export const QAReviewTable = ({
 
   const showPdf = pdfFile && onPdfPageChange;
   const isPdfReviewMode = showPdf && currentWorkPoint;
+
+  // Handle PDF view mode changes
+  const handleTogglePdfSplit = () => {
+    setPdfViewMode(prev => prev === "split" ? "hidden" : "split");
+  };
+
+  const handleOpenPdfModal = () => {
+    setPdfViewMode("modal");
+    setIsPdfModalOpen(true);
+  };
+
+  const handleClosePdfModal = () => {
+    setIsPdfModalOpen(false);
+    setPdfViewMode("hidden");
+  };
 
   // Render function for table/cards content
   const renderTableContent = () => (
@@ -228,44 +246,97 @@ export const QAReviewTable = ({
     </div>
   );
 
-  // PDF Review Mode: PDF (75%) + Context Panel (25%)
+  // PDF Review Mode: QA Panel is the main focus
   if (isPdfReviewMode) {
     return (
-      <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-350px)]">
-        <ResizablePanel defaultSize={75} minSize={50}>
-          <div className="h-full pr-2">
-            <PDFViewer
-              file={pdfFile}
-              currentPage={currentPdfPage}
-              onPageChange={onPdfPageChange}
-              stationPageMapping={stationPageMapping}
-              currentStation={selectedStation}
-              onAnnotationsChange={onAnnotationsChange}
-              initialAnnotations={initialAnnotations}
-              onWorkPointNotesChange={onWorkPointNotesChange}
-              initialWorkPointNotes={initialWorkPointNotes}
-            />
-          </div>
-        </ResizablePanel>
-        
-        <ResizableHandle withHandle />
-        
-        <ResizablePanel defaultSize={25} minSize={20}>
-          <div className="h-full pl-2">
-            <PDFReviewContextPanel
-              data={data}
-              currentWorkPoint={currentWorkPoint}
-              onUpdateRow={onUpdateRow}
-              cuOptions={cuOptions}
-              onJumpToWorkPoint={onJumpToWorkPoint!}
-              onPreviousWorkPoint={onPreviousWorkPoint!}
-              onNextWorkPoint={onNextWorkPoint!}
-              canGoPrevious={canGoPrevious}
-              canGoNext={canGoNext}
-            />
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+      <>
+        <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-350px)]">
+          {/* Main Content: QA Review Panel */}
+          <ResizablePanel defaultSize={pdfViewMode === "split" ? 60 : 100} minSize={40}>
+            <div className="h-full flex flex-col">
+              {/* PDF Control Buttons */}
+              {showPdf && (
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    variant={pdfViewMode === "split" ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleTogglePdfSplit}
+                    className="gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    {pdfViewMode === "split" ? "Hide PDF" : "Split View PDF"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenPdfModal}
+                    className="gap-2"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                    Open PDF Fullscreen
+                  </Button>
+                </div>
+              )}
+              
+              <PDFReviewContextPanel
+                data={data}
+                currentWorkPoint={currentWorkPoint}
+                onUpdateRow={onUpdateRow}
+                cuOptions={cuOptions}
+                onJumpToWorkPoint={onJumpToWorkPoint!}
+                onPreviousWorkPoint={onPreviousWorkPoint!}
+                onNextWorkPoint={onNextWorkPoint!}
+                canGoPrevious={canGoPrevious}
+                canGoNext={canGoNext}
+              />
+            </div>
+          </ResizablePanel>
+          
+          {/* Split View PDF */}
+          {pdfViewMode === "split" && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={40} minSize={30}>
+                <div className="h-full pl-2">
+                  <PDFViewer
+                    file={pdfFile}
+                    currentPage={currentPdfPage}
+                    onPageChange={onPdfPageChange}
+                    stationPageMapping={stationPageMapping}
+                    currentStation={selectedStation}
+                    onAnnotationsChange={onAnnotationsChange}
+                    initialAnnotations={initialAnnotations}
+                    onWorkPointNotesChange={onWorkPointNotesChange}
+                    initialWorkPointNotes={initialWorkPointNotes}
+                  />
+                </div>
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
+
+        {/* Fullscreen PDF Modal */}
+        <Dialog open={isPdfModalOpen} onOpenChange={setIsPdfModalOpen}>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] h-[95vh] p-6">
+            <DialogHeader>
+              <DialogTitle>PDF Viewer - Station {selectedStation}</DialogTitle>
+            </DialogHeader>
+            <div className="h-full overflow-auto">
+              <PDFViewer
+                file={pdfFile}
+                currentPage={currentPdfPage}
+                onPageChange={onPdfPageChange}
+                stationPageMapping={stationPageMapping}
+                currentStation={selectedStation}
+                onAnnotationsChange={onAnnotationsChange}
+                initialAnnotations={initialAnnotations}
+                onWorkPointNotesChange={onWorkPointNotesChange}
+                initialWorkPointNotes={initialWorkPointNotes}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
