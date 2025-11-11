@@ -257,17 +257,19 @@ export type Database = {
           id: string
           kmz_file_name: string | null
           pdf_file_name: string | null
+          status: string | null
           title: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          created_by: string
+          created_by?: string
           description?: string | null
           file_name?: string | null
-          id: string
+          id?: string
           kmz_file_name?: string | null
           pdf_file_name?: string | null
+          status?: string | null
           title: string
           updated_at?: string | null
         }
