@@ -61,8 +61,8 @@ export const reviewsAPI = {
 
   get: async (id: string): Promise<ReviewData> => {
     const [{ data: review, error: rErr }, { data: points, error: pErr }] = await Promise.all([
-      supabase.from('reviews').select('*').eq('id', id).single(),
-      supabase.from('work_points').select('*').eq('review_id', id),
+      supabase.from('reviews' as any).select('*').eq('id', id).single(),
+      supabase.from('work_points' as any).select('*').eq('review_id', id),
     ]);
     if (rErr) throw rErr;
     if (pErr) throw pErr;
@@ -96,19 +96,62 @@ export const reviewsAPI = {
     workPointNotes?: Record<string, string>;
     kmzPlacemarks?: any[];
   }): Promise<{ id: string; message: string }> => {
-    // Create review
-    // Explicitly omit id and created_by - they're auto-generated
-    const insertData: any = { title: data.title };
-    if (data.description) {
-      insertData.description = data.description;
+    // Ensure the current user has a users record to satisfy FK on reviews.created_by
+    const { data: authUserRes, error: authErr } = await supabase.auth.getUser();
+    if (authErr) throw authErr;
+    const authUser = authUserRes?.user;
+    if (!authUser) {
+      throw new Error('You must be logged in to create a review.');
     }
+    // Ensure the user exists in users table to satisfy FK on reviews.created_by
+    // Note: users.id is text, auth.uid() is UUID, so we use the UUID as text
+    const userId = authUser.id; // This is already a string/UUID
+    const userEmail = authUser.email || '';
+    const userName = authUser.user_metadata?.full_name || 
+                     authUser.user_metadata?.name || 
+                     userEmail.split('@')[0] || 
+                     'user';
+    
+    // Check if user exists first
+    const { data: existingUser } = await supabase
+      .from('users' as any)
+      .select('id')
+      .eq('id', userId)
+      .single();
+    
+    // Only insert if user doesn't exist (don't overwrite existing password_hash)
+    if (!existingUser) {
+      const { error: userErr } = await supabase
+        .from('users' as any)
+        .insert([
+          {
+            id: userId,
+            email: userEmail,
+            username: userName,
+            full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || null,
+            password_hash: 'auth_user', // Placeholder for auth users (required field)
+          },
+        ] as any);
+      
+      if (userErr) {
+        // If insert fails (e.g., user was created between check and insert), ignore the error
+        // The trigger will handle setting created_by, and if user doesn't exist, we'll get a FK error
+        // which is more informative than trying to upsert without password_hash
+        console.warn('Failed to create user record:', userErr);
+      }
+    }
+
+    // Create review (omit id and created_by - they are auto-generated via default/trigger)
+    const insertData: any = { title: data.title };
+    if (data.description) insertData.description = data.description;
+
     const { data: review, error } = await supabase
-      .from('reviews')
+      .from('reviews' as any)
       .insert([insertData]) // created_by is auto-set by trigger, status defaults to 'draft', id is auto-generated
       .select()
       .single();
     if (error) throw error;
-    const reviewId = review.id as string;
+    const reviewId = (review as any).id as string;
 
     // Insert work_points if provided
     if (Array.isArray(data.reviewRows) && data.reviewRows.length > 0) {
@@ -117,7 +160,7 @@ export const reviewsAPI = {
         notes: r.qa_comments ?? r.description ?? null,
         status: r.issue_type === 'OK' ? 'closed' : 'open',
       }));
-      const { error: wpErr } = await supabase.from('work_points').insert(workPoints);
+      const { error: wpErr } = await supabase.from('work_points' as any).insert(workPoints as any);
       if (wpErr) throw wpErr;
     }
 
@@ -131,7 +174,7 @@ export const reviewsAPI = {
           upsert: true,
         });
       if (uploadError) throw uploadError;
-      await supabase.from('files').insert([{ review_id: reviewId, kind: 'pdf', path }]);
+      await supabase.from('files' as any).insert([{ review_id: reviewId, kind: 'pdf', path }] as any);
     }
 
     return { id: reviewId, message: 'Review created' };
