@@ -14,7 +14,7 @@ import { SaveReviewDialog } from "@/components/SaveReviewDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save, FolderOpen, User, LogOut, ArrowLeft } from "lucide-react";
-import { reviewsAPI } from "@/services/api";
+import { useCreateReview } from "@/hooks/useReviews";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { exportDesignerPackage } from "@/utils/exportPackage";
@@ -52,9 +52,9 @@ const NewReview = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const createReview = useCreateReview();
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -70,13 +70,13 @@ const NewReview = () => {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (user) {
-        // Get profile data if needed
-        const { data: profile } = await supabase
-          .from('profiles')
+        // Get user data if needed
+        const { data: userData } = await supabase
+          .from('users')
           .select('*')
           .eq('id', user.id)
           .single();
-        setCurrentUser(profile || { id: user.id, email: user.email });
+        setCurrentUser(userData || { id: user.id, email: user.email });
       } else {
         setCurrentUser(null);
       }
@@ -105,23 +105,22 @@ const NewReview = () => {
       return;
     }
 
-    setIsSaving(true);
     try {
-      await reviewsAPI.create({
+      await createReview.mutateAsync({
         title,
         description,
         fileName,
         kmzFileName,
         pdfFileName,
         pdfFile: pdfFile, // Include the actual PDF file
-        reviewRows: qaData,
+        reviewRows: qaData as any, // Will be converted in API
         cuLookup,
         stationPageMapping,
         stationSpecMapping,
         editedSpecMapping,
         pdfAnnotations,
         workPointNotes: pdfWorkPointNotes,
-        kmzPlacemarks,
+        kmzPlacemarks: kmzPlacemarks as any,
       });
 
       toast({
@@ -130,14 +129,12 @@ const NewReview = () => {
       });
       setShowSaveDialog(false);
       navigate("/reviews");
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error saving review",
-        description: error.message || "Failed to save review",
+        description: error instanceof Error ? error.message : "Failed to save review",
         variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -179,7 +176,7 @@ const NewReview = () => {
         description: "Failed to parse the Excel file. Please check the format.",
         variant: "destructive",
       });
-      console.error("Error parsing file:", error);
+      // Error already handled by toast notification
     }
   };
 
@@ -209,7 +206,7 @@ const NewReview = () => {
         description: "Failed to parse the KMZ file. Please check the format.",
         variant: "destructive",
       });
-      console.error("Error parsing KMZ:", error);
+      // Error already handled by toast notification
     }
   };
 
@@ -234,7 +231,7 @@ const NewReview = () => {
         description: `Found ${pdfInfo.numPages} pages. Mapped ${mappedCount} work points${specCount > 0 ? ` and ${specCount} spec numbers` : ''}.`,
       });
     } catch (error) {
-      console.error("Error parsing PDF:", error);
+      // Error already handled by toast notification
       
       // Still attach the file so the viewer works, even if parsing failed
       setPdfFile(file);
@@ -379,7 +376,7 @@ const NewReview = () => {
         description: "Failed to export data",
         variant: "destructive",
       });
-      console.error("Export error:", error);
+      // Error already handled by toast notification
     }
   };
 
@@ -854,7 +851,7 @@ const NewReview = () => {
         onOpenChange={setShowSaveDialog}
         onSave={handleSaveReview}
         defaultTitle={fileName ? `Review: ${fileName}` : "QA Review"}
-        isLoading={isSaving}
+        isLoading={createReview.isPending}
       />
     </div>
   );

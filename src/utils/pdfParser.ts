@@ -7,14 +7,9 @@ if (!GlobalWorkerOptions.workerSrc) {
 }
 
 export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo> {
-  console.log("Starting PDF parse for file:", file.name);
-  
   try {
     const arrayBuffer = await file.arrayBuffer();
-    console.log("PDF arrayBuffer loaded, size:", arrayBuffer.byteLength);
-    
     const pdf = await getDocument({ data: arrayBuffer }).promise;
-    console.log("PDF document loaded, pages:", pdf.numPages);
     
     const numPages = pdf.numPages;
     const pages: PDFPageInfo[] = [];
@@ -105,15 +100,9 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
           stationSpecMapping[normalized] = specNumber;
           stationSpecMapping[padded4] = specNumber;
           stationSpecMapping[normalizedPadded4] = specNumber;
-          console.log(`Found WP ${workPoint} with Spec ${specNumber} on page ${pageNum}`);
-        } else {
-          console.log(`Found WP ${workPoint} on page ${pageNum} (no spec number found)`);
         }
       }
     }
-
-    console.log("PDF parsing complete. Total work points found:", Object.keys(stationPageMapping).length);
-    console.log("Total spec numbers mapped:", Object.keys(stationSpecMapping).length);
 
     return {
       file,
@@ -124,7 +113,6 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
       stationSpecMapping,
     };
   } catch (error) {
-    console.error("PDF parsing error:", error);
     throw new Error(`Failed to parse PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

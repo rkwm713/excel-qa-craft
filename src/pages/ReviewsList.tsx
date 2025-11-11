@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { reviewsAPI, ReviewListItem } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Search, LogOut, User, Plus, Trash2 } from "lucide-react";
+import { useReviews, useDeleteReview } from "@/hooks/useReviews";
+import { FileText, Search, LogOut, User, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -20,51 +20,72 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const ITEMS_PER_PAGE = 12;
+
 export default function ReviewsList() {
-  const [reviews, setReviews] = useState<ReviewListItem[]>([]);
-  const [filteredReviews, setFilteredReviews] = useState<ReviewListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const { data: reviews = [], isLoading, error } = useReviews();
+  const deleteReview = useDeleteReview();
 
   useEffect(() => {
     loadUser();
-    loadReviews();
   }, []);
 
-  useEffect(() => {
+  const filteredReviews = useMemo(() => {
     if (searchQuery.trim() === "") {
-      setFilteredReviews(reviews);
-    } else {
-      const query = searchQuery.toLowerCase();
-      setFilteredReviews(
-        reviews.filter(
-          (review) =>
-            review.title.toLowerCase().includes(query) ||
-            review.description?.toLowerCase().includes(query) ||
-            review.file_name?.toLowerCase().includes(query) ||
-            review.username?.toLowerCase().includes(query)
-        )
-      );
+      return reviews;
     }
+    const query = searchQuery.toLowerCase();
+    return reviews.filter(
+      (review) =>
+        review.title.toLowerCase().includes(query) ||
+        review.description?.toLowerCase().includes(query) ||
+        review.file_name?.toLowerCase().includes(query) ||
+        review.username?.toLowerCase().includes(query)
+    );
   }, [searchQuery, reviews]);
+  
+  // Pagination
+  const totalPages = Math.ceil(filteredReviews.length / ITEMS_PER_PAGE);
+  const paginatedReviews = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredReviews.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredReviews, currentPage]);
+  
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+  
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error loading reviews",
+        description: error instanceof Error ? error.message : "Failed to load reviews",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const loadUser = async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (user) {
-        // Get profile data if needed
-        const { data: profile } = await supabase
-          .from('profiles')
+        // Get user data if needed
+        const { data: userData } = await supabase
+          .from('users')
           .select('*')
           .eq('id', user.id)
           .single();
-        setCurrentUser(profile || { id: user.id, email: user.email });
+        setCurrentUser(userData || { id: user.id, email: user.email });
       } else {
         setCurrentUser(null);
       }
@@ -74,22 +95,6 @@ export default function ReviewsList() {
     }
   };
 
-  const loadReviews = async () => {
-    setIsLoading(true);
-    try {
-      const response = await reviewsAPI.list();
-      setReviews(response.reviews);
-      setFilteredReviews(response.reviews);
-    } catch (error: any) {
-      toast({
-        title: "Error loading reviews",
-        description: error.message || "Failed to load reviews",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -103,18 +108,17 @@ export default function ReviewsList() {
   const handleDelete = async () => {
     if (!reviewToDelete) return;
     try {
-      await reviewsAPI.delete(reviewToDelete);
+      await deleteReview.mutateAsync(reviewToDelete);
       toast({
         title: "Review deleted",
         description: "The review has been deleted successfully",
       });
-      loadReviews();
       setDeleteDialogOpen(false);
       setReviewToDelete(null);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error deleting review",
-        description: error.message || "Failed to delete review",
+        description: error instanceof Error ? error.message : "Failed to delete review",
         variant: "destructive",
       });
     }
@@ -199,8 +203,9 @@ export default function ReviewsList() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredReviews.map((review) => (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedReviews.map((review) => (
               <Card key={review.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -252,8 +257,55 @@ export default function ReviewsList() {
                   </Button>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="min-w-[2.5rem]"
+                        >
+                          {page}
+                        </Button>
+                      );
+                    } else if (page === currentPage - 2 || page === currentPage + 2) {
+                      return <span key={page} className="px-2">...</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
