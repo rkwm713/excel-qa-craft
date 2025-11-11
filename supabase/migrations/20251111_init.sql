@@ -122,4 +122,28 @@ create policy if not exists "Files write by review owner" on public.files
   for all using (exists (select 1 from public.reviews r where r.id = review_id and r.created_by = auth.uid()))
   with check (exists (select 1 from public.reviews r where r.id = review_id and r.created_by = auth.uid()));
 
+-- Automatically stamp created_by from auth.uid() on insert
+create or replace function public.set_created_by_to_auth_uid()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.created_by is null then
+    new.created_by := auth.uid();
+  end if;
+  return new;
+end;
+$$;
+
+do $$
+begin
+  if not exists (select 1 from pg_trigger where tgname = 'trg_reviews_set_created_by') then
+    create trigger trg_reviews_set_created_by
+    before insert on public.reviews
+    for each row execute procedure public.set_created_by_to_auth_uid();
+  end if;
+end $$;
+
 
