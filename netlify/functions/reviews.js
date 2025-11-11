@@ -175,7 +175,22 @@ export const handler = async (event, context) => {
           workPointNotes: notesMap,
           kmzPlacemarks: placemarks.map(p => p.placemark_data),
           pdfFile: pdfFile ? {
-            data: Buffer.from(pdfFile.file_data).toString('base64'),
+            data: (() => {
+              try {
+                const raw = pdfFile.file_data;
+                if (typeof raw === 'string' && raw.startsWith('\\x')) {
+                  const hex = raw.slice(2);
+                  return Buffer.from(hex, 'hex').toString('base64');
+                }
+                if (raw instanceof Uint8Array || Array.isArray(raw)) {
+                  return Buffer.from(raw).toString('base64');
+                }
+                // Fallback
+                return Buffer.from(String(raw)).toString('base64');
+              } catch (e) {
+                return '';
+              }
+            })(),
             fileName: pdfFile.file_name,
             mimeType: pdfFile.mime_type,
           } : null,
@@ -350,20 +365,27 @@ export const handler = async (event, context) => {
 
       // Insert PDF file if provided
       if (pdfFileData && pdfFileData.data) {
-        const pdfBuffer = Buffer.from(pdfFileData.data, 'base64');
-        const { error: pdfError } = await supabase
-          .from('pdf_files')
-          .insert([{
-            id: uuidv4(),
-            review_id: reviewId,
-            file_data: pdfBuffer,
-            file_name: pdfFileData.fileName || pdfFileName || 'document.pdf',
-            file_size: pdfBuffer.length,
-            mime_type: pdfFileData.mimeType || 'application/pdf',
-          }]);
+        try {
+          // Convert base64 -> hex and prefix with \\x for Postgres bytea
+          const hex = Buffer.from(pdfFileData.data, 'base64').toString('hex');
+          const bytea = `\\x${hex}`;
+          const { error: pdfError } = await supabase
+            .from('pdf_files')
+            .insert([{
+              id: uuidv4(),
+              review_id: reviewId,
+              file_data: bytea,
+              file_name: pdfFileData.fileName || pdfFileName || 'document.pdf',
+              file_size: Math.ceil(hex.length / 2),
+              mime_type: pdfFileData.mimeType || 'application/pdf',
+            }]);
 
-        if (pdfError) {
-          console.error('Error storing PDF file:', pdfError);
+          if (pdfError) {
+            console.error('Error storing PDF file:', pdfError);
+            // Continue without failing the whole request
+          }
+        } catch (e) {
+          console.error('PDF processing error:', e);
         }
       }
 
