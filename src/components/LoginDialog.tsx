@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { authAPI } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface LoginDialogProps {
@@ -27,12 +27,16 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await authAPI.login(loginUsername, loginPassword);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginUsername,
+        password: loginPassword,
+      });
+      if (error) throw error;
       toast({
         title: "Login successful",
-        description: `Welcome back, ${response.user.username}!`,
+        description: `Welcome back!`,
       });
-      onLoginSuccess(response.user);
+      onLoginSuccess(data.user);
       onOpenChange(false);
       setLoginUsername("");
       setLoginPassword("");
@@ -51,17 +55,21 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await authAPI.register(
-        registerUsername,
-        registerEmail,
-        registerPassword,
-        registerFullName || undefined
-      );
+      const { data, error } = await supabase.auth.signUp({
+        email: registerEmail,
+        password: registerPassword,
+        options: {
+          data: {
+            display_name: registerFullName || registerUsername || null,
+          },
+        },
+      });
+      if (error) throw error;
       toast({
         title: "Registration successful",
-        description: `Welcome, ${response.user.username}!`,
+        description: "Please check your email to verify your account.",
       });
-      onLoginSuccess(response.user);
+      onLoginSuccess(data.user);
       onOpenChange(false);
       setRegisterUsername("");
       setRegisterEmail("");
