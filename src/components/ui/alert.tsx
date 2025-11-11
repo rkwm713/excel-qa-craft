@@ -4,19 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
-  "relative w-full rounded-[var(--radius)] border border-[hsl(var(--border))] bg-card p-5 pl-6 text-card-foreground shadow-brand-sm transition-brand [&>svg~*]:pl-8 [&>svg]:absolute [&>svg]:left-5 [&>svg]:top-5 [&>svg]:text-[hsl(var(--primary))]",
+  "relative w-full rounded-[var(--radius-sm)] border border-[hsl(var(--border))] bg-card px-6 py-5 text-card-foreground shadow-brand-sm transition-[box-shadow,transform] duration-200 ease-out [&>svg~*]:pl-9 [&>svg]:absolute [&>svg]:left-6 [&>svg]:top-5 [&>svg]:text-[hsl(var(--color-primary))]",
   {
     variants: {
       variant: {
-        default: "border-l-4 border-l-[hsl(var(--primary))] bg-secondary/40",
+        default:
+          "border-l-4 border-l-[hsl(var(--color-primary))] bg-[hsla(var(--color-light)/0.8)] text-[hsl(var(--color-dark))]",
         success:
-          "border-l-4 border-l-[hsl(var(--success))] bg-[rgba(40,167,69,0.12)] [&>svg]:text-[hsl(var(--success))]",
+          "border-l-4 border-l-[hsl(var(--color-success))] bg-[hsl(134,41%,88%)] text-[hsl(134,61%,21%)] [&>svg]:text-[hsl(var(--color-success))]",
         warning:
-          "border-l-4 border-l-[hsl(var(--warning))] bg-[rgba(255,193,7,0.14)] [&>svg]:text-[hsl(var(--warning))]",
+          "border-l-4 border-l-[hsl(var(--color-warning))] bg-[hsl(46,100%,90%)] text-[hsl(45,94%,27%)] [&>svg]:text-[hsl(var(--color-warning))]",
         info:
-          "border-l-4 border-l-[hsl(var(--info))] bg-[rgba(4,69,141,0.14)] [&>svg]:text-[hsl(var(--info))]",
+          "border-l-4 border-l-[hsl(var(--color-info))] bg-[hsla(var(--color-info)/0.18)] text-[hsl(206,78%,18%)] [&>svg]:text-[hsl(var(--color-info))]",
         destructive:
-          "border-l-4 border-l-[hsl(var(--destructive))] bg-[rgba(220,53,69,0.12)] text-destructive [&>svg]:text-destructive",
+          "border-l-4 border-l-[hsl(var(--color-error))] bg-[hsl(355,70%,91%)] text-[hsl(354,61%,28%)] [&>svg]:text-[hsl(var(--color-error))]",
       },
     },
     defaultVariants: {
@@ -51,7 +52,7 @@ const AlertDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttrib
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("font-neuton text-sm text-foreground/80 [&_p]:leading-relaxed", className)}
+      className={cn("font-neuton text-sm text-[hsl(var(--color-secondary))] [&_p]:leading-relaxed", className)}
       {...props}
     />
   ),

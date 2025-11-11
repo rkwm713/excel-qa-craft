@@ -5,23 +5,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-sm)] font-saira font-semibold uppercase tracking-[0.05em] transition-brand focus-visible:outline focus-visible:outline-primary focus-visible:outline-[3px] focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-60 shadow-brand-sm will-change-transform [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-sm)] border border-transparent font-saira font-semibold uppercase tracking-[0.05em] transition-[transform,box-shadow,background-color,color,border-color] duration-200 ease-out focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--color-primary))] motion-reduce:transform-none disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[hsl(var(--color-disabled))] disabled:text-[hsl(var(--color-secondary))] disabled:shadow-none disabled:translate-y-0 shadow-brand-sm will-change-transform [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:-translate-y-0.5 hover:shadow-brand-md hover:bg-[hsl(var(--primary-light))] active:translate-y-0",
+          "border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary))] text-white hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-dark))] hover:border-[hsl(var(--color-primary-dark))] hover:shadow-brand-md active:translate-y-0 active:shadow-brand-sm",
         destructive:
-          "bg-destructive text-destructive-foreground hover:-translate-y-0.5 hover:shadow-brand-md hover:bg-destructive/90 active:translate-y-0",
+          "border-[hsl(var(--color-error))] bg-[hsl(var(--color-error))] text-white hover:-translate-y-0.5 hover:bg-[hsl(var(--color-error))]/90 hover:shadow-brand-md active:translate-y-0",
         outline:
-          "border-2 border-primary text-primary bg-transparent hover:-translate-y-0.5 hover:bg-primary hover:text-primary-foreground active:translate-y-0",
+          "border-2 border-[hsl(var(--color-primary))] bg-transparent text-[hsl(var(--color-primary))] hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary))] hover:text-white active:translate-y-0",
         secondary:
-          "bg-secondary text-secondary-foreground border border-primary/20 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-brand-md hover:bg-secondary/90 active:translate-y-0",
+          "border-2 border-[hsl(var(--color-primary))] bg-transparent text-[hsl(var(--color-primary))] hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary))] hover:text-white active:translate-y-0",
         ghost:
-          "bg-transparent text-primary hover:bg-primary/10 hover:-translate-y-0.5 active:translate-y-0",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-transparent text-[hsl(var(--color-primary))] hover:bg-[hsla(var(--color-primary)/0.12)] hover:-translate-y-0.5 active:translate-y-0",
+        link: "text-[hsl(var(--color-primary))] underline-offset-4 hover:underline",
         cta:
-          "bg-accent text-accent-foreground border-2 border-[hsl(var(--foreground))] hover:-translate-y-0.5 hover:bg-[#E6E600] hover:shadow-brand-lg active:translate-y-0",
+          "border-2 border-[hsl(var(--color-text))] bg-[hsl(var(--color-cta))] text-[hsl(var(--color-text))] hover:-translate-y-0.5 hover:bg-[hsl(60,100%,45%)] hover:shadow-brand-lg active:translate-y-0",
       },
       size: {
         default: "min-h-[3rem] px-6 py-3 text-base",

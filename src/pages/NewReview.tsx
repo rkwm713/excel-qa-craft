@@ -13,7 +13,7 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { SaveReviewDialog } from "@/components/SaveReviewDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save, FolderOpen, User, LogOut, ArrowLeft, Clock, CheckCircle2 } from "lucide-react";
+import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save, ArrowLeft, Clock, CheckCircle2 } from "lucide-react";
 import { reviewsAPI } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
@@ -25,7 +25,8 @@ import { QAReviewRow, DashboardMetrics, CULookupItem } from "@/types/qa-tool";
 import { useToast } from "@/hooks/use-toast";
 import { draftManager } from "@/utils/draftManager";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
-import techservLogo from "@/assets/techserv-logo.png";
+import { TechServLogo } from "@/components/brand/TechServLogo";
+import { UserProfileMenu } from "@/components/UserProfileMenu";
 import { normalizeQaRow, normalizeQaRows } from "@/utils/qaValidation";
 import { WorkPointNote } from "@/types/pdf";
 import { normalizeWorkPointNotes } from "@/utils/workPointNotes";
@@ -668,180 +669,202 @@ const NewReview = () => {
   }, [qaData]);
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="relative flex min-h-screen w-full bg-background text-foreground">
+      <div className="absolute inset-0 pattern-sky-surface opacity-70" aria-hidden="true" />
+      <div className="absolute inset-0 pattern-technical-grid-light opacity-15" aria-hidden="true" />
       {/* Main Content */}
-      <div className="flex-1 w-full">
-          <header className="sticky top-0 z-10 border-b bg-card shadow-sm">
-            <div className="flex flex-col gap-3 px-4 py-3">
-              {/* Top row: Logo and Export */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-between flex-1">
-                  <div className="flex items-center gap-6">
-                    <Button variant="ghost" onClick={() => {
+      <div className="relative z-10 flex-1 w-full">
+          <header className="sticky top-0 z-10 border-b border-[hsl(var(--border))] bg-white/95 shadow-brand-sm backdrop-blur">
+            <div className="flex flex-col gap-3 px-4 py-3 sm:px-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-5">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
                       allowNavigation();
                       navigate("/dashboard");
-                    }} className="gap-2">
-                      <ArrowLeft className="w-4 h-4" />
-                      Back to Dashboard
-                    </Button>
-                    <img 
-                      src={techservLogo} 
-                      alt="TechServ" 
-                      className="h-12 w-auto"
-                    />
-                    <div className="border-l border-border pl-6">
-                      <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">New QA Review</h1>
-                      <p className="text-sm text-muted-foreground font-neuton">Create a new QA review session</p>
+                    }}
+                    className="gap-2 text-[hsl(var(--color-secondary))] hover:text-[hsl(var(--color-primary))]"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Dashboard
+                  </Button>
+                  <div className="hidden h-8 w-px bg-[hsl(var(--border))] md:block" />
+                  <TechServLogo variant="primary" width={140} />
+                  <div className="space-y-1">
+                    <h1 className="text-2xl font-saira font-semibold uppercase tracking-[0.08em] text-[hsl(var(--color-primary))]">
+                      New QA Review
+                    </h1>
+                    <p className="text-sm font-neuton text-[hsl(var(--color-secondary))]">
+                      Create a new QA review session
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {draftStatus !== "unsaved" && hasUploadedFiles && (
+                    <div className="flex items-center gap-2 rounded-full border border-[hsl(var(--border))] bg-[hsla(var(--color-light)/0.6)] px-3 py-1 text-xs font-medium text-[hsl(var(--color-secondary))]">
+                      {draftStatus === "saving" ? (
+                        <>
+                          <Clock className="h-4 w-4 text-yellow-500" />
+                          <span>Saving draft…</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                          <span>
+                            Draft saved {lastSavedTime ? new Date(lastSavedTime).toLocaleTimeString() : ""}
+                          </span>
+                        </>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {currentUser && (
-                      <div className="flex items-center gap-2 text-sm mr-2">
-                        <User className="w-4 h-4" />
-                        <span className="font-semibold">{currentUser.username}</span>
-                      </div>
-                    )}
-
-                    {/* Draft status indicator */}
-                    {draftStatus !== 'unsaved' && hasUploadedFiles && (
-                      <div className="flex items-center gap-2 text-sm mr-2">
-                        {draftStatus === 'saving' ? (
-                          <>
-                            <Clock className="w-4 h-4 text-yellow-500 animate-pulse" />
-                            <span className="text-yellow-600">Saving draft...</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            <span className="text-green-600">
-                              Draft saved {lastSavedTime ? new Date(lastSavedTime).toLocaleTimeString() : ''}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    )}
-
-                    {qaData.length > 0 && (
-                      <>
-                        <Button
-                          onClick={() => {
-                            if (!currentUser) {
-                              setShowLoginDialog(true);
-                            } else {
-                              setShowSaveDialog(true);
-                            }
-                          }}
-                          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-                        >
-                          <Save className="w-4 h-4" />
-                          Save Review
-                        </Button>
-                        <Button onClick={handleExport} className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                          <Download className="w-4 h-4" />
-                          Export QA Tool
-                        </Button>
-                      </>
-                    )}
-                    {currentUser ? (
-                      <Button variant="outline" onClick={handleLogout} className="gap-2">
-                        <LogOut className="w-4 h-4" />
-                        Logout
+                  )}
+                  {qaData.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => {
+                          if (!currentUser) {
+                            setShowLoginDialog(true);
+                          } else {
+                            setShowSaveDialog(true);
+                          }
+                        }}
+                        className="gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        Save Review
                       </Button>
-                    ) : (
-                      <Button variant="outline" onClick={() => setShowLoginDialog(true)} className="gap-2">
-                        <User className="w-4 h-4" />
-                        Login
+                      <Button onClick={handleExport} variant="cta" className="gap-2">
+                        <Download className="w-4 h-4" />
+                        Export QA Tool
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  <div className="h-8 w-px bg-[hsl(var(--border))]" />
+                  <UserProfileMenu
+                    user={currentUser}
+                    onLogin={() => setShowLoginDialog(true)}
+                    onLogout={handleLogout}
+                  />
                 </div>
               </div>
-              
-              {/* Bottom row: Tabs and Action Buttons - only show when files are uploaded */}
+
               {hasUploadedFiles && (
-                <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="flex gap-1 bg-muted/50 p-1.5 rounded-lg border border-border/50 shadow-sm">
-                      <Button
-                        variant={activeTab === "dashboard" ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setActiveTab("dashboard")}
-                        className={`gap-2 transition-all duration-200 ${
-                          activeTab === "dashboard" 
-                            ? "bg-primary text-primary-foreground shadow-md font-semibold" 
-                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <TrendingUp className={`w-4 h-4 transition-transform ${activeTab === "dashboard" ? "scale-110" : ""}`} />
-                        Dashboard
-                      </Button>
-                      <Button
-                        variant={activeTab === "data" ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setActiveTab("data")}
-                        className={`gap-2 transition-all duration-200 ${
-                          activeTab === "data" 
-                            ? "bg-primary text-primary-foreground shadow-md font-semibold" 
-                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <FileSpreadsheet className={`w-4 h-4 transition-transform ${activeTab === "data" ? "scale-110" : ""}`} />
-                        QA Data
-                      </Button>
-                      <Button
-                        variant={activeTab === "map" ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setActiveTab("map")}
-                        className={`gap-2 transition-all duration-200 ${
-                          activeTab === "map" 
-                            ? "bg-primary text-primary-foreground shadow-md font-semibold" 
-                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <MapIcon className={`w-4 h-4 transition-transform ${activeTab === "map" ? "scale-110" : ""}`} />
-                        Map View
-                      </Button>
+                <>
+                  <div className="rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsla(var(--color-light)/0.5)] px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-3 text-sm font-neuton text-[hsl(var(--color-secondary))]">
+                      <span className="font-saira text-xs uppercase tracking-[0.12em] text-[hsl(var(--color-primary))]">
+                        Review Setup
+                      </span>
+                      <span>Excel: {fileName || "Not uploaded"}</span>
+                      <span>KMZ: {kmzFileName || "Not uploaded"}</span>
+                      <span>PDF: {pdfFileName || "Not uploaded"}</span>
                     </div>
-                    {activeTab === "data" && fileName && (
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-semibold font-saira uppercase tracking-wide text-primary">
-                          QA Review: {fileName}
-                        </h2>
+                  </div>
+                  <div className="border-t border-[hsl(var(--border))] bg-[hsla(var(--color-light)/0.4)]">
+                    <div className="flex flex-wrap items-center gap-4 px-4 py-3 sm:px-6">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Button
+                          variant={activeTab === "dashboard" ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => setActiveTab("dashboard")}
+                          className={`
+                            gap-2 rounded-b-none h-10 font-medium
+                            ${activeTab === "dashboard" 
+                              ? "bg-background text-[hsl(var(--color-primary))] border-t-2 border-x border-[hsl(var(--color-primary))] shadow-sm" 
+                              : "hover:bg-[hsla(var(--color-primary)/0.08)] text-[hsl(var(--color-secondary))]"
+                            }
+                          `}
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                          Dashboard
+                        </Button>
+                        <Button
+                          variant={activeTab === "data" ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => setActiveTab("data")}
+                          className={`
+                            gap-2 rounded-b-none h-10 font-medium
+                            ${activeTab === "data" 
+                              ? "bg-background text-[hsl(var(--color-primary))] border-t-2 border-x border-[hsl(var(--color-primary))] shadow-sm" 
+                              : "hover:bg-[hsla(var(--color-primary)/0.08)] text-[hsl(var(--color-secondary))]"
+                            }
+                          `}
+                        >
+                          <FileSpreadsheet className="w-4 h-4" />
+                          QA Data
+                        </Button>
+                        <Button
+                          variant={activeTab === "map" ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => setActiveTab("map")}
+                          className={`
+                            gap-2 rounded-b-none h-10 font-medium
+                            ${activeTab === "map" 
+                              ? "bg-background text-[hsl(var(--color-primary))] border-t-2 border-x border-[hsl(var(--color-primary))] shadow-sm" 
+                              : "hover:bg-[hsla(var(--color-primary)/0.08)] text-[hsl(var(--color-secondary))]"
+                            }
+                          `}
+                        >
+                          <MapIcon className="w-4 h-4" />
+                          Map View
+                        </Button>
                       </div>
-                    )}
+                      {activeTab === "data" && fileName && (
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-sm font-saira uppercase tracking-[0.12em] text-[hsl(var(--color-primary))]">
+                            Reviewing: {fileName}
+                          </h2>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                        {!fileName && (
+                          <Button
+                            variant="outline"
+                            onClick={() => document.getElementById("excel-upload-later")?.click()}
+                            className="gap-2"
+                          >
+                            <FileSpreadsheet className="w-4 h-4" />
+                            Add Excel
+                          </Button>
+                        )}
+                        {!kmzPlacemarks.length && (
+                          <Button
+                            variant="outline"
+                            onClick={() => document.getElementById("kmz-upload")?.click()}
+                            className="gap-2"
+                          >
+                            <MapIcon className="w-4 h-4" />
+                            Add KMZ
+                          </Button>
+                        )}
+                        {!pdfFileName && (
+                          <Button
+                            variant="outline"
+                            onClick={() => document.getElementById("pdf-upload-later")?.click()}
+                            className="gap-2"
+                          >
+                            <FileText className="w-4 h-4" />
+                            Add PDF
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setQaData([]);
+                            setKmzPlacemarks([]);
+                            setPdfFile(null);
+                            setFileName("");
+                            setKmzFileName("");
+                            setPdfFileName("");
+                            setHasUploadedFiles(false);
+                          }}
+                        >
+                          Upload New Files
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {!fileName && (
-                      <Button variant="outline" onClick={() => document.getElementById("excel-upload-later")?.click()} className="gap-2">
-                        <FileSpreadsheet className="w-4 h-4" />
-                        Add Excel
-                      </Button>
-                    )}
-                    {!kmzPlacemarks.length && (
-                      <Button variant="outline" onClick={() => document.getElementById("kmz-upload")?.click()} className="gap-2">
-                        <MapIcon className="w-4 h-4" />
-                        Add KMZ
-                      </Button>
-                    )}
-                    {!pdfFileName && (
-                      <Button variant="outline" onClick={() => document.getElementById("pdf-upload-later")?.click()} className="gap-2">
-                        <FileText className="w-4 h-4" />
-                        Add PDF
-                      </Button>
-                    )}
-                    <Button variant="outline" onClick={() => { 
-                      setQaData([]); 
-                      setKmzPlacemarks([]);
-                      setPdfFile(null);
-                      setFileName("");
-                      setKmzFileName("");
-                      setPdfFileName("");
-                      setHasUploadedFiles(false);
-                    }}>
-                      Upload New Files
-                    </Button>
-                  </div>
-                </div>
+                </>
               )}
             </div>
           </header>
@@ -896,7 +919,7 @@ const NewReview = () => {
                     setActiveTab("dashboard");
                   }}
                   size="lg"
-                  className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8"
+                  className="gap-2 px-8"
                 >
                   Start QA Review
                 </Button>

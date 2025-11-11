@@ -8,8 +8,9 @@ import { Navbar, NavbarActions, NavbarBrand, NavbarNav, NavbarLink } from "@/com
 import { reviewsAPI, ReviewListItem } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Search, LogOut, User, Plus, Trash2, TrendingUp, Calendar, FileSpreadsheet, Map as MapIcon, LayoutDashboard } from "lucide-react";
-import techservLogo from "@/assets/techserv-logo.png";
+import { FileText, Search, Plus, Trash2, TrendingUp, Calendar, FileSpreadsheet, Map as MapIcon } from "lucide-react";
+import { TechServLogo } from "@/components/brand/TechServLogo";
+import { UserProfileMenu } from "@/components/UserProfileMenu";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -160,49 +161,41 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-card shadow-sm">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <img 
-                src={techservLogo} 
-                alt="TechServ" 
-                className="h-12 w-auto"
-              />
-              <div>
-                <h1 className="text-3xl font-bold font-saira uppercase tracking-wide text-primary">
+      <header className="sticky top-0 z-10 border-b border-[hsl(var(--border))] bg-white/95 shadow-brand-sm backdrop-blur">
+        <div className="flex flex-col gap-3 px-6 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-5">
+              <TechServLogo variant="primary" width={160} />
+              <div className="space-y-1">
+                <h1 className="text-3xl font-saira font-bold uppercase tracking-[0.08em] text-[hsl(var(--color-primary))]">
                   QA Tool Dashboard
                 </h1>
-                <p className="text-sm text-muted-foreground font-neuton">
-                  Manage and review all QA review sessions
+                <p className="font-neuton text-sm text-[hsl(var(--color-secondary))]">
+                  Manage QA reviews with TechServ’s unified brand system
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              {currentUser && (
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="w-4 h-4" />
-                  <span className="font-semibold">{currentUser.username}</span>
-                </div>
-              )}
-              <Button
-                onClick={() => navigate("/new-review")}
-                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-              >
+            <div className="flex items-center gap-3">
+              <Button onClick={() => navigate("/new-review")} className="gap-2">
                 <Plus className="w-4 h-4" />
                 New Review
               </Button>
-              {currentUser ? (
-                <Button variant="outline" onClick={handleLogout} className="gap-2">
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={() => setShowLoginDialog(true)} className="gap-2">
-                  <User className="w-4 h-4" />
-                  Login
-                </Button>
-              )}
+              <div className="h-8 w-px bg-[hsl(var(--border))]" />
+              <UserProfileMenu
+                user={currentUser}
+                onLogin={() => setShowLoginDialog(true)}
+                onLogout={handleLogout}
+              />
+            </div>
+          </div>
+          <div className="rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsla(var(--color-light)/0.4)] px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3 text-sm font-neuton text-[hsl(var(--color-secondary))]">
+              <span className="font-saira text-xs uppercase tracking-[0.12em] text-[hsl(var(--color-primary))]">
+                Today’s Overview
+              </span>
+              <span>Total reviews: {stats.total}</span>
+              <span>Updated this week: {stats.recent}</span>
+              <span>My reviews: {stats.myReviews}</span>
             </div>
           </div>
         </div>
@@ -263,8 +256,7 @@ export default function Index() {
         {/* Reviews List */}
         <div className="space-y-4">
           {isLoading ? (
-            <div className="overflow-hidden rounded-md border">
-              <Table>
+            <Table wrapperClassName="overflow-hidden">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title & Description</TableHead>
@@ -309,7 +301,6 @@ export default function Index() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
           ) : filteredReviews.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
@@ -329,8 +320,7 @@ export default function Index() {
               </CardContent>
             </Card>
           ) : (
-            <div className="overflow-hidden rounded-md border">
-              <Table>
+            <Table wrapperClassName="overflow-hidden">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title & Description</TableHead>
@@ -417,7 +407,6 @@ export default function Index() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
           )}
         </div>
       </main>

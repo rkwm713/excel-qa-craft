@@ -7,12 +7,11 @@ import { MapViewer } from "@/components/MapViewer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, Save, Download, User, LogOut, Edit2, Check, X } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, Save, Download, Edit2, Check, X } from "lucide-react";
 import { QAReviewRow, DashboardMetrics } from "@/types/qa-tool";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
 import { exportToExcel } from "@/utils/excelParser";
-import techservLogo from "@/assets/techserv-logo.png";
 import { LoginDialog } from "@/components/LoginDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -28,15 +27,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { normalizeQaRow, normalizeQaRows } from "@/utils/qaValidation";
 import { findMatchingSpec } from "@/utils/stationNormalizer";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { TechServLogo } from "@/components/brand/TechServLogo";
+import { UserProfileMenu } from "@/components/UserProfileMenu";
 
 const STATUS_OPTIONS = [
   "Needs QA Review",
@@ -642,137 +634,98 @@ const handleExport = useCallback(async () => {
   return (
     <div className="min-h-screen flex w-full bg-background">
       <div className="flex-1 w-full">
-        <header className="sticky top-0 z-10 bg-white border-b border-border shadow-sm">
-          {/* Top Bar - Main Navigation */}
-          <div className="h-16 px-6 flex items-center justify-between">
-            {/* Left Section - Logo & Back */}
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate("/reviews")} 
-                className="gap-2 text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back to Reviews</span>
-              </Button>
-              <div className="h-8 w-px bg-border" />
-              <img src={techservLogo} alt="TechServ" className="h-8 w-auto" />
-            </div>
-
-            {/* Center Section - Title & Status */}
-            <div className="flex-1 px-6">
-              <div className="flex items-center gap-4">
-                <div>
-                  <h1 className="text-xl font-bold text-primary uppercase tracking-wide font-saira">
+        <header className="sticky top-0 z-10 border-b border-[hsl(var(--border))] bg-white/95 shadow-brand-sm backdrop-blur">
+          <div className="flex flex-col gap-3 px-4 py-3 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/reviews")}
+                  className="gap-2 text-[hsl(var(--color-secondary))] hover:text-[hsl(var(--color-primary))]"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Back to Reviews</span>
+                </Button>
+                <div className="hidden h-8 w-px bg-[hsl(var(--border))] md:block" />
+                <TechServLogo variant="secondary" width={120} />
+                <div className="space-y-1">
+                  <h1 className="text-xl font-saira font-semibold uppercase tracking-[0.08em] text-[hsl(var(--color-primary))]">
                     {reviewData.review.title || metadata.woNumber || "Untitled Review"}
                   </h1>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    {metadata.woNumber && (
-                      <>
-                        <span>WO# {metadata.woNumber}</span>
-                        <span className="text-xs">•</span>
-                      </>
-                    )}
-                    <Badge 
+                  <div className="flex flex-wrap items-center gap-3 text-sm font-neuton text-[hsl(var(--color-secondary))]">
+                    {metadata.woNumber && <span>WO# {metadata.woNumber}</span>}
+                    <Badge
                       variant={
-                        metadata.status === "Approved" ? "success" :
-                        metadata.status === "In Review" ? "default" :
-                        metadata.status === "Needs Corrections" ? "destructive" :
-                        "secondary"
+                        metadata.status === "Approved"
+                          ? "success"
+                          : metadata.status === "Needs Corrections"
+                            ? "destructive"
+                            : metadata.status === "In Review"
+                              ? "default"
+                              : "secondary"
                       }
-                      className="text-xs"
+                      className="text-[11px]"
                     >
                       {metadata.status}
                     </Badge>
-                    {reviewData.review.description && reviewData.review.description !== "QA Review Session" && (
-                      <>
-                        <span className="text-xs">•</span>
-                        <span className="truncate max-w-xs">{reviewData.review.description}</span>
-                      </>
-                    )}
+                    {reviewData.review.description &&
+                      reviewData.review.description !== "QA Review Session" && (
+                        <span className="truncate max-w-[16rem]">
+                          {reviewData.review.description}
+                        </span>
+                      )}
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Right Section - Actions */}
-            <div className="flex items-center gap-2">
-              {qaData.length > 0 && (
-                <div className="flex items-center gap-2">
-                  {canEditReview && (
-                    <Button
-                      size="sm"
-                      className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
-                      onClick={handleSaveReview}
-                      disabled={isSaving || !canEditReview}
-                    >
-                      <Save className="w-4 h-4" />
-                      <span className="hidden lg:inline">{isSaving ? "Saving..." : "Save Changes"}</span>
+              <div className="flex items-center gap-3">
+                {qaData.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    {canEditReview && (
+                      <Button
+                        size="sm"
+                        className="gap-2"
+                        onClick={handleSaveReview}
+                        disabled={isSaving || !canEditReview}
+                      >
+                        <Save className="w-4 h-4" />
+                        <span className="hidden lg:inline">
+                          {isSaving ? "Saving..." : "Save Changes"}
+                        </span>
+                      </Button>
+                    )}
+                    <Button size="sm" variant="cta" onClick={handleExport} className="gap-2">
+                      <Download className="w-4 h-4" />
+                      <span className="hidden lg:inline">Export QA Tool</span>
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={handleExport}
-                    className="gap-2 font-medium bg-accent text-accent-foreground hover:bg-accent/90"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span className="hidden lg:inline">Export QA Tool</span>
-                  </Button>
-                </div>
-              )}
-              
-              <div className="h-8 w-px bg-border" />
-              
-              {currentUser ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="ghost" className="gap-2 hover:bg-muted">
-                      <Avatar className="h-7 w-7">
-                        <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                          {(currentUser.username ?? currentUser.email ?? "U")
-                            .toString()
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="hidden md:inline text-sm font-medium">
-                        {currentUser.username ?? currentUser.email ?? "User"}
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                          {currentUser.username ?? "User"}
-                        </p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                          {currentUser.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="gap-2 text-destructive focus:text-destructive">
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button size="sm" variant="outline" onClick={() => setShowLoginDialog(true)} className="gap-2">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">Login</span>
-                </Button>
-              )}
+                  </div>
+                )}
+                <div className="h-8 w-px bg-[hsl(var(--border))]" />
+                <UserProfileMenu
+                  user={currentUser}
+                  onLogin={() => setShowLoginDialog(true)}
+                  onLogout={handleLogout}
+                />
+              </div>
             </div>
-          </div>
-
-          {/* Bottom Bar - Tabs */}
-          <div className="bg-muted/30 border-t border-border">
-            <div className="px-6 flex items-center h-12">
-              <div className="flex gap-1">
+            <div className="rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsla(var(--color-light)/0.45)] px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm font-neuton text-[hsl(var(--color-dark))]">
+                <span className="font-saira text-xs uppercase tracking-[0.12em] text-[hsl(var(--color-primary))]">
+                  Review Summary
+                </span>
+                <span className="text-xs text-[hsl(var(--color-secondary))]">
+                  Designer: {metadata.designer || "—"}
+                </span>
+                <span className="text-xs text-[hsl(var(--color-secondary))]">
+                  QA Tech: {metadata.qaTech || "—"}
+                </span>
+                <span className="text-xs text-[hsl(var(--color-secondary))]">
+                  Project: {metadata.project || "—"}
+                </span>
+              </div>
+            </div>
+            <div className="border-t border-[hsl(var(--border))] bg-[hsla(var(--color-light)/0.4)]">
+              <div className="flex h-12 items-center gap-1 px-6">
                 <Button
                   variant={activeTab === "dashboard" ? "default" : "ghost"}
                   size="sm"
@@ -780,8 +733,8 @@ const handleExport = useCallback(async () => {
                   className={`
                     gap-2 rounded-b-none h-10 font-medium
                     ${activeTab === "dashboard" 
-                      ? "bg-background text-primary border-t-2 border-x border-primary shadow-sm" 
-                      : "hover:bg-muted/50 text-muted-foreground"
+                      ? "bg-background text-[hsl(var(--color-primary))] border-t-2 border-x border-[hsl(var(--color-primary))] shadow-sm" 
+                      : "hover:bg-[hsla(var(--color-primary)/0.08)] text-[hsl(var(--color-secondary))]"
                     }
                   `}
                 >
@@ -795,8 +748,8 @@ const handleExport = useCallback(async () => {
                   className={`
                     gap-2 rounded-b-none h-10 font-medium
                     ${activeTab === "data" 
-                      ? "bg-background text-primary border-t-2 border-x border-primary shadow-sm" 
-                      : "hover:bg-muted/50 text-muted-foreground"
+                      ? "bg-background text-[hsl(var(--color-primary))] border-t-2 border-x border-[hsl(var(--color-primary))] shadow-sm" 
+                      : "hover:bg-[hsla(var(--color-primary)/0.08)] text-[hsl(var(--color-secondary))]"
                     }
                   `}
                 >
@@ -810,8 +763,8 @@ const handleExport = useCallback(async () => {
                   className={`
                     gap-2 rounded-b-none h-10 font-medium
                     ${activeTab === "map" 
-                      ? "bg-background text-primary border-t-2 border-x border-primary shadow-sm" 
-                      : "hover:bg-muted/50 text-muted-foreground"
+                      ? "bg-background text-[hsl(var(--color-primary))] border-t-2 border-x border-[hsl(var(--color-primary))] shadow-sm" 
+                      : "hover:bg-[hsla(var(--color-primary)/0.08)] text-[hsl(var(--color-secondary))]"
                     }
                   `}
                 >

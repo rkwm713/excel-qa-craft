@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { reviewsAPI, ReviewListItem } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Search, LogOut, User, Plus, Trash2 } from "lucide-react";
+import { FileText, Search, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -27,6 +27,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TechServLogo } from "@/components/brand/TechServLogo";
+import { UserProfileMenu } from "@/components/UserProfileMenu";
+import { LoginDialog } from "@/components/LoginDialog";
 
 export default function ReviewsList() {
   const [reviews, setReviews] = useState<ReviewListItem[]>([]);
@@ -36,6 +39,7 @@ export default function ReviewsList() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -145,42 +149,56 @@ export default function ReviewsList() {
     setDeleteDialogOpen(true);
   };
 
+  const handleLoginSuccess = (user: any) => {
+    setCurrentUser(user);
+    setShowLoginDialog(false);
+    loadReviews();
+  };
+
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="relative min-h-screen bg-background p-6 text-foreground">
+      <div className="absolute inset-0 pattern-sky-surface opacity-70" aria-hidden="true" />
+      <div className="absolute inset-0 pattern-technical-grid-light opacity-15" aria-hidden="true" />
+      <div className="relative z-10 mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold font-saira uppercase tracking-wide text-primary">
-              QA Reviews
-            </h1>
-            <p className="text-muted-foreground font-neuton mt-1">
-              View and manage all QA review sessions
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            {currentUser && (
-              <div className="flex items-center gap-2 text-sm">
-                <User className="w-4 h-4" />
-                <span className="font-semibold">{currentUser.username}</span>
+        <header className="rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-white/95 px-6 py-4 shadow-brand-sm backdrop-blur">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-5">
+                <TechServLogo variant="primary" width={150} />
+                <div className="space-y-1">
+                  <h1 className="text-3xl font-saira font-bold uppercase tracking-[0.08em] text-[hsl(var(--color-primary))]">
+                    QA Reviews
+                  </h1>
+                  <p className="font-neuton text-sm text-[hsl(var(--color-secondary))]">
+                    View and manage all QA review sessions
+                  </p>
+                </div>
               </div>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => navigate("/new-review")}
-              className="gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Review
-            </Button>
-            {currentUser && (
-              <Button variant="outline" onClick={handleLogout} className="gap-2">
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
-            )}
+              <div className="flex items-center gap-3">
+                <Button variant="outline" onClick={() => navigate("/new-review")} className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  New Review
+                </Button>
+                <div className="h-8 w-px bg-[hsl(var(--border))]" />
+                <UserProfileMenu
+                  user={currentUser}
+                  onLogin={() => setShowLoginDialog(true)}
+                  onLogout={handleLogout}
+                />
+              </div>
+            </div>
+            <div className="rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsla(var(--color-light)/0.4)] px-4 py-3">
+              <div className="flex flex-wrap items-center gap-3 text-sm font-neuton text-[hsl(var(--color-secondary))]">
+                <span className="font-saira text-xs uppercase tracking-[0.12em] text-[hsl(var(--color-primary))]">
+                  Review Snapshot
+                </span>
+                <span>Total reviews: {reviews.length}</span>
+                <span>Matching search: {filteredReviews.length}</span>
+              </div>
+            </div>
           </div>
-        </div>
+        </header>
 
         {/* Search */}
         <div className="relative">
@@ -196,8 +214,7 @@ export default function ReviewsList() {
         {/* Reviews List */}
         <div className="space-y-4">
           {isLoading ? (
-            <div className="overflow-hidden rounded-md border">
-              <Table>
+            <Table wrapperClassName="overflow-hidden rounded-[var(--radius-md)]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title & Description</TableHead>
@@ -210,9 +227,9 @@ export default function ReviewsList() {
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {[1, 2, 3, 4].map((row) => (
-                    <TableRow key={row}>
+              <TableBody>
+                {[1, 2, 3, 4].map((row) => (
+                  <TableRow key={row}>
                       <TableCell>
                         <div className="h-4 w-48 rounded bg-muted animate-pulse" />
                         <div className="mt-2 h-3 w-64 rounded bg-muted animate-pulse" />
@@ -239,10 +256,9 @@ export default function ReviewsList() {
                         <div className="ml-auto h-9 w-24 rounded bg-muted animate-pulse" />
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
           ) : filteredReviews.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
@@ -253,8 +269,7 @@ export default function ReviewsList() {
               </CardContent>
             </Card>
           ) : (
-            <div className="overflow-hidden rounded-md border">
-              <Table>
+            <Table wrapperClassName="overflow-hidden rounded-[var(--radius-md)]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title & Description</TableHead>
@@ -267,9 +282,13 @@ export default function ReviewsList() {
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {filteredReviews.map((review) => (
-                    <TableRow key={review.id} className="hover:bg-muted/50 transition">
+              <TableBody>
+                {filteredReviews.map((review) => (
+                  <TableRow
+                    key={review.id}
+                    className="cursor-pointer transition hover:bg-[hsla(var(--color-primary)/0.08)]"
+                    onClick={() => navigate(`/review/${review.id}`)}
+                  >
                       <TableCell>
                         <p className="text-sm font-semibold font-saira text-foreground">{review.title}</p>
                         <p className="text-xs text-muted-foreground font-neuton line-clamp-2 mt-1">
@@ -306,32 +325,37 @@ export default function ReviewsList() {
                       <TableCell className="text-sm text-muted-foreground font-neuton">
                         {format(new Date(review.updated_at), "MMM d, yyyy 'at' h:mm a")}
                       </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/review/${review.id}`)}
-                          className="gap-2"
-                        >
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/review/${review.id}`);
+                        }}
+                        className="gap-2"
+                      >
                           <FileText className="w-4 h-4" />
                           View
+                      </Button>
+                      {currentUser && currentUser.id === review.created_by && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteDialog(review.id);
+                          }}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
-                        {currentUser && currentUser.id === review.created_by && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openDeleteDialog(review.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>
@@ -353,6 +377,12 @@ export default function ReviewsList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </div>
   );
 }

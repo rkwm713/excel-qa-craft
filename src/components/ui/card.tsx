@@ -6,7 +6,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   <div
     ref={ref}
     className={cn(
-      "rounded-[var(--radius-lg)] border border-[hsl(var(--border))] bg-card text-card-foreground shadow-brand-sm transition-brand hover:shadow-brand-md motion-reduce:transition-none",
+      "rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-card text-card-foreground shadow-brand-sm transition-[box-shadow,transform] duration-200 ease-out hover:-translate-y-1 hover:shadow-brand-md motion-reduce:translate-y-0 motion-reduce:duration-0",
       className,
     )}
     {...props}
@@ -19,7 +19,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
     <div
       ref={ref}
       className={cn(
-        "flex flex-col space-y-2 border-b-2 border-b-[hsl(var(--sky-blue))] px-6 pb-4 pt-6",
+        "flex flex-col space-y-2 border-b-2 border-b-[hsl(var(--color-light))] px-6 pb-4 pt-6",
         className,
       )}
       {...props}
@@ -44,7 +44,11 @@ CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("font-neuton text-sm text-muted-foreground", className)} {...props} />
+    <p
+      ref={ref}
+      className={cn("font-neuton text-sm text-[hsl(var(--color-secondary))]", className)}
+      {...props}
+    />
   ),
 );
 CardDescription.displayName = "CardDescription";

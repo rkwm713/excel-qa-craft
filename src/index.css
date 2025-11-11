@@ -8,64 +8,28 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* TechServ Brand Colors */
-    --background: 0 0% 100%;
-    --foreground: 220 11% 17%; /* TechServ Black */
+    /* Core TechServ Palette */
+    --color-primary: 212 94% 28%;
+    --color-primary-light: 211 95% 36%;
+    --color-primary-dark: 208 94% 20%;
+    --color-dark: 206 78% 18%;
+    --color-secondary: 222 8% 33%;
+    --color-text: 225 9% 17%;
+    --color-light: 210 65% 91%;
+    --color-cta: 60 100% 50%;
+    --color-disabled: 210 4% 91%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 11% 17%;
+    /* Semantic Colors */
+    --color-success: 134 61% 41%;
+    --color-warning: 45 100% 51%;
+    --color-error: 354 70% 54%;
+    --color-info: 212 94% 28%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 11% 17%;
+    /* Typography */
+    --font-heading: 'Saira', sans-serif;
+    --font-body: 'Neuton', serif;
 
-    --primary: 210 97% 28%; /* TechServ Blue #04458D */
-    --primary-foreground: 0 0% 100%;
-    --primary-dark: 210 96% 22%; /* #033562 */
-    --primary-light: 210 95% 34%; /* #0558B3 */
-
-    --secondary: 211 57% 89%; /* Sky Blue #D9E8F7 */
-    --secondary-foreground: 210 97% 28%;
-
-    --muted: 216 8% 78%; /* Conduit Gray #E6E7E8 */
-    --muted-foreground: 214 9% 33%; /* TechServ Gray #4E525B */
-
-    --accent: 60 100% 50%; /* Safety Yellow #FFFF00 */
-    --accent-foreground: 220 11% 17%;
-
-    --destructive: 355 70% 51%; /* #DC3545 */
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 134 61% 36%; /* #28A745 */
-    --success-foreground: 0 0% 100%;
-
-    --warning: 45 100% 50%; /* #FFC107 */
-    --warning-foreground: 220 11% 17%;
-
-    --info: 210 97% 28%;
-
-    --border: 216 8% 78%;
-    --input: 216 8% 78%;
-    --ring: 210 97% 28%;
-
-    --radius: 0.5rem;
-
-    /* TechServ specific colors */
-    --techserv-blue: 210 97% 28%;
-    --techserv-blue-dark: 210 96% 22%;
-    --techserv-blue-light: 210 95% 34%;
-    --techserv-gray: 214 9% 33%;
-    --techserv-black: 220 11% 17%;
-    --storm-blue: 209 77% 18%; /* #0A3251 */
-    --sky-blue: 211 57% 89%;
-    --safety-yellow: 60 100% 50%;
-    --conduit-gray: 216 8% 78%;
-
-    /* Shadows */
-    --shadow-sm: 0 2px 4px rgba(40, 42, 48, 0.08);
-    --shadow-md: 0 4px 12px rgba(40, 42, 48, 0.12);
-    --shadow-lg: 0 8px 20px rgba(40, 42, 48, 0.16);
-
-    /* Spacing */
+    /* Spacing Scale (8px) */
     --space-xs: 4px;
     --space-sm: 8px;
     --space-md: 16px;
@@ -74,16 +38,77 @@ All colors MUST be HSL.
     --space-2xl: 48px;
     --space-3xl: 64px;
 
-    /* Transitions */
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(40, 42, 48, 0.08);
+    --shadow-md: 0 4px 8px rgba(40, 42, 48, 0.12);
+    --shadow-lg: 0 8px 16px rgba(40, 42, 48, 0.16);
+
+    /* Motion */
     --transition-fast: 0.15s ease;
     --transition-base: 0.2s ease;
     --transition-slow: 0.3s ease;
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
+    /* Tailwind Token Bridge */
+    --background: 0 0% 100%;
+    --foreground: var(--color-text);
+
+    --card: 0 0% 100%;
+    --card-foreground: var(--color-text);
+
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--color-text);
+
+    --primary: var(--color-primary);
+    --primary-foreground: 0 0% 100%;
+    --primary-light: var(--color-primary-light);
+
+    --secondary: var(--color-light);
+    --secondary-foreground: var(--color-primary);
+
+    --muted: var(--color-disabled);
+    --muted-foreground: var(--color-secondary);
+
+    --accent: var(--color-cta);
+    --accent-foreground: var(--color-text);
+
+    --destructive: var(--color-error);
+    --destructive-foreground: 0 0% 100%;
+
+    --success: var(--color-success);
+    --success-foreground: 0 0% 100%;
+
+    --warning: var(--color-warning);
+    --warning-foreground: var(--color-text);
+
+    --info: var(--color-info);
+
+    --border: var(--color-disabled);
+    --input: var(--color-disabled);
+    --ring: var(--color-primary);
+
+    --radius: 0.5rem;
+
+    /* Brand-Specific Tokens */
+    --techserv-blue: var(--color-primary);
+    --techserv-blue-dark: var(--color-primary-dark);
+    --techserv-blue-light: var(--color-primary-light);
+    --techserv-gray: var(--color-secondary);
+    --techserv-black: var(--color-text);
+    --storm-blue: var(--color-dark);
+    --sky-blue: var(--color-light);
+    --safety-yellow: var(--color-cta);
+    --conduit-gray: var(--color-disabled);
+
     /* Gradients */
-    --gradient-blue: linear-gradient(135deg, hsl(var(--storm-blue)) 0%, hsl(var(--primary)) 100%);
-    --gradient-cta: linear-gradient(135deg, #04458D 0%, #FFFF00 100%);
-    --gradient-light: linear-gradient(180deg, #FFFFFF 0%, #D9E8F7 100%);
+    --gradient-blue: linear-gradient(135deg, hsl(var(--color-dark)) 0%, hsl(var(--color-primary)) 100%);
+    --gradient-cta: linear-gradient(135deg, hsl(var(--color-primary)) 0%, hsl(var(--color-cta)) 100%);
+    --gradient-light: linear-gradient(180deg, #FFFFFF 0%, hsl(var(--color-light)) 100%);
 
     /* Sidebar */
     --sidebar-background: 0 0% 98%;
@@ -97,7 +122,7 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 11% 17%; /* TechServ Black */
+    --background: var(--color-text);
     --foreground: 0 0% 100%;
 
     --card: 217 10% 22%;
@@ -106,25 +131,25 @@ All colors MUST be HSL.
     --popover: 220 11% 17%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 210 95% 34%;
+    --primary: 211 95% 36%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 209 77% 18%; /* Storm Blue */
+    --secondary: var(--color-dark);
     --secondary-foreground: 0 0% 100%;
 
     --muted: 220 11% 25%;
     --muted-foreground: 220 13% 85%;
 
-    --accent: 60 100% 50%;
+    --accent: var(--color-cta);
     --accent-foreground: 220 11% 17%;
 
-    --destructive: 355 70% 41%;
+    --destructive: 354 70% 44%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 134 61% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 45 100% 50%;
+    --warning: var(--color-warning);
     --warning-foreground: 220 11% 17%;
 
     --border: 217 10% 25%;
@@ -157,6 +182,22 @@ All colors MUST be HSL.
     font-weight: 700;
     letter-spacing: 0.05em;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  *:focus-visible {
+    outline: 3px solid hsl(var(--color-primary));
+    outline-offset: 2px;
+  }
 }
 
 .circuit-pattern {
@@ -166,30 +207,91 @@ All colors MUST be HSL.
   opacity: 0.12;
 }
 
+.pattern-technical-grid,
 .grid-pattern {
+  background-color: hsl(var(--color-primary));
   background-image:
-    linear-gradient(rgba(4, 69, 141, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(4, 69, 141, 0.12) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: #ffffff;
 }
 
+.pattern-technical-grid-light,
 .grid-pattern-light {
+  background-color: hsl(var(--color-light));
   background-image:
-    linear-gradient(#E6E7E8 1px, transparent 1px),
-    linear-gradient(90deg, #E6E7E8 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(rgba(78, 82, 91, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(78, 82, 91, 0.16) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: hsl(var(--color-text));
 }
 
+.pattern-blue-gradient,
 .gradient-hero {
   background: var(--gradient-blue);
+  color: #ffffff;
 }
 
+.pattern-sky-surface,
 .gradient-light {
   background: var(--gradient-light);
+  color: hsl(var(--color-text));
 }
 
+.pattern-cta-glow,
 .gradient-cta {
   background: var(--gradient-cta);
+  color: hsl(var(--color-text));
+}
+
+.pattern-electric-trail {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.14) 0 18px,
+      transparent 18px 36px
+    ),
+    var(--gradient-blue);
+  background-size: 180px 180px, cover;
+  animation: electric-trail 10s linear infinite;
+}
+
+.pattern-bolt-strike {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12) 25%, transparent 25%) center/40px 40px,
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%) center/40px 40px,
+    linear-gradient(180deg, hsl(var(--color-dark)) 0%, hsl(var(--color-primary)) 100%);
+  color: #ffffff;
+}
+
+.pattern-bolt-glow {
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 0, 0.25) 0%, transparent 65%),
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 55%),
+    linear-gradient(180deg, hsl(var(--color-dark)) 0%, hsl(var(--color-primary)) 100%);
+  color: #ffffff;
+  box-shadow: inset 0 0 40px rgba(4, 69, 141, 0.35);
+}
+
+.pattern-safety-grid {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 0, 0.2) 0 12px,
+      transparent 12px 24px
+    ),
+    hsl(var(--color-dark));
+  color: #ffffff;
+}
+
+@keyframes electric-trail {
+  0% {
+    background-position: 0 0, center;
+  }
+  100% {
+    background-position: 360px 0, center;
+  }
 }
 
 /* Rich Text Editor Styles */

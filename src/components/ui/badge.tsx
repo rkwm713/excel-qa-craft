@@ -4,23 +4,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-saira text-[11px] font-semibold uppercase tracking-[0.08em] transition-brand focus-visible:outline focus-visible:outline-primary focus-visible:outline-[3px] focus-visible:outline-offset-2",
+  "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-saira text-[11px] font-semibold uppercase tracking-[0.08em] transition-[background-color,color,border-color] duration-200 ease-out focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--color-primary))]",
   {
     variants: {
       variant: {
         default:
-          "border-primary bg-primary text-primary-foreground hover:border-[hsl(var(--primary-light))] hover:bg-[hsl(var(--primary-light))]",
+          "border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary))] text-white hover:bg-[hsl(var(--color-primary-light))] hover:border-[hsl(var(--color-primary-light))]",
         secondary:
-          "border-[hsl(var(--secondary))] bg-[hsl(var(--secondary))] text-[hsl(var(--primary))] hover:border-[hsl(var(--primary))]/30 hover:bg-[hsl(var(--secondary))]/80",
+          "border-[hsl(var(--color-light))] bg-[hsl(var(--color-light))] text-[hsl(var(--color-primary))] hover:border-[hsl(var(--color-primary))]/30 hover:bg-[hsl(var(--color-light))]/90",
         success:
-          "border-[hsl(var(--success))] bg-[rgba(40,167,69,0.12)] text-[hsl(var(--success))]",
+          "border-[hsl(var(--color-success))] bg-[hsla(var(--color-success)/0.12)] text-[hsl(var(--color-success))]",
         warning:
-          "border-[hsl(var(--warning))] bg-[rgba(255,193,7,0.12)] text-[hsl(var(--warning))]",
+          "border-[hsl(var(--color-warning))] bg-[hsla(var(--color-warning)/0.16)] text-[hsl(var(--color-warning))]",
         destructive:
-          "border-[hsl(var(--destructive))] bg-[rgba(220,53,69,0.12)] text-[hsl(var(--destructive))]",
-        outline: "border-[hsl(var(--border))] text-foreground",
+          "border-[hsl(var(--color-error))] bg-[hsla(var(--color-error)/0.14)] text-[hsl(var(--color-error))]",
+        outline: "border-[hsl(var(--border))] text-[hsl(var(--color-text))]",
         info:
-          "border-[hsl(var(--info))] bg-[rgba(4,69,141,0.12)] text-[hsl(var(--info))]",
+          "border-[hsl(var(--color-info))] bg-[hsla(var(--color-info)/0.14)] text-[hsl(var(--color-info))]",
       },
     },
     defaultVariants: {
