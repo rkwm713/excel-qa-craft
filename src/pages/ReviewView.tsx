@@ -62,11 +62,25 @@ export default function ReviewView() {
           setPdfFile(file);
         } catch (error) {
           console.error('Error loading PDF file:', error);
-          toast({
-            title: "Warning",
-            description: "PDF file could not be loaded",
-            variant: "destructive",
-          });
+        }
+      } else if (data.review?.pdf_file_name) {
+        // Treat pdf_file_name as a Supabase Storage path
+        try {
+          const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string | undefined;
+          const path = data.review.pdf_file_name as string;
+          if (supabaseUrl && path) {
+            const publicUrl = `${supabaseUrl}/storage/v1/object/public/pdf-files/${path}`;
+            const res = await fetch(publicUrl);
+            if (res.ok) {
+              const blob = await res.blob();
+              const file = new File([blob], path.split('/').pop() || 'document.pdf', { type: blob.type || 'application/pdf' });
+              setPdfFile(file);
+            } else {
+              console.warn('Failed to fetch PDF from storage:', res.status);
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching PDF from storage:', e);
         }
       }
       

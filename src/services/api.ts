@@ -163,123 +163,42 @@ export const reviewsAPI = {
     // Helper function to safely clone data (removes circular references and non-serializable objects)
     const safeClone = (obj: any, seen = new WeakSet(), depth = 0): any => {
       const MAX_DEPTH = 5;
-
-      // Handle primitives and null
-      if (obj === null || typeof obj !== 'object') {
-        return obj;
-      }
-
-      // Depth guard
-      if (depth > MAX_DEPTH) {
-        return null;
-      }
-
-      // Handle circular references
-      if (seen.has(obj)) {
-        return null; // Replace circular reference with null
-      }
-
-      // Skip DOM elements, events, functions, and non-plain instances
-      if (
-        typeof obj === 'function' ||
-        obj instanceof HTMLElement ||
-        obj instanceof Event
-      ) {
-        return null;
-      }
-
-      // Allow arrays
-      if (Array.isArray(obj)) {
-        seen.add(obj);
-        const result = obj.map(item => safeClone(item, seen, depth + 1));
-        seen.delete(obj);
-        return result;
-      }
-
-      // Allow Date
-      if (obj instanceof Date) {
-        return obj.toISOString();
-      }
-
-      // Allow Map
-      if (obj instanceof Map) {
-        seen.add(obj);
-        const result: Record<string, any> = {};
-        obj.forEach((value, key) => {
-          result[String(key)] = safeClone(value, seen, depth + 1);
-        });
-        seen.delete(obj);
-        return result;
-      }
-
-      // Allow Set
-      if (obj instanceof Set) {
-        seen.add(obj);
-        const result = Array.from(obj).map(item => safeClone(item, seen, depth + 1));
-        seen.delete(obj);
-        return result;
-      }
-
-      // Only allow plain objects
-      const isPlainObject = Object.getPrototypeOf(obj) === Object.prototype || Object.getPrototypeOf(obj) === null;
-      if (!isPlainObject) {
-        return null;
-      }
-
-      // Handle plain objects
-      seen.add(obj);
-      const result: Record<string, any> = {};
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          try {
-            result[key] = safeClone((obj as any)[key], seen, depth + 1);
-          } catch (_) {
-            result[key] = null;
-          }
-        }
-      }
-      seen.delete(obj);
-      return result;
+      if (obj === null || typeof obj !== 'object') return obj;
+      if (depth > MAX_DEPTH) return null;
+      if (seen.has(obj)) return null;
+      if (typeof obj === 'function' || (typeof HTMLElement !== 'undefined' && obj instanceof HTMLElement) || (typeof Event !== 'undefined' && obj instanceof Event)) return null;
+      if (Array.isArray(obj)) { seen.add(obj); const r = obj.map(i => safeClone(i, seen, depth + 1)); seen.delete(obj); return r; }
+      if (obj instanceof Date) return obj.toISOString();
+      if (obj instanceof Map) { seen.add(obj); const r: Record<string, any> = {}; obj.forEach((v, k) => { r[String(k)] = safeClone(v, seen, depth + 1); }); seen.delete(obj); return r; }
+      if (obj instanceof Set) { seen.add(obj); const r = Array.from(obj).map(i => safeClone(i, seen, depth + 1)); seen.delete(obj); return r; }
+      const isPlain = Object.getPrototypeOf(obj) === Object.prototype || Object.getPrototypeOf(obj) === null;
+      if (!isPlain) return null;
+      seen.add(obj); const r: Record<string, any> = {}; for (const k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) { try { r[k] = safeClone((obj as any)[k], seen, depth + 1); } catch { r[k] = null; } } seen.delete(obj); return r;
     };
 
     // Convert Map to object for JSON serialization
     const annotationsObj: Record<string, any[]> = {};
     if (data.pdfAnnotations) {
       data.pdfAnnotations.forEach((value, key) => {
-        // Sanitize annotation data to remove any circular references
         annotationsObj[key.toString()] = safeClone(value);
       });
     }
 
-    // Convert PDF file to base64 if provided
-    let pdfFileData: { data: string; fileName: string; mimeType: string } | undefined;
-    if (data.pdfFile) {
-      const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
-        try {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = reader.result as string;
-            // data:[mime];base64,XXXXX
-            const commaIndex = result.indexOf(',');
-            const base64 = commaIndex >= 0 ? result.substring(commaIndex + 1) : result;
-            resolve(base64);
-          };
-          reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
-          reader.readAsDataURL(file);
-        } catch (e) {
-          reject(e);
-        }
+    // Upload PDF to Supabase Storage if provided
+    let pdfStoragePath: string | undefined;
+    if (data.pdfFile && supabaseClient) {
+      const reviewId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+      const path = `reviews/${reviewId}/${data.pdfFile.name}`;
+      const { error: uploadError } = await supabaseClient.storage.from('pdf-files').upload(path, data.pdfFile, {
+        contentType: data.pdfFile.type || 'application/pdf',
+        upsert: true,
       });
-
-      const base64 = await toBase64(data.pdfFile);
-      pdfFileData = {
-        data: base64,
-        fileName: data.pdfFile.name,
-        mimeType: data.pdfFile.type || 'application/pdf',
-      };
+      if (uploadError) {
+        throw new Error(`PDF upload failed: ${uploadError.message}`);
+      }
+      pdfStoragePath = path;
     }
 
-    // Sanitize all data before stringifying
     const sanitizedData = {
       title: data.title,
       description: data.description,
@@ -294,10 +213,10 @@ export const reviewsAPI = {
       pdfAnnotations: annotationsObj,
       workPointNotes: safeClone(data.workPointNotes),
       kmzPlacemarks: safeClone(data.kmzPlacemarks),
-      pdfFile: pdfFileData,
+      // send only storage path
+      pdfStoragePath,
     };
 
-    // Use JSON request (Netlify Functions work better with JSON)
     return apiRequest('/reviews', {
       method: 'POST',
       body: JSON.stringify(sanitizedData),
@@ -341,4 +260,11 @@ export const reviewsAPI = {
     });
   },
 };
+
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = (import.meta as any).env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_ANON_KEY = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+const supabaseClient = SUPABASE_URL && SUPABASE_ANON_KEY ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 

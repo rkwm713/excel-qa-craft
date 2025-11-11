@@ -108,3 +108,19 @@ If you encounter any issues:
 2. Check Supabase logs in the dashboard
 3. Verify environment variables are set correctly
 4. Ensure Supabase project is active
+
+## Storage Bucket (Configured by me)
+
+- Bucket: `pdf-files` (public)
+- Policies:
+  - insert: allowed for roles `anon` and `authenticated` in bucket `pdf-files`
+  - select: allowed for roles `anon` and `authenticated` in bucket `pdf-files`
+- Purpose: Store uploaded PDFs client-side without routing large files through Netlify Functions
+
+Use public URL pattern to access:
+
+```
+${SUPABASE_URL}/storage/v1/object/public/pdf-files/<path>
+```
+
+Client uploads with supabase-js are enabled using the anon key.

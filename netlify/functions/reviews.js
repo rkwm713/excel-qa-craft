@@ -235,6 +235,7 @@ export const handler = async (event, context) => {
         workPointNotes: notes,
         kmzPlacemarks: placemarks,
         pdfFile: pdfFileData,
+        pdfStoragePath,
       } = requestData;
 
       if (!title) {
@@ -252,7 +253,7 @@ export const handler = async (event, context) => {
         description: description || null,
         file_name: fileName || null,
         kmz_file_name: kmzFileName || null,
-        pdf_file_name: pdfFileName || null,
+        pdf_file_name: pdfStoragePath || pdfFileName || null, // store storage path here
         created_by: user.id,
       };
 
@@ -422,35 +423,8 @@ export const handler = async (event, context) => {
 
       // Insert PDF file if provided
       if (pdfFileData && pdfFileData.data) {
-        try {
-          // Convert base64 to Buffer
-          const pdfBuffer = Buffer.from(pdfFileData.data, 'base64');
-          
-          // Supabase should handle Buffer/Uint8Array for bytea columns
-          // Convert to Uint8Array for Supabase
-          const uint8Array = new Uint8Array(pdfBuffer);
-          
-          const { error: pdfError } = await supabase
-            .from('pdf_files')
-            .insert([{
-              id: uuidv4(),
-              review_id: reviewId,
-              file_data: uint8Array, // Supabase should handle this for bytea
-              file_name: pdfFileData.fileName || pdfFileName || 'document.pdf',
-              file_size: pdfBuffer.length,
-              mime_type: pdfFileData.mimeType || 'application/pdf',
-            }]);
-
-          if (pdfError) {
-            console.error('Error storing PDF file:', pdfError);
-            console.error('PDF error details:', JSON.stringify(pdfError));
-            // Continue without failing the whole request - PDF is optional
-          }
-        } catch (e) {
-          console.error('PDF processing error:', e);
-          console.error('PDF error stack:', e.stack);
-          // Don't throw - allow review to be saved without PDF
-        }
+        // Deprecated path: we no longer store blobs here to avoid limits
+        console.log('Skipping inline PDF storage; using Supabase Storage path instead');
       }
 
       return {
