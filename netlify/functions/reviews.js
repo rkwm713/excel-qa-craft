@@ -266,126 +266,190 @@ export const handler = async (event, context) => {
         return {
           statusCode: 500,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'Failed to create review' }),
+          body: JSON.stringify({ 
+            error: 'Failed to create review',
+            details: reviewError.message || JSON.stringify(reviewError)
+          }),
         };
       }
 
       // Insert review rows
       if (rows && Array.isArray(rows) && rows.length > 0) {
-        const reviewRowsData = rows.map((row, i) => ({
-          id: uuidv4(),
-          review_id: reviewId,
-          issue_type: row.issueType,
-          station: row.station,
-          work_set: row.workSet || null,
-          designer_cu: row.designerCU || null,
-          qa_cu: row.qaCU || null,
-          description: row.description || null,
-          designer_wf: row.designerWF || null,
-          qa_wf: row.qaWF || null,
-          designer_qty: row.designerQty || 0,
-          qa_qty: row.qaQty || 0,
-          qa_comments: row.qaComments || '',
-          map_notes: row.mapNotes || '',
-          cu_check: row.cuCheck ? 1 : 0,
-          wf_check: row.wfCheck ? 1 : 0,
-          qty_check: row.qtyCheck ? 1 : 0,
-          row_order: i,
-        }));
+        try {
+          const reviewRowsData = rows.map((row, i) => ({
+            id: uuidv4(),
+            review_id: reviewId,
+            issue_type: row.issueType,
+            station: row.station,
+            work_set: row.workSet || null,
+            designer_cu: row.designerCU || null,
+            qa_cu: row.qaCU || null,
+            description: row.description || null,
+            designer_wf: row.designerWF || null,
+            qa_wf: row.qaWF || null,
+            designer_qty: row.designerQty || 0,
+            qa_qty: row.qaQty || 0,
+            qa_comments: row.qaComments || '',
+            map_notes: row.mapNotes || '',
+            cu_check: row.cuCheck ? 1 : 0,
+            wf_check: row.wfCheck ? 1 : 0,
+            qty_check: row.qtyCheck ? 1 : 0,
+            row_order: i,
+          }));
 
-        await supabase.from('review_rows').insert(reviewRowsData);
+          const { error: rowsError } = await supabase.from('review_rows').insert(reviewRowsData);
+          if (rowsError) {
+            console.error('Error inserting review rows:', rowsError);
+            throw new Error(`Failed to insert review rows: ${rowsError.message}`);
+          }
+        } catch (e) {
+          console.error('Error processing review rows:', e);
+          throw e;
+        }
       }
 
       // Insert CU lookup
       if (cu && Array.isArray(cu) && cu.length > 0) {
-        const cuData = cu.map(cuItem => ({
-          id: uuidv4(),
-          review_id: reviewId,
-          code: cuItem.code,
-          description: cuItem.description || null,
-        }));
+        try {
+          const cuData = cu.map(cuItem => ({
+            id: uuidv4(),
+            review_id: reviewId,
+            code: cuItem.code,
+            description: cuItem.description || null,
+          }));
 
-        await supabase.from('cu_lookup').insert(cuData);
+          const { error: cuError } = await supabase.from('cu_lookup').insert(cuData);
+          if (cuError) {
+            console.error('Error inserting CU lookup:', cuError);
+            throw new Error(`Failed to insert CU lookup: ${cuError.message}`);
+          }
+        } catch (e) {
+          console.error('Error processing CU lookup:', e);
+          throw e;
+        }
       }
 
       // Insert PDF mappings
       if (stationPageMapping) {
-        const mappingsData = Object.entries(stationPageMapping).map(([station, pageNumber]) => ({
-          id: uuidv4(),
-          review_id: reviewId,
-          station,
-          page_number: pageNumber,
-          spec_number: stationSpecMapping?.[station] || null,
-          edited_spec_number: editedSpecMapping?.[station] || null,
-        }));
+        try {
+          const mappingsData = Object.entries(stationPageMapping).map(([station, pageNumber]) => ({
+            id: uuidv4(),
+            review_id: reviewId,
+            station,
+            page_number: pageNumber,
+            spec_number: stationSpecMapping?.[station] || null,
+            edited_spec_number: editedSpecMapping?.[station] || null,
+          }));
 
-        if (mappingsData.length > 0) {
-          await supabase.from('pdf_mappings').insert(mappingsData);
+          if (mappingsData.length > 0) {
+            const { error: mappingsError } = await supabase.from('pdf_mappings').insert(mappingsData);
+            if (mappingsError) {
+              console.error('Error inserting PDF mappings:', mappingsError);
+              throw new Error(`Failed to insert PDF mappings: ${mappingsError.message}`);
+            }
+          }
+        } catch (e) {
+          console.error('Error processing PDF mappings:', e);
+          throw e;
         }
       }
 
       // Insert PDF annotations
       if (annotations) {
-        const annotationsData = Object.entries(annotations).map(([pageNumber, annotationData]) => ({
-          id: uuidv4(),
-          review_id: reviewId,
-          page_number: parseInt(pageNumber),
-          annotation_data: annotationData,
-        }));
+        try {
+          const annotationsData = Object.entries(annotations).map(([pageNumber, annotationData]) => ({
+            id: uuidv4(),
+            review_id: reviewId,
+            page_number: parseInt(pageNumber),
+            annotation_data: annotationData,
+          }));
 
-        if (annotationsData.length > 0) {
-          await supabase.from('pdf_annotations').insert(annotationsData);
+          if (annotationsData.length > 0) {
+            const { error: annotationsError } = await supabase.from('pdf_annotations').insert(annotationsData);
+            if (annotationsError) {
+              console.error('Error inserting PDF annotations:', annotationsError);
+              throw new Error(`Failed to insert PDF annotations: ${annotationsError.message}`);
+            }
+          }
+        } catch (e) {
+          console.error('Error processing PDF annotations:', e);
+          throw e;
         }
       }
 
       // Insert work point notes
       if (notes) {
-        const notesData = Object.entries(notes).map(([workPoint, noteText]) => ({
-          id: uuidv4(),
-          review_id: reviewId,
-          work_point: workPoint,
-          notes: noteText || null,
-        }));
+        try {
+          const notesData = Object.entries(notes).map(([workPoint, noteText]) => ({
+            id: uuidv4(),
+            review_id: reviewId,
+            work_point: workPoint,
+            notes: noteText || null,
+          }));
 
-        if (notesData.length > 0) {
-          await supabase.from('work_point_notes').insert(notesData);
+          if (notesData.length > 0) {
+            const { error: notesError } = await supabase.from('work_point_notes').insert(notesData);
+            if (notesError) {
+              console.error('Error inserting work point notes:', notesError);
+              throw new Error(`Failed to insert work point notes: ${notesError.message}`);
+            }
+          }
+        } catch (e) {
+          console.error('Error processing work point notes:', e);
+          throw e;
         }
       }
 
       // Insert KMZ placemarks
       if (placemarks && Array.isArray(placemarks) && placemarks.length > 0) {
-        const placemarksData = placemarks.map(placemark => ({
-          id: uuidv4(),
-          review_id: reviewId,
-          placemark_data: placemark,
-        }));
+        try {
+          const placemarksData = placemarks.map(placemark => ({
+            id: uuidv4(),
+            review_id: reviewId,
+            placemark_data: placemark,
+          }));
 
-        await supabase.from('kmz_placemarks').insert(placemarksData);
+          const { error: placemarksError } = await supabase.from('kmz_placemarks').insert(placemarksData);
+          if (placemarksError) {
+            console.error('Error inserting KMZ placemarks:', placemarksError);
+            throw new Error(`Failed to insert KMZ placemarks: ${placemarksError.message}`);
+          }
+        } catch (e) {
+          console.error('Error processing KMZ placemarks:', e);
+          throw e;
+        }
       }
 
       // Insert PDF file if provided
       if (pdfFileData && pdfFileData.data) {
         try {
-          // Convert base64 -> hex and prefix with \\x for Postgres bytea
-          const hex = Buffer.from(pdfFileData.data, 'base64').toString('hex');
-          const bytea = `\\x${hex}`;
+          // Convert base64 to Buffer
+          const pdfBuffer = Buffer.from(pdfFileData.data, 'base64');
+          
+          // Supabase should handle Buffer/Uint8Array for bytea columns
+          // Convert to Uint8Array for Supabase
+          const uint8Array = new Uint8Array(pdfBuffer);
+          
           const { error: pdfError } = await supabase
             .from('pdf_files')
             .insert([{
               id: uuidv4(),
               review_id: reviewId,
-              file_data: bytea,
+              file_data: uint8Array, // Supabase should handle this for bytea
               file_name: pdfFileData.fileName || pdfFileName || 'document.pdf',
-              file_size: Math.ceil(hex.length / 2),
+              file_size: pdfBuffer.length,
               mime_type: pdfFileData.mimeType || 'application/pdf',
             }]);
 
           if (pdfError) {
             console.error('Error storing PDF file:', pdfError);
-            // Continue without failing the whole request
+            console.error('PDF error details:', JSON.stringify(pdfError));
+            // Continue without failing the whole request - PDF is optional
           }
         } catch (e) {
           console.error('PDF processing error:', e);
+          console.error('PDF error stack:', e.stack);
+          // Don't throw - allow review to be saved without PDF
         }
       }
 
@@ -586,11 +650,18 @@ export const handler = async (event, context) => {
       body: JSON.stringify({ error: 'Not found' }),
     };
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in reviews function:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Internal server error', details: error.message }),
+      body: JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error.message || String(error),
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }),
     };
   }
 };
