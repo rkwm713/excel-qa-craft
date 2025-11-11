@@ -13,5 +13,5 @@ export interface KMZPlacemark {
 
 export interface KMZData {
   placemarks: KMZPlacemark[];
-  bounds?: google.maps.LatLngBounds;
+  bounds?: any;
 }

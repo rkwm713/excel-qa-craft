@@ -1,4 +1,4 @@
-import { PDFDocument, PDFPage, rgb, PDFFont } from 'pdf-lib';
+import { PDFDocument, PDFPage, rgb, PDFFont, RGB } from 'pdf-lib';
 import { PDFAnnotation } from '@/types/pdf';
 
 /**
@@ -107,13 +107,13 @@ export async function exportAnnotatedPDF(
   }
   
   const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+  return new Blob([pdfBytes as any], { type: 'application/pdf' });
 }
 
 /**
  * Parse color string to RGB
  */
-function parseColor(color: string): { r: number; g: number; b: number } {
+function parseColor(color: string): RGB {
   // Handle hex colors
   if (color.startsWith('#')) {
     const hex = color.slice(1);
@@ -124,7 +124,7 @@ function parseColor(color: string): { r: number; g: number; b: number } {
   }
   
   // Handle named colors
-  const colorMap: Record<string, { r: number; g: number; b: number }> = {
+  const colorMap: Record<string, RGB> = {
     red: rgb(1, 0, 0),
     green: rgb(0, 1, 0),
     blue: rgb(0, 0, 1),

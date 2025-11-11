@@ -23,6 +23,7 @@ interface MapViewerProps {
   placemarks: any[];
   onStationClick?: (station: string) => void;
   onStreetViewClick?: (location: { lat: number; lng: number; name: string }) => void;
+  onPlacemarkClick?: (location: { lat: number; lng: number; name: string }) => void;
   hasGoogleApiKey?: boolean;
   onNotesChange?: (placemarkId: string, notes: string) => void;
   initialNotes?: Record<string, string>;

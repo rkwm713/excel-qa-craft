@@ -25,7 +25,7 @@ export const StreetViewModal = ({
   apiKey,
 }: StreetViewModalProps) => {
   const panoramaRef = useRef<HTMLDivElement>(null);
-  const panoramaInstance = useRef<google.maps.StreetViewPanorama | null>(null);
+  const panoramaInstance = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasStreetView, setHasStreetView] = useState(true);
@@ -52,7 +52,7 @@ export const StreetViewModal = ({
         }
 
         // Check if Street View is available at this location
-        const streetViewService = new google.maps.StreetViewService();
+        const streetViewService = new (window as any).google.maps.StreetViewService();
         const STREET_VIEW_MAX_DISTANCE = 50; // meters
 
         streetViewService.getPanorama(
@@ -60,11 +60,11 @@ export const StreetViewModal = ({
             location: { lat: location.lat, lng: location.lng },
             radius: STREET_VIEW_MAX_DISTANCE,
           },
-          (data, status) => {
-            if (status === google.maps.StreetViewStatus.OK && data) {
+          (data: any, status: any) => {
+            if (status === (window as any).google.maps.StreetViewStatus.OK && data) {
               // Street View is available - create interactive panorama
               if (panoramaRef.current) {
-                panoramaInstance.current = new google.maps.StreetViewPanorama(
+                panoramaInstance.current = new (window as any).google.maps.StreetViewPanorama(
                   panoramaRef.current,
                   {
                     position: data.location?.latLng,

@@ -152,12 +152,12 @@ export const QAReviewTable = ({
             bValue = b.qaWF || "";
             break;
           case "designerQty":
-            aValue = typeof a.designerQty === "number" ? a.designerQty : parseFloat(a.designerQty?.toString() || "0") || 0;
-            bValue = typeof b.designerQty === "number" ? b.designerQty : parseFloat(b.designerQty?.toString() || "0") || 0;
+            aValue = typeof a.designerQty === "number" ? a.designerQty : parseFloat(String(a.designerQty || "0")) || 0;
+            bValue = typeof b.designerQty === "number" ? b.designerQty : parseFloat(String(b.designerQty || "0")) || 0;
             break;
           case "qaQty":
-            aValue = typeof a.qaQty === "number" ? a.qaQty : parseFloat(a.qaQty?.toString() || "0") || 0;
-            bValue = typeof b.qaQty === "number" ? b.qaQty : parseFloat(b.qaQty?.toString() || "0") || 0;
+            aValue = typeof a.qaQty === "number" ? a.qaQty : parseFloat(String(a.qaQty || "0")) || 0;
+            bValue = typeof b.qaQty === "number" ? b.qaQty : parseFloat(String(b.qaQty || "0")) || 0;
             break;
           default:
             return 0;
