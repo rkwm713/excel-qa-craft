@@ -1,3 +1,9 @@
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabaseClient = SUPABASE_URL && SUPABASE_ANON_KEY ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
 // Auto-detect API URL based on environment
 const getApiBaseUrl = () => {
   // If explicit URL is set, use it
@@ -260,11 +266,4 @@ export const reviewsAPI = {
     });
   },
 };
-
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = (import.meta as any).env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_ANON_KEY = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string | undefined;
-
-const supabaseClient = SUPABASE_URL && SUPABASE_ANON_KEY ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
