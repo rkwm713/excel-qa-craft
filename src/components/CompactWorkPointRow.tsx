@@ -71,7 +71,7 @@ export function CompactWorkPointRow({ row, rowNumber, onUpdateRow, cuOptions }: 
         <div>
           <label className="text-[10px] text-muted-foreground uppercase">QA CU</label>
           <Select
-            value={row.qaCU}
+            value={row.qaCU === "" ? undefined : row.qaCU}
             onValueChange={(value) => handleChange("qaCU", value)}
           >
             <SelectTrigger className={cn(
@@ -100,7 +100,7 @@ export function CompactWorkPointRow({ row, rowNumber, onUpdateRow, cuOptions }: 
         <div>
           <label className="text-[10px] text-muted-foreground uppercase">QA WF</label>
           <Input
-            value={row.qaWF}
+            value={row.qaWF ?? ""}
             onChange={(e) => handleChange("qaWF", e.target.value)}
             className={cn(
               "h-7 text-xs",
@@ -120,8 +120,16 @@ export function CompactWorkPointRow({ row, rowNumber, onUpdateRow, cuOptions }: 
           <label className="text-[10px] text-muted-foreground uppercase">QA Qty</label>
           <Input
             type="number"
-            value={row.qaQty}
-            onChange={(e) => handleChange("qaQty", parseFloat(e.target.value) || 0)}
+            value={row.qaQty ?? ""}
+            onChange={(e) => {
+              const inputValue = e.target.value;
+              const parsed =
+                inputValue.trim() === "" ? null : Number(inputValue);
+              handleChange(
+                "qaQty",
+                parsed !== null && Number.isFinite(parsed) ? parsed : null
+              );
+            }}
             className={cn(
               "h-7 text-xs",
               !row.qtyCheck && "border-red-500"

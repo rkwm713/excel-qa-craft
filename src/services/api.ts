@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { logger } from "@/lib/logger";
+import { normalizeQaRow, normalizeQaRows } from "@/utils/qaValidation";
 import type { QAReviewRow } from "@/types/qa-tool";
 import type { PostgrestError } from "@supabase/supabase-js";
 
@@ -70,26 +71,27 @@ const serializeReviewRows = (rows: ReviewRowInput[] | undefined): Record<string,
   });
 };
 
-const deserializeReviewRows = (rows: ReviewRow[]): QAReviewRow[] => {
-  return rows.map((row) => ({
-    id: row.id,
-    issueType: (row.issue_type as QAReviewRow["issueType"]) ?? "NEEDS REVISIONS",
-    station: row.station ?? "",
-    workSet: row.work_set ?? "",
-    designerCU: row.designer_cu ?? "",
-    qaCU: row.qa_cu ?? "",
-    description: row.description ?? "",
-    designerWF: row.designer_wf ?? "",
-    qaWF: row.qa_wf ?? "",
-    designerQty: row.designer_qty ?? 0,
-    qaQty: row.qa_qty ?? 0,
-    qaComments: row.qa_comments ?? "",
-    mapNotes: row.map_notes ?? undefined,
-    cuCheck: (row.cu_check ?? 0) > 0,
-    wfCheck: (row.wf_check ?? 0) > 0,
-    qtyCheck: (row.qty_check ?? 0) > 0,
-  }));
-};
+const deserializeReviewRows = (rows: ReviewRow[]): QAReviewRow[] =>
+  normalizeQaRows(
+    rows.map((row) => ({
+      id: row.id,
+      issueType: (row.issue_type as QAReviewRow["issueType"]) ?? "NEEDS REVISIONS",
+      station: row.station ?? "",
+      workSet: row.work_set ?? "",
+      designerCU: row.designer_cu ?? "",
+      qaCU: row.qa_cu ?? "",
+      description: row.description ?? "",
+      designerWF: row.designer_wf ?? "",
+      qaWF: row.qa_wf ?? "",
+      designerQty: row.designer_qty ?? 0,
+      qaQty: row.qa_qty ?? null,
+      qaComments: row.qa_comments ?? "",
+      mapNotes: row.map_notes ?? undefined,
+      cuCheck: (row.cu_check ?? 0) > 0,
+      wfCheck: (row.wf_check ?? 0) > 0,
+      qtyCheck: (row.qty_check ?? 0) > 0,
+    }))
+  );
 
 const ensureUserProfile = async () => {
   const { data: authUserRes, error: authErr } = await supabase.auth.getUser();

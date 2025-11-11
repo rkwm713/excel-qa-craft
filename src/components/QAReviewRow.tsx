@@ -43,7 +43,7 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, isActive = false
         )}
         <div className="flex justify-center">
           <Select
-            value={row.qaCU}
+            value={row.qaCU === "" ? undefined : row.qaCU}
             onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
           >
             <SelectTrigger 
@@ -76,7 +76,7 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, isActive = false
         )}
         <div className="flex justify-center">
           <Select
-            value={row.qaWF}
+            value={row.qaWF === "" ? undefined : row.qaWF}
             onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
           >
             <SelectTrigger 
@@ -107,9 +107,18 @@ export const QAReviewRow = memo(({ row, onUpdateRow, cuOptions, isActive = false
         <div className="flex justify-center">
           <Input
             type="number"
-            value={row.qaQty}
+            value={row.qaQty ?? ""}
             onChange={(e) => {
-              onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0);
+              const inputValue = e.target.value;
+              const parsedValue =
+                inputValue.trim() === "" ? null : Number(inputValue);
+              onUpdateRow(
+                row.id,
+                "qaQty",
+                parsedValue !== null && Number.isFinite(parsedValue)
+                  ? parsedValue
+                  : null
+              );
               e.stopPropagation(); // Prevent row click when editing
             }}
             onClick={(e) => e.stopPropagation()} // Prevent row click when clicking input

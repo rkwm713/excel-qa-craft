@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { normalizeQaRow, normalizeQaRows } from "@/utils/qaValidation";
 
 const STATUS_OPTIONS = [
   "Needs QA Review",
@@ -184,10 +185,12 @@ export default function ReviewView() {
       setReviewData(data);
       
       // Convert review rows to QAReviewRow format
-      const rows = data.reviewRows.map((row) => ({
-        ...row,
-        id: row.id,
-      }));
+      const rows = normalizeQaRows(
+        data.reviewRows.map((row) => ({
+          ...row,
+          id: row.id,
+        }))
+      );
       setQaData(rows);
       
       // Load PDF file if available (async, don't block)
@@ -420,18 +423,26 @@ const handleAddRow = useCallback((station: string) => {
     designerWF: "",
     qaWF: "",
     designerQty: 0,
-    qaQty: 0,
+    qaQty: null,
     qaComments: "",
-    cuCheck: false,
-    wfCheck: false,
-    qtyCheck: false,
+    cuCheck: true,
+    wfCheck: true,
+    qtyCheck: true,
   };
-  setQaData((prev) => [...prev, newRow]);
+  const normalized = normalizeQaRow(newRow);
+  setQaData((prev) => [...prev, normalized]);
 }, []);
 
   const handleUpdateRow = (rowId: string, field: keyof QAReviewRow, value: any) => {
     setQaData((prev) =>
-      prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row))
+      prev.map((row) => {
+        if (row.id !== rowId) return row;
+        const updatedRow = normalizeQaRow({ ...row, [field]: value });
+        if (currentWorkPoint?.id === rowId) {
+          setCurrentWorkPoint(updatedRow);
+        }
+        return updatedRow;
+      })
     );
   };
 
@@ -466,13 +477,17 @@ const handleExport = useCallback(async () => {
     return Array.from(new Set([...lookupCodes, ...rowCodes]));
   }, [reviewData, qaData]);
 
+  const cuReviewed = qaData.filter((r) => r.qaCU !== "");
+  const wfReviewed = qaData.filter((r) => r.qaWF !== "");
+  const qtyReviewed = qaData.filter((r) => r.qaQty !== null);
+
   const metrics: DashboardMetrics = {
     totalRows: qaData.length,
     okCount: qaData.filter((r) => r.issueType === "OK").length,
     needsRevisionCount: qaData.filter((r) => r.issueType === "NEEDS REVISIONS").length,
-    cuMatchRate: qaData.length > 0 ? (qaData.filter((r) => r.cuCheck).length / qaData.length) * 100 : 0,
-    wfMatchRate: qaData.length > 0 ? (qaData.filter((r) => r.wfCheck).length / qaData.length) * 100 : 0,
-    qtyMatchRate: qaData.length > 0 ? (qaData.filter((r) => r.qtyCheck).length / qaData.length) * 100 : 0,
+    cuMatchRate: cuReviewed.length > 0 ? (cuReviewed.filter((r) => r.cuCheck).length / cuReviewed.length) * 100 : 0,
+    wfMatchRate: wfReviewed.length > 0 ? (wfReviewed.filter((r) => r.wfCheck).length / wfReviewed.length) * 100 : 0,
+    qtyMatchRate: qtyReviewed.length > 0 ? (qtyReviewed.filter((r) => r.qtyCheck).length / qtyReviewed.length) * 100 : 0,
   };
 
   const metadataChanged = useMemo(() => {

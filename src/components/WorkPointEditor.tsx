@@ -83,7 +83,7 @@ export function WorkPointEditor({ row, onUpdateRow, cuOptions }: WorkPointEditor
             {!row.cuCheck && <AlertCircle className="w-3 h-3 text-destructive" />}
           </Label>
           <Select
-            value={row.qaCU}
+            value={row.qaCU === "" ? undefined : row.qaCU}
             onValueChange={(value) => handleChange("qaCU", value)}
           >
             <SelectTrigger className="h-8 text-sm">
@@ -116,7 +116,7 @@ export function WorkPointEditor({ row, onUpdateRow, cuOptions }: WorkPointEditor
             {!row.wfCheck && <AlertCircle className="w-3 h-3 text-destructive" />}
           </Label>
           <Input
-            value={row.qaWF}
+            value={row.qaWF ?? ""}
             onChange={(e) => handleChange("qaWF", e.target.value)}
             className="h-8 text-sm"
           />
@@ -141,8 +141,16 @@ export function WorkPointEditor({ row, onUpdateRow, cuOptions }: WorkPointEditor
           </Label>
           <Input
             type="number"
-            value={row.qaQty}
-            onChange={(e) => handleChange("qaQty", parseFloat(e.target.value) || 0)}
+            value={row.qaQty ?? ""}
+            onChange={(e) => {
+              const inputValue = e.target.value;
+              const parsed =
+                inputValue.trim() === "" ? null : Number(inputValue);
+              handleChange(
+                "qaQty",
+                parsed !== null && Number.isFinite(parsed) ? parsed : null
+              );
+            }}
             className="h-8 text-sm"
           />
         </div>

@@ -20,7 +20,7 @@ export interface QAReviewRow {
   designerWF: string;
   qaWF: string;
   designerQty: number;
-  qaQty: number;
+  qaQty: number | null;
   qaComments: string;
   mapNotes?: string;
   cuCheck: boolean;

@@ -156,8 +156,8 @@ export const QAReviewTable = ({
             bValue = typeof b.designerQty === "number" ? b.designerQty : parseFloat(String(b.designerQty || "0")) || 0;
             break;
           case "qaQty":
-            aValue = typeof a.qaQty === "number" ? a.qaQty : parseFloat(String(a.qaQty || "0")) || 0;
-            bValue = typeof b.qaQty === "number" ? b.qaQty : parseFloat(String(b.qaQty || "0")) || 0;
+            aValue = a.qaQty ?? Number.NEGATIVE_INFINITY;
+            bValue = b.qaQty ?? Number.NEGATIVE_INFINITY;
             break;
           default:
             return 0;

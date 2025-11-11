@@ -22,7 +22,12 @@ export async function exportDesignerPackage(
   
   // 1. Export Excel with revisions needed
   const revisionsData = qaData
-    .filter(row => row.issueType === 'NEEDS REVISIONS')
+    .filter(row => {
+      const reviewed =
+        row.qaCU !== "" || row.qaWF !== "" || row.qaQty !== null;
+      const needsChange = !row.cuCheck || !row.wfCheck || !row.qtyCheck;
+      return reviewed && needsChange;
+    })
     .map((row) => ({
       'WP': row.station,
       'Work Set': row.workSet,
@@ -34,9 +39,9 @@ export async function exportDesignerPackage(
       'QA Qty (Revision Needed)': row.qaQty,
       'Description': row.description,
       'QA Comments': row.qaComments || '',
-      'CU Needs Change': row.cuCheck ? 'No' : 'Yes',
-      'WF Needs Change': row.wfCheck ? 'No' : 'Yes',
-      'Qty Needs Change': row.qtyCheck ? 'No' : 'Yes',
+      'CU Needs Change': row.qaCU === "" ? 'Pending' : row.cuCheck ? 'No' : 'Yes',
+      'WF Needs Change': row.qaWF === "" ? 'Pending' : row.wfCheck ? 'No' : 'Yes',
+      'Qty Needs Change': row.qaQty === null ? 'Pending' : row.qtyCheck ? 'No' : 'Yes',
     }));
   
   const workbook = XLSX.utils.book_new();
@@ -50,9 +55,18 @@ export async function exportDesignerPackage(
     { 'Metric': 'Total Records', 'Value': qaData.length },
     { 'Metric': 'Records Needing Revision', 'Value': revisionsData.length },
     { 'Metric': 'Records OK', 'Value': qaData.length - revisionsData.length },
-    { 'Metric': 'CU Changes Needed', 'Value': qaData.filter(r => !r.cuCheck).length },
-    { 'Metric': 'WF Changes Needed', 'Value': qaData.filter(r => !r.wfCheck).length },
-    { 'Metric': 'Qty Changes Needed', 'Value': qaData.filter(r => !r.qtyCheck).length },
+    {
+      'Metric': 'CU Changes Needed',
+      'Value': qaData.filter(r => r.qaCU !== "" && !r.cuCheck).length
+    },
+    {
+      'Metric': 'WF Changes Needed',
+      'Value': qaData.filter(r => r.qaWF !== "" && !r.wfCheck).length
+    },
+    {
+      'Metric': 'Qty Changes Needed',
+      'Value': qaData.filter(r => r.qaQty !== null && !r.qtyCheck).length
+    },
   ];
   const summarySheet = XLSX.utils.json_to_sheet(summaryData);
   XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');

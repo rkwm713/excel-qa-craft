@@ -9,6 +9,7 @@ import { reviewsAPI, ReviewListItem } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Search, LogOut, User, Plus, Trash2, TrendingUp, Calendar, FileSpreadsheet, Map as MapIcon, LayoutDashboard } from "lucide-react";
+import techservLogo from "@/assets/techserv-logo.png";
 import { format } from "date-fns";
 import {
   AlertDialog,

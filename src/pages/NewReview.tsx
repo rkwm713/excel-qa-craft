@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileUpload } from "@/components/FileUpload";
 import { KMZUpload } from "@/components/KMZUpload";
@@ -13,7 +13,7 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { SaveReviewDialog } from "@/components/SaveReviewDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save, FolderOpen, User, LogOut, ArrowLeft } from "lucide-react";
+import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save, FolderOpen, User, LogOut, ArrowLeft, Clock, CheckCircle2 } from "lucide-react";
 import { reviewsAPI } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
@@ -23,7 +23,10 @@ import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
 import { QAReviewRow, DashboardMetrics, CULookupItem } from "@/types/qa-tool";
 import { useToast } from "@/hooks/use-toast";
+import { draftManager } from "@/utils/draftManager";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import techservLogo from "@/assets/techserv-logo.png";
+import { normalizeQaRow, normalizeQaRows } from "@/utils/qaValidation";
 
 const NewReview = () => {
   const [qaData, setQaData] = useState<QAReviewRow[]>([]);
@@ -53,17 +56,86 @@ const NewReview = () => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Draft-related state
+  const [draftStatus, setDraftStatus] = useState<'saved' | 'saving' | 'unsaved'>('unsaved');
+  const [lastSavedTime, setLastSavedTime] = useState<number | null>(null);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [showDraftRecovery, setShowDraftRecovery] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
+  const hasUploadedFilesRef = useRef(false);
 
-  // Load API key from localStorage on mount
+  // Track unsaved changes for navigation guard
+  const hasUnsavedChanges = hasUploadedFiles && draftStatus !== 'saved';
+  const { allowNavigation } = useUnsavedChanges({
+    hasUnsavedChanges,
+    message: "You have unsaved work. Are you sure you want to leave? Your draft will be preserved, but any changes since the last auto-save may be lost.",
+  });
+
+  // Get current state for draft saving
+  const getCurrentStateForDraft = useCallback(() => {
+    return {
+      qaData,
+      cuLookup,
+      fileName,
+      kmzPlacemarks,
+      kmzFileName,
+      pdfFileName,
+      stationPageMapping,
+      stationSpecMapping,
+      editedSpecMapping,
+      placemarkNotes,
+      mapDrawings,
+      pdfAnnotations,
+      pdfWorkPointNotes,
+      selectedStation,
+      currentPdfPage,
+      activeTab,
+      googleApiKey,
+    };
+  }, [
+    qaData, cuLookup, fileName, kmzPlacemarks, kmzFileName, pdfFileName,
+    stationPageMapping, stationSpecMapping, editedSpecMapping, placemarkNotes,
+    mapDrawings, pdfAnnotations, pdfWorkPointNotes, selectedStation,
+    currentPdfPage, activeTab, googleApiKey
+  ]);
+
+  // Save draft when state changes
+  useEffect(() => {
+    if (hasUploadedFilesRef.current) {
+      setDraftStatus('saving');
+      draftManager.saveDraft(getCurrentStateForDraft());
+    }
+  }, [getCurrentStateForDraft]);
+
+  // Load draft on mount
   useEffect(() => {
     const savedKey = localStorage.getItem("googleMapsApiKey");
     if (savedKey) {
       setGoogleApiKey(savedKey);
     }
+
+    // Check for existing draft
+    if (draftManager.hasDraft()) {
+      const metadata = draftManager.getDraftMetadata();
+      if (metadata?.hasData) {
+        setHasDraft(true);
+        setLastSavedTime(metadata.timestamp);
+        setShowDraftRecovery(true);
+      }
+    }
+
     loadCurrentUser();
-  }, []);
+
+    // Start auto-save
+    draftManager.startAutoSave(getCurrentStateForDraft);
+
+    return () => {
+      draftManager.stopAutoSave();
+    };
+  }, [getCurrentStateForDraft]);
 
   const loadCurrentUser = async () => {
     try {
@@ -85,6 +157,55 @@ const NewReview = () => {
     }
   };
 
+  // Handle draft recovery
+  const handleDraftRecovery = (action: 'resume' | 'discard') => {
+    if (action === 'resume') {
+      const draft = draftManager.loadDraft();
+      if (draft) {
+        setQaData(draft.qaData);
+        setCuLookup(draft.cuLookup);
+        setFileName(draft.fileName);
+        setKmzPlacemarks(draft.kmzPlacemarks);
+        setKmzFileName(draft.kmzFileName);
+        setPdfFileName(draft.pdfFileName);
+        setStationPageMapping(draft.stationPageMapping);
+        setStationSpecMapping(draft.stationSpecMapping);
+        setEditedSpecMapping(draft.editedSpecMapping);
+        setPlacemarkNotes(draft.placemarkNotes);
+        setMapDrawings(draft.mapDrawings);
+        setPdfAnnotations(draft.pdfAnnotations);
+        setPdfWorkPointNotes(draft.pdfWorkPointNotes);
+        setSelectedStation(draft.selectedStation);
+        setCurrentPdfPage(draft.currentPdfPage);
+        setActiveTab(draft.activeTab);
+        setGoogleApiKey(draft.googleApiKey);
+        setHasUploadedFiles(true);
+        hasUploadedFilesRef.current = true;
+        setDraftStatus('saved');
+        toast({
+          title: "Draft restored",
+          description: "Your previous work has been restored",
+        });
+      }
+    } else {
+      draftManager.clearDraft();
+      setHasDraft(false);
+      setLastSavedTime(null);
+    }
+    setShowDraftRecovery(false);
+  };
+
+  // Update draft status when saving completes
+  useEffect(() => {
+    if (draftStatus === 'saving') {
+      const timer = setTimeout(() => {
+        setDraftStatus('saved');
+        setLastSavedTime(Date.now());
+      }, 100); // Small delay to show saving state
+      return () => clearTimeout(timer);
+    }
+  }, [draftStatus]);
+
   const handleLoginSuccess = (user: any) => {
     setCurrentUser(user);
     setShowLoginDialog(false);
@@ -93,6 +214,7 @@ const NewReview = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setCurrentUser(null);
+    allowNavigation(); // Allow navigation after logout
     toast({
       title: "Logged out",
       description: "You have been logged out",
@@ -140,6 +262,14 @@ const NewReview = () => {
         description: "Your review has been saved successfully",
       });
       setShowSaveDialog(false);
+
+      // Clear draft after successful save
+      draftManager.clearDraft();
+      setHasDraft(false);
+      setLastSavedTime(null);
+      setDraftStatus('unsaved');
+
+      allowNavigation(); // Allow navigation after successful save
       navigate(`/review/${reviewId}`);
     } catch (error: any) {
       toast({
@@ -174,14 +304,18 @@ const NewReview = () => {
 
       setCuLookup(uniqueCUs);
       const qaRows = convertToQAReviewRows(designerData, uniqueCUs);
-      setQaData(qaRows);
+      setQaData(normalizeQaRows(qaRows));
       setFileName(file.name);
+
+      // Mark that files have been uploaded
+      setHasUploadedFiles(true);
+      hasUploadedFilesRef.current = true;
 
       toast({
         title: "File loaded successfully",
         description: `Processed ${qaRows.length} records`,
       });
-      
+
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
@@ -204,6 +338,10 @@ const NewReview = () => {
       const kmzData = await parseKMZ(file);
       setKmzPlacemarks(kmzData.placemarks);
       setKmzFileName(file.name);
+
+      // Mark that files have been uploaded
+      setHasUploadedFiles(true);
+      hasUploadedFilesRef.current = true;
 
       toast({
         title: "KMZ loaded successfully",
@@ -238,6 +376,10 @@ const NewReview = () => {
       setStationSpecMapping(pdfInfo.stationSpecMapping);
       setCurrentPdfPage(1);
 
+      // Mark that files have been uploaded
+      setHasUploadedFiles(true);
+      hasUploadedFilesRef.current = true;
+
       const mappedCount = Object.keys(pdfInfo.stationPageMapping).length;
       const specCount = Object.keys(pdfInfo.stationSpecMapping).length;
       toast({
@@ -246,14 +388,18 @@ const NewReview = () => {
       });
     } catch (error) {
       console.error("Error parsing PDF:", error);
-      
+
       // Still attach the file so the viewer works, even if parsing failed
       setPdfFile(file);
       setPdfFileName(file.name);
       setStationPageMapping({});
       setStationSpecMapping({});
       setCurrentPdfPage(1);
-      
+
+      // Mark that files have been uploaded
+      setHasUploadedFiles(true);
+      hasUploadedFilesRef.current = true;
+
       toast({
         title: "PDF loaded (mapping unavailable)",
         description: "We couldn't extract work points from the PDF, but you can still view the document.",
@@ -344,8 +490,17 @@ const NewReview = () => {
   }, [stationPageMapping, qaData]);
 
   const handleUpdateRow = useCallback((id: string, field: keyof QAReviewRow, value: any) => {
-    setQaData(prev => prev.map(row => row.id === id ? { ...row, [field]: value } : row));
-  }, []);
+    setQaData(prev =>
+      prev.map(row => {
+        if (row.id !== id) return row;
+        const updatedRow = normalizeQaRow({ ...row, [field]: value });
+        if (currentWorkPoint?.id === id) {
+          setCurrentWorkPoint(updatedRow);
+        }
+        return updatedRow;
+      })
+    );
+  }, [currentWorkPoint]);
 
   const handleAddRow = useCallback((station: string) => {
     const newRow: QAReviewRow = {
@@ -359,13 +514,13 @@ const NewReview = () => {
       designerWF: "",
       qaWF: "",
       designerQty: 0,
-      qaQty: 0,
+      qaQty: null,
       qaComments: "",
-      cuCheck: false,
-      wfCheck: false,
-      qtyCheck: false,
+      cuCheck: true,
+      wfCheck: true,
+      qtyCheck: true,
     };
-    setQaData(prev => [...prev, newRow]);
+    setQaData(prev => [...prev, normalizeQaRow(newRow)]);
   }, []);
 
   const handleExport = async () => {
@@ -485,17 +640,22 @@ const NewReview = () => {
     const totalRows = qaData.length;
     const okCount = qaData.filter((r) => r.issueType === "OK").length;
     const needsRevisionCount = qaData.filter((r) => r.issueType === "NEEDS REVISIONS").length;
-    const cuMatches = qaData.filter((r) => r.cuCheck).length;
-    const wfMatches = qaData.filter((r) => r.wfCheck).length;
-    const qtyMatches = qaData.filter((r) => r.qtyCheck).length;
+
+    const cuReviewed = qaData.filter((r) => r.qaCU !== "");
+    const wfReviewed = qaData.filter((r) => r.qaWF !== "");
+    const qtyReviewed = qaData.filter((r) => r.qaQty !== null);
+
+    const cuMatches = cuReviewed.filter((r) => r.cuCheck).length;
+    const wfMatches = wfReviewed.filter((r) => r.wfCheck).length;
+    const qtyMatches = qtyReviewed.filter((r) => r.qtyCheck).length;
 
     return {
       totalRows,
       okCount,
       needsRevisionCount,
-      cuMatchRate: totalRows > 0 ? (cuMatches / totalRows) * 100 : 0,
-      wfMatchRate: totalRows > 0 ? (wfMatches / totalRows) * 100 : 0,
-      qtyMatchRate: totalRows > 0 ? (qtyMatches / totalRows) * 100 : 0,
+      cuMatchRate: cuReviewed.length > 0 ? (cuMatches / cuReviewed.length) * 100 : 0,
+      wfMatchRate: wfReviewed.length > 0 ? (wfMatches / wfReviewed.length) * 100 : 0,
+      qtyMatchRate: qtyReviewed.length > 0 ? (qtyMatches / qtyReviewed.length) * 100 : 0,
     };
   }, [qaData]);
 
@@ -509,7 +669,10 @@ const NewReview = () => {
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-between flex-1">
                   <div className="flex items-center gap-6">
-                    <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+                    <Button variant="ghost" onClick={() => {
+                      allowNavigation();
+                      navigate("/dashboard");
+                    }} className="gap-2">
                       <ArrowLeft className="w-4 h-4" />
                       Back to Dashboard
                     </Button>
@@ -530,6 +693,26 @@ const NewReview = () => {
                         <span className="font-semibold">{currentUser.username}</span>
                       </div>
                     )}
+
+                    {/* Draft status indicator */}
+                    {draftStatus !== 'unsaved' && hasUploadedFiles && (
+                      <div className="flex items-center gap-2 text-sm mr-2">
+                        {draftStatus === 'saving' ? (
+                          <>
+                            <Clock className="w-4 h-4 text-yellow-500 animate-pulse" />
+                            <span className="text-yellow-600">Saving draft...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            <span className="text-green-600">
+                              Draft saved {lastSavedTime ? new Date(lastSavedTime).toLocaleTimeString() : ''}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     {qaData.length > 0 && (
                       <>
                         <Button
@@ -866,6 +1049,20 @@ const NewReview = () => {
         onSave={handleSaveReview}
         defaultTitle={fileName ? `Review: ${fileName}` : "QA Review"}
         isLoading={isSaving}
+      />
+
+      {/* Draft Recovery Dialog */}
+      <DraftRecoveryDialog
+        open={showDraftRecovery}
+        onOpenChange={setShowDraftRecovery}
+        onAction={handleDraftRecovery}
+        draftMetadata={lastSavedTime ? {
+          timestamp: lastSavedTime,
+          fileName,
+          kmzFileName,
+          pdfFileName,
+          qaDataCount: qaData.length
+        } : undefined}
       />
     </div>
   );

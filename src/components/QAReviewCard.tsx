@@ -83,10 +83,10 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions, compact = true 
                   </div>
                 </div>
                 <div className="flex-1">
-                  <Select
-                    value={row.qaCU}
-                    onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
-                  >
+              <Select
+                value={row.qaCU === "" ? undefined : row.qaCU}
+                onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
+              >
                     <SelectTrigger className="h-8 text-[10px] font-mono font-semibold border">
                       <SelectValue placeholder="QA" />
                     </SelectTrigger>
@@ -121,7 +121,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions, compact = true 
                 </div>
                 <div className="flex-1">
                   <Select
-                    value={row.qaWF}
+                    value={row.qaWF === "" ? undefined : row.qaWF}
                     onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
                   >
                     <SelectTrigger className="h-8 text-[10px] font-mono font-semibold border">
@@ -156,8 +156,17 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions, compact = true 
                 <div className="flex-1">
                   <Input
                     type="number"
-                    value={row.qaQty}
-                    onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
+                    value={row.qaQty ?? ""}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      const parsed =
+                        inputValue.trim() === "" ? null : Number(inputValue);
+                      onUpdateRow(
+                        row.id,
+                        "qaQty",
+                        parsed !== null && Number.isFinite(parsed) ? parsed : null
+                      );
+                    }}
                     className="h-8 text-[10px] text-center font-mono font-semibold border"
                   />
                 </div>
@@ -248,7 +257,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions, compact = true 
                 <div className="bg-background rounded border border-border/50 shadow-sm hover:border-primary/30 transition-colors">
                   <div className="text-[9px] text-muted-foreground/60 uppercase px-2 pt-1 font-medium">QA</div>
                   <Select
-                    value={row.qaCU}
+                    value={row.qaCU === "" ? undefined : row.qaCU}
                     onValueChange={(value) => onUpdateRow(row.id, "qaCU", value)}
                   >
                     <SelectTrigger className="h-8 text-[11px] font-mono font-semibold border-0">
@@ -290,7 +299,7 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions, compact = true 
                 <div className="bg-background rounded border border-border/50 shadow-sm hover:border-primary/30 transition-colors">
                   <div className="text-[9px] text-muted-foreground/60 uppercase px-2 pt-1 font-medium">QA</div>
                   <Select
-                    value={row.qaWF}
+                    value={row.qaWF === "" ? undefined : row.qaWF}
                     onValueChange={(value) => onUpdateRow(row.id, "qaWF", value)}
                   >
                     <SelectTrigger className="h-8 text-[11px] font-mono font-semibold border-0">
@@ -330,8 +339,17 @@ export const QAReviewCard = memo(({ row, onUpdateRow, cuOptions, compact = true 
                   <div className="text-[9px] text-muted-foreground/60 uppercase px-2 pt-1 font-medium">QA</div>
                   <Input
                     type="number"
-                    value={row.qaQty}
-                    onChange={(e) => onUpdateRow(row.id, "qaQty", parseFloat(e.target.value) || 0)}
+                    value={row.qaQty ?? ""}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      const parsed =
+                        inputValue.trim() === "" ? null : Number(inputValue);
+                      onUpdateRow(
+                        row.id,
+                        "qaQty",
+                        parsed !== null && Number.isFinite(parsed) ? parsed : null
+                      );
+                    }}
                     className="h-8 text-[11px] text-center font-mono font-semibold border-0"
                   />
                 </div>

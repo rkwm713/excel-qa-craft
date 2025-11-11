@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { DesignerUploadRow, QAReviewRow, CULookupItem } from "@/types/qa-tool";
+import { normalizeQaRow } from "@/utils/qaValidation";
 
 export const parseDesignerUpload = async (file: File): Promise<DesignerUploadRow[]> => {
   return new Promise((resolve, reject) => {
@@ -26,35 +27,25 @@ export const convertToQAReviewRows = (
   designerData: DesignerUploadRow[],
   cuLookup: CULookupItem[]
 ): QAReviewRow[] => {
-  return designerData.map((row, index) => {
-    const qaCU = row["CU Name"] || "";
-    const qaWF = row["Work Function"] || "";
-    const qaQty = row.Quantity || 0;
-
-    const cuCheck = qaCU === row["CU Name"];
-    const wfCheck = qaWF === row["Work Function"];
-    const qtyCheck = qaQty === row.Quantity;
-
-    const issueType = cuCheck && wfCheck && qtyCheck ? "OK" : "NEEDS REVISIONS";
-
-    return {
+  return designerData.map((row, index) =>
+    normalizeQaRow({
       id: `row-${index}`,
-      issueType: issueType as "OK" | "NEEDS REVISIONS",
+      issueType: "NEEDS REVISIONS",
       station: row.Station || "",
       workSet: row["Work Set"] || "",
       designerCU: row["CU Name"] || "",
-      qaCU,
+      qaCU: "",
       description: row.Description || "",
       designerWF: row["Work Function"] || "",
-      qaWF,
+      qaWF: "",
       designerQty: row.Quantity || 0,
-      qaQty,
+      qaQty: null,
       qaComments: "",
-      cuCheck,
-      wfCheck,
-      qtyCheck,
-    };
-  });
+      cuCheck: true,
+      wfCheck: true,
+      qtyCheck: true,
+    })
+  );
 };
 
 export const exportToExcel = (data: QAReviewRow[], cuLookup: CULookupItem[]) => {
@@ -71,11 +62,11 @@ export const exportToExcel = (data: QAReviewRow[], cuLookup: CULookupItem[]) => 
     "Designer WF": row.designerWF,
     "QA WF": row.qaWF,
     "Designer Qty": row.designerQty,
-    "QA Qty": row.qaQty,
+    "QA Qty": row.qaQty ?? "",
     "QA Comments": row.qaComments,
-    "CU Check": row.cuCheck ? "✓" : "✗",
-    "WF Check": row.wfCheck ? "✓" : "✗",
-    "Qty Check": row.qtyCheck ? "✓" : "✗",
+    "CU Check": row.qaCU === "" ? "" : row.cuCheck ? "✓" : "✗",
+    "WF Check": row.qaWF === "" ? "" : row.wfCheck ? "✓" : "✗",
+    "Qty Check": row.qaQty === null ? "" : row.qtyCheck ? "✓" : "✗",
   }));
 
   const qaReviewSheet = XLSX.utils.json_to_sheet(qaReviewData);
@@ -92,17 +83,40 @@ export const exportToExcel = (data: QAReviewRow[], cuLookup: CULookupItem[]) => 
   // Dashboard Sheet with metrics
   const okCount = data.filter((r) => r.issueType === "OK").length;
   const needsRevisionCount = data.filter((r) => r.issueType === "NEEDS REVISIONS").length;
-  const cuMatches = data.filter((r) => r.cuCheck).length;
-  const wfMatches = data.filter((r) => r.wfCheck).length;
-  const qtyMatches = data.filter((r) => r.qtyCheck).length;
+
+  const cuReviewed = data.filter((r) => r.qaCU !== "");
+  const wfReviewed = data.filter((r) => r.qaWF !== "");
+  const qtyReviewed = data.filter((r) => r.qaQty !== null);
+
+  const cuMatches = cuReviewed.filter((r) => r.cuCheck).length;
+  const wfMatches = wfReviewed.filter((r) => r.wfCheck).length;
+  const qtyMatches = qtyReviewed.filter((r) => r.qtyCheck).length;
 
   const dashboardData = [
     { Metric: "Total Records", Value: data.length },
     { Metric: "OK Status", Value: okCount },
     { Metric: "Needs Revision", Value: needsRevisionCount },
-    { Metric: "CU Match Rate", Value: `${Math.round((cuMatches / data.length) * 100)}%` },
-    { Metric: "WF Match Rate", Value: `${Math.round((wfMatches / data.length) * 100)}%` },
-    { Metric: "Qty Match Rate", Value: `${Math.round((qtyMatches / data.length) * 100)}%` },
+    {
+      Metric: "CU Match Rate",
+      Value:
+        cuReviewed.length > 0
+          ? `${Math.round((cuMatches / cuReviewed.length) * 100)}%`
+          : "N/A",
+    },
+    {
+      Metric: "WF Match Rate",
+      Value:
+        wfReviewed.length > 0
+          ? `${Math.round((wfMatches / wfReviewed.length) * 100)}%`
+          : "N/A",
+    },
+    {
+      Metric: "Qty Match Rate",
+      Value:
+        qtyReviewed.length > 0
+          ? `${Math.round((qtyMatches / qtyReviewed.length) * 100)}%`
+          : "N/A",
+    },
   ];
 
   const dashboardSheet = XLSX.utils.json_to_sheet(dashboardData);
