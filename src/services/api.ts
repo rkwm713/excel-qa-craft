@@ -97,9 +97,14 @@ export const reviewsAPI = {
     kmzPlacemarks?: any[];
   }): Promise<{ id: string; message: string }> => {
     // Create review
+    // Explicitly omit id and created_by - they're auto-generated
+    const insertData: any = { title: data.title };
+    if (data.description) {
+      insertData.description = data.description;
+    }
     const { data: review, error } = await supabase
       .from('reviews')
-      .insert([{ title: data.title }]) // created_by is auto-set by trigger, status defaults to 'draft'
+      .insert([insertData]) // created_by is auto-set by trigger, status defaults to 'draft', id is auto-generated
       .select()
       .single();
     if (error) throw error;
