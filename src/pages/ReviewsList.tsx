@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { reviewsAPI, ReviewListItem } from "@/services/api";
-import { authAPI, removeAuthToken } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Search, LogOut, User, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -55,8 +55,19 @@ export default function ReviewsList() {
 
   const loadUser = async () => {
     try {
-      const response = await authAPI.getCurrentUser();
-      setCurrentUser(response.user);
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (user) {
+        // Get profile data if needed
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        setCurrentUser(profile || { id: user.id, email: user.email });
+      } else {
+        setCurrentUser(null);
+      }
     } catch (error) {
       // Not logged in
       setCurrentUser(null);
@@ -80,8 +91,8 @@ export default function ReviewsList() {
     }
   };
 
-  const handleLogout = () => {
-    removeAuthToken();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
     toast({
       title: "Logged out",

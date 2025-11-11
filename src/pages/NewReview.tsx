@@ -14,7 +14,8 @@ import { SaveReviewDialog } from "@/components/SaveReviewDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save, FolderOpen, User, LogOut, ArrowLeft } from "lucide-react";
-import { reviewsAPI, authAPI, removeAuthToken } from "@/services/api";
+import { reviewsAPI } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { exportDesignerPackage } from "@/utils/exportPackage";
 import { parseKMZ } from "@/utils/kmzParser";
@@ -66,8 +67,19 @@ const NewReview = () => {
 
   const loadCurrentUser = async () => {
     try {
-      const response = await authAPI.getCurrentUser();
-      setCurrentUser(response.user);
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (user) {
+        // Get profile data if needed
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        setCurrentUser(profile || { id: user.id, email: user.email });
+      } else {
+        setCurrentUser(null);
+      }
     } catch (error) {
       setCurrentUser(null);
     }
@@ -78,8 +90,8 @@ const NewReview = () => {
     setShowLoginDialog(false);
   };
 
-  const handleLogout = () => {
-    removeAuthToken();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
     toast({
       title: "Logged out",
