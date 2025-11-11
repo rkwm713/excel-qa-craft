@@ -2,10 +2,14 @@
 CREATE OR REPLACE FUNCTION public.create_review_with_rows(
   p_title text,
   p_description text DEFAULT NULL,
-  p_status text DEFAULT 'draft',
+  p_status text DEFAULT 'Needs QA Review',
   p_file_name text DEFAULT NULL,
   p_kmz_file_name text DEFAULT NULL,
   p_pdf_file_name text DEFAULT NULL,
+  p_wo_number text DEFAULT NULL,
+  p_designer text DEFAULT NULL,
+  p_qa_tech text DEFAULT NULL,
+  p_project text DEFAULT NULL,
   p_rows jsonb DEFAULT '[]'::jsonb
 )
 RETURNS uuid
@@ -21,15 +25,23 @@ BEGIN
     status,
     file_name,
     kmz_file_name,
-    pdf_file_name
+    pdf_file_name,
+    wo_number,
+    designer,
+    qa_tech,
+    project
   )
   VALUES (
     p_title,
     p_description,
-    COALESCE(NULLIF(p_status, ''), 'draft'),
+    COALESCE(NULLIF(p_status, ''), 'Needs QA Review'),
     p_file_name,
     p_kmz_file_name,
-    p_pdf_file_name
+    p_pdf_file_name,
+    NULLIF(p_wo_number, ''),
+    NULLIF(p_designer, ''),
+    NULLIF(p_qa_tech, ''),
+    NULLIF(p_project, '')
   )
   RETURNING id INTO v_review_id;
 
@@ -85,6 +97,10 @@ GRANT EXECUTE ON FUNCTION public.create_review_with_rows(
   p_file_name text,
   p_kmz_file_name text,
   p_pdf_file_name text,
+  p_wo_number text,
+  p_designer text,
+  p_qa_tech text,
+  p_project text,
   p_rows jsonb
 ) TO authenticated;
 

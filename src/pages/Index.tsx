@@ -21,6 +21,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LoginDialog } from "@/components/LoginDialog";
 import techservLogo from "@/assets/techserv-logo.png";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function Index() {
   const [reviews, setReviews] = useState<ReviewListItem[]>([]);
@@ -45,13 +53,24 @@ export default function Index() {
     } else {
       const query = searchQuery.toLowerCase();
       setFilteredReviews(
-        reviews.filter(
-          (review) =>
-            review.title.toLowerCase().includes(query) ||
-            review.description?.toLowerCase().includes(query) ||
-            review.file_name?.toLowerCase().includes(query) ||
-            review.username?.toLowerCase().includes(query)
-        )
+        reviews.filter((review) => {
+          const haystacks = [
+            review.title,
+            review.description ?? "",
+            review.file_name ?? "",
+            review.wo_number ?? "",
+            review.designer ?? "",
+            review.qa_tech ?? "",
+            review.project ?? "",
+            review.status ?? "",
+            review.username ?? "",
+            review.full_name ?? "",
+          ]
+            .filter(Boolean)
+            .map((value) => value.toLowerCase());
+
+          return haystacks.some((value) => value.includes(query));
+        })
       );
     }
   }, [searchQuery, reviews]);
@@ -99,6 +118,7 @@ export default function Index() {
       title: "Logged out",
       description: "You have been logged out",
     });
+    navigate("/");
   };
 
   const handleDelete = async () => {
@@ -232,120 +252,173 @@ export default function Index() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
-            placeholder="Search reviews by title, description, file name, or creator..."
+            placeholder="Search reviews by title, WO#, project, designer, status, or creator..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
 
-        {/* Reviews Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-3 bg-muted rounded w-1/2 mt-2"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-3 bg-muted rounded w-full mb-2"></div>
-                  <div className="h-3 bg-muted rounded w-2/3"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : filteredReviews.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center mb-4">
-                {searchQuery ? "No reviews match your search" : "No reviews yet. Create your first review!"}
-              </p>
-              {!searchQuery && (
-                <Button
-                  onClick={() => navigate("/new-review")}
-                  className="gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create New Review
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredReviews.map((review) => (
-              <Card key={review.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(`/review/${review.id}`)}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-saira mb-1">{review.title}</CardTitle>
-                      <CardDescription className="mt-1 line-clamp-2">
-                        {review.description || "No description"}
-                      </CardDescription>
-                    </div>
-                    {currentUser && currentUser.id === review.created_by && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openDeleteDialog(review.id);
-                        }}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {review.file_name && (
-                      <Badge variant="outline" className="text-xs">
-                        <FileSpreadsheet className="w-3 h-3 mr-1" />
-                        {review.file_name}
-                      </Badge>
-                    )}
-                    {review.pdf_file_name && (
-                      <Badge variant="outline" className="text-xs">
-                        <FileText className="w-3 h-3 mr-1" />
-                        PDF
-                      </Badge>
-                    )}
-                    {review.kmz_file_name && (
-                      <Badge variant="outline" className="text-xs">
-                        <MapIcon className="w-3 h-3 mr-1" />
-                        KMZ
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      <span className="font-semibold">{review.username || review.full_name || "Unknown"}</span>
-                    </p>
-                    <p className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Updated: {format(new Date(review.updated_at), "MMM d, yyyy")}
-                    </p>
-                  </div>
+        {/* Reviews List */}
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="overflow-hidden rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title & Description</TableHead>
+                    <TableHead>WO#</TableHead>
+                    <TableHead>Designer</TableHead>
+                    <TableHead>QA Tech</TableHead>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[1, 2, 3, 4, 5].map((row) => (
+                    <TableRow key={row}>
+                      <TableCell>
+                        <div className="h-4 w-48 rounded bg-muted animate-pulse" />
+                        <div className="mt-2 h-3 w-64 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-28 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="ml-auto h-9 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : filteredReviews.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <FileText className="w-12 h-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-center mb-4">
+                  {searchQuery ? "No reviews match your search" : "No reviews yet. Create your first review!"}
+                </p>
+                {!searchQuery && (
                   <Button
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/review/${review.id}`);
-                    }}
+                    onClick={() => navigate("/new-review")}
+                    className="gap-2"
                   >
-                    <FileText className="w-4 h-4 mr-2" />
-                    View Review
+                    <Plus className="w-4 h-4" />
+                    Create New Review
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="overflow-hidden rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title & Description</TableHead>
+                    <TableHead>WO#</TableHead>
+                    <TableHead>Designer</TableHead>
+                    <TableHead>QA Tech</TableHead>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredReviews.map((review) => (
+                    <TableRow
+                      key={review.id}
+                      className="cursor-pointer hover:bg-muted/50 transition"
+                      onClick={() => navigate(`/review/${review.id}`)}
+                    >
+                      <TableCell>
+                        <p className="text-sm font-semibold font-saira text-foreground">{review.title}</p>
+                        <p className="text-xs text-muted-foreground font-neuton line-clamp-2 mt-1">
+                          {review.description || "No description"}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        {review.wo_number ? (
+                          <Badge variant="outline" className="font-saira text-xs">
+                            {review.wo_number}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm font-neuton">
+                        {review.designer || <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-sm font-neuton">
+                        {review.qa_tech || <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-sm font-neuton">
+                        {review.project || <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell>
+                        {review.status ? (
+                          <Badge variant="secondary" className="text-xs font-saira uppercase tracking-wide">
+                            {review.status}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground font-neuton">
+                        {format(new Date(review.updated_at), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/review/${review.id}`);
+                          }}
+                          className="gap-2"
+                        >
+                          <FileText className="w-4 h-4" />
+                          View
+                        </Button>
+                        {currentUser && currentUser.id === review.created_by && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDeleteDialog(review.id);
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Delete Confirmation Dialog */}

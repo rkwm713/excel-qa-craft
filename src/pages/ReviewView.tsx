@@ -4,14 +4,47 @@ import { reviewsAPI, ReviewData } from "@/services/api";
 import { QAReviewTable } from "@/components/QAReviewTable";
 import { Dashboard } from "@/components/Dashboard";
 import { MapViewer } from "@/components/MapViewer";
-import { PDFUpload } from "@/components/PDFUpload";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, Save, Download, User, LogOut } from "lucide-react";
 import { QAReviewRow, DashboardMetrics } from "@/types/qa-tool";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
+import { exportToExcel } from "@/utils/excelParser";
+import techservLogo from "@/assets/techserv-logo.png";
+import { LoginDialog } from "@/components/LoginDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+const STATUS_OPTIONS = [
+  "Needs QA Review",
+  "In Review",
+  "Needs Corrections",
+  "Corrections Completed",
+  "Approved",
+] as const;
+
+type StatusOption = typeof STATUS_OPTIONS[number];
+
+type ReviewMetadataState = {
+  jobName: string;
+  woNumber: string;
+  designer: string;
+  qaTech: string;
+  project: string;
+  status: StatusOption;
+};
 
 export default function ReviewView() {
   const { id } = useParams<{ id: string }>();
@@ -26,13 +59,110 @@ export default function ReviewView() {
   const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
   const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, string>>({});
   const [currentWorkPoint, setCurrentWorkPoint] = useState<QAReviewRow | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [metadata, setMetadata] = useState<ReviewMetadataState>({
+    jobName: "",
+    woNumber: "",
+    designer: "",
+    qaTech: "",
+    project: "",
+    status: STATUS_OPTIONS[0],
+  });
+  const [isMetadataSaving, setIsMetadataSaving] = useState(false);
   const { toast } = useToast();
+
+  const handleSaveReview = useCallback(async () => {
+    if (!id || !reviewData) return;
+
+    setIsSaving(true);
+    try {
+      await reviewsAPI.update(id, {
+        reviewRows: qaData,
+        cuLookup: reviewData.cuLookup ?? [],
+        stationPageMapping: reviewData.stationPageMapping ?? {},
+        stationSpecMapping: reviewData.stationSpecMapping ?? {},
+        editedSpecMapping: reviewData.editedSpecMapping ?? {},
+        pdfAnnotations,
+        workPointNotes: pdfWorkPointNotes,
+      });
+
+      toast({
+        title: "Review saved",
+        description: "Your changes have been saved successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error saving review",
+        description: error?.message ?? "Failed to save review.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [id, reviewData, qaData, pdfAnnotations, pdfWorkPointNotes, toast]);
+
+  const loadCurrentUser = useCallback(async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (user) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+        setCurrentUser(profile || { id: user.id, email: user.email, username: user.email?.split("@")[0] ?? "user" });
+      } else {
+        setCurrentUser(null);
+      }
+    } catch (error) {
+      setCurrentUser(null);
+    }
+  }, []);
+
+  const handleLoginSuccess = useCallback((user: any) => {
+    setCurrentUser(user);
+    setShowLoginDialog(false);
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+    toast({
+      title: "Logged out",
+      description: "You have been logged out",
+    });
+  }, [toast]);
 
   useEffect(() => {
     if (id) {
       loadReview(id);
     }
   }, [id]);
+
+  useEffect(() => {
+    loadCurrentUser();
+  }, [loadCurrentUser]);
+
+  useEffect(() => {
+    if (reviewData?.review) {
+      const statusCandidate = reviewData.review.status || STATUS_OPTIONS[0];
+      const statusValue = (STATUS_OPTIONS as readonly string[]).includes(statusCandidate)
+        ? (statusCandidate as StatusOption)
+        : STATUS_OPTIONS[0];
+
+      setMetadata({
+        jobName: reviewData.review.title ?? "",
+        woNumber: reviewData.review.wo_number ?? "",
+        designer: reviewData.review.designer ?? "",
+        qaTech: reviewData.review.qa_tech ?? "",
+        project: reviewData.review.project ?? "",
+        status: statusValue,
+      });
+    }
+  }, [reviewData]);
 
   const loadReview = async (reviewId: string) => {
     setIsLoading(true);
@@ -236,11 +366,57 @@ export default function ReviewView() {
     });
   };
 
+const handleAddRow = useCallback((station: string) => {
+  const newRow: QAReviewRow = {
+    id: `row-${Date.now()}`,
+    issueType: "NEEDS REVISIONS",
+    station,
+    workSet: "",
+    designerCU: "",
+    qaCU: "",
+    description: "",
+    designerWF: "",
+    qaWF: "",
+    designerQty: 0,
+    qaQty: 0,
+    qaComments: "",
+    cuCheck: false,
+    wfCheck: false,
+    qtyCheck: false,
+  };
+  setQaData((prev) => [...prev, newRow]);
+}, []);
+
   const handleUpdateRow = (rowId: string, field: keyof QAReviewRow, value: any) => {
     setQaData((prev) =>
       prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row))
     );
   };
+
+const handleExport = useCallback(async () => {
+  try {
+    if (qaData.length === 0) {
+      toast({
+        title: "No data to export",
+        description: "There is no QA data available to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await exportToExcel(qaData, reviewData?.cuLookup ?? []);
+    toast({
+      title: "Export successful",
+      description: "QA Tool data exported to Excel.",
+    });
+  } catch (error) {
+    toast({
+      title: "Export failed",
+      description: "Failed to export QA data.",
+      variant: "destructive",
+    });
+  }
+}, [qaData, reviewData?.cuLookup, toast]);
 
   const cuOptions = useMemo(() => {
     const lookupCodes = reviewData?.cuLookup?.map((cu) => cu.code).filter(Boolean) ?? [];
@@ -256,6 +432,107 @@ export default function ReviewView() {
     wfMatchRate: qaData.length > 0 ? (qaData.filter((r) => r.wfCheck).length / qaData.length) * 100 : 0,
     qtyMatchRate: qaData.length > 0 ? (qaData.filter((r) => r.qtyCheck).length / qaData.length) * 100 : 0,
   };
+
+  const metadataChanged = useMemo(() => {
+    if (!reviewData) return false;
+    const review = reviewData.review;
+    return (
+      metadata.jobName !== (review.title ?? "") ||
+      metadata.woNumber !== (review.wo_number ?? "") ||
+      metadata.designer !== (review.designer ?? "") ||
+      metadata.qaTech !== (review.qa_tech ?? "") ||
+      metadata.project !== (review.project ?? "") ||
+      metadata.status !== ((review.status as StatusOption | null) ?? STATUS_OPTIONS[0])
+    );
+  }, [metadata, reviewData]);
+
+  const handleMetadataFieldChange = useCallback(
+    (field: keyof ReviewMetadataState, value: string) => {
+      setMetadata((prev) => {
+        const next: ReviewMetadataState = {
+          ...prev,
+          [field]: value,
+        };
+
+        if (field === "woNumber") {
+          if (prev.jobName === prev.woNumber || prev.jobName.trim() === "") {
+            next.jobName = value;
+          }
+        }
+
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleMetadataSave = useCallback(async () => {
+    if (!id || !reviewData) return;
+    if (!currentUser || currentUser.id !== reviewData.review.created_by) {
+      toast({
+        title: "Permission denied",
+        description: "You do not have permission to update this review.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsMetadataSaving(true);
+    try {
+      const trimmedJobName = metadata.jobName.trim();
+      const trimmedWo = metadata.woNumber.trim();
+      const trimmedDesigner = metadata.designer.trim();
+      const trimmedQaTech = metadata.qaTech.trim();
+      const trimmedProject = metadata.project.trim();
+
+      await reviewsAPI.update(id, {
+        title: trimmedJobName || trimmedWo || reviewData.review.title,
+        woNumber: trimmedWo || null,
+        designer: trimmedDesigner || null,
+        qaTech: trimmedQaTech || null,
+        project: trimmedProject || null,
+        status: metadata.status,
+      });
+
+      setReviewData((prev) =>
+        prev
+          ? {
+              ...prev,
+              review: {
+                ...prev.review,
+                title: trimmedJobName || trimmedWo || prev.review.title,
+                wo_number: trimmedWo || null,
+                designer: trimmedDesigner || null,
+                qa_tech: trimmedQaTech || null,
+                project: trimmedProject || null,
+                status: metadata.status,
+              },
+            }
+          : prev
+      );
+
+      setMetadata((prev) => ({
+        ...prev,
+        jobName: trimmedJobName || trimmedWo || prev.jobName,
+        woNumber: trimmedWo,
+        designer: trimmedDesigner,
+        qaTech: trimmedQaTech,
+        project: trimmedProject,
+      }));
+
+      toast({
+        title: "Metadata updated",
+        description: "Review details have been saved successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating metadata",
+        description: error?.message ?? "Failed to update review metadata.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsMetadataSaving(false);
+    }
+  }, [currentUser, id, metadata, reviewData, toast]);
 
   const stations = Array.from(new Set(qaData.map((r) => r.station))).sort();
 
@@ -274,50 +551,267 @@ export default function ReviewView() {
     return null;
   }
 
+  const canEditReview = currentUser?.id === reviewData.review.created_by;
+
   return (
     <div className="min-h-screen flex w-full bg-background">
       <div className="flex-1 w-full">
         <header className="sticky top-0 z-10 border-b bg-card shadow-sm">
           <div className="flex flex-col gap-3 px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" onClick={() => navigate("/reviews")} className="gap-2">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Reviews
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">
-                    {reviewData.review.title}
-                  </h1>
-                  <p className="text-sm text-muted-foreground font-neuton">
-                    {reviewData.review.description || "QA Review Session"}
-                  </p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between flex-1">
+                <div className="flex items-center gap-6">
+                  <Button variant="ghost" onClick={() => navigate("/reviews")} className="gap-2">
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Reviews
+                  </Button>
+                  <img src={techservLogo} alt="TechServ" className="h-10 w-auto" />
+                  <div className="border-l border-border pl-6">
+                    <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">
+                      {reviewData.review.title}
+                    </h1>
+                    <p className="text-sm text-muted-foreground font-neuton">
+                      {reviewData.review.description || "QA Review Session"}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {reviewData.review.status && (
+                        <Badge variant="secondary" className="uppercase tracking-wide font-saira text-xs">
+                          {reviewData.review.status}
+                        </Badge>
+                      )}
+                      {reviewData.review.wo_number && (
+                        <Badge variant="outline" className="text-xs font-saira">
+                          WO# {reviewData.review.wo_number}
+                        </Badge>
+                      )}
+                      {reviewData.review.project && (
+                        <Badge variant="outline" className="text-xs font-saira">
+                          Project: {reviewData.review.project}
+                        </Badge>
+                      )}
+                      {reviewData.review.designer && (
+                        <Badge variant="outline" className="text-xs font-saira">
+                          Designer: {reviewData.review.designer}
+                        </Badge>
+                      )}
+                      {reviewData.review.qa_tech && (
+                        <Badge variant="outline" className="text-xs font-saira">
+                          QA Tech: {reviewData.review.qa_tech}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {currentUser && (
+                    <div className="flex items-center gap-2 text-sm mr-2">
+                      <User className="w-4 h-4" />
+                      <span className="font-semibold font-saira uppercase">
+                        {currentUser.username ?? currentUser.email ?? "User"}
+                      </span>
+                    </div>
+                  )}
+                  {qaData.length > 0 && (
+                    <>
+                      {canEditReview && (
+                        <Button
+                          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+                          onClick={handleSaveReview}
+                          disabled={isSaving || !canEditReview}
+                        >
+                          <Save className="w-4 h-4" />
+                          {isSaving ? "Saving..." : "Save Changes"}
+                        </Button>
+                      )}
+                      <Button
+                        onClick={handleExport}
+                        className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
+                      >
+                        <Download className="w-4 h-4" />
+                        Export QA Tool
+                      </Button>
+                    </>
+                  )}
+                  {currentUser ? (
+                    <Button variant="outline" onClick={handleLogout} className="gap-2">
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={() => setShowLoginDialog(true)} className="gap-2">
+                      <User className="w-4 h-4" />
+                      Login
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full max-w-md grid-cols-3">
-                <TabsTrigger value="dashboard" className="gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Dashboard
-                </TabsTrigger>
-                <TabsTrigger value="data" className="gap-2">
-                  <FileSpreadsheet className="w-4 h-4" />
-                  QA Data
-                </TabsTrigger>
-                <TabsTrigger value="map" className="gap-2">
-                  <MapIcon className="w-4 h-4" />
-                  Map View
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="flex gap-1 bg-muted/50 p-1.5 rounded-lg border border-border/50 shadow-sm">
+                  <Button
+                    variant={activeTab === "dashboard" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTab("dashboard")}
+                    className={`gap-2 transition-all duration-200 ${
+                      activeTab === "dashboard"
+                        ? "bg-primary text-primary-foreground shadow-md font-semibold"
+                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <TrendingUp className={`w-4 h-4 transition-transform ${activeTab === "dashboard" ? "scale-110" : ""}`} />
+                    Overview
+                  </Button>
+                  <Button
+                    variant={activeTab === "data" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTab("data")}
+                    className={`gap-2 transition-all duration-200 ${
+                      activeTab === "data"
+                        ? "bg-primary text-primary-foreground shadow-md font-semibold"
+                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <FileSpreadsheet className={`w-4 h-4 transition-transform ${activeTab === "data" ? "scale-110" : ""}`} />
+                    QA Data
+                  </Button>
+                  <Button
+                    variant={activeTab === "map" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTab("map")}
+                    className={`gap-2 transition-all duration-200 ${
+                      activeTab === "map"
+                        ? "bg-primary text-primary-foreground shadow-md font-semibold"
+                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <MapIcon className={`w-4 h-4 transition-transform ${activeTab === "map" ? "scale-110" : ""}`} />
+                    Map View
+                  </Button>
+                </div>
+                {activeTab === "data" && (
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold font-saira uppercase tracking-wide text-primary">
+                      QA Review: {reviewData.review.file_name || reviewData.review.title}
+                    </h2>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2" />
+            </div>
           </div>
         </header>
 
         <main className="w-full px-4 py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsContent value="dashboard" className="space-y-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-saira uppercase tracking-wide text-primary">
+                    Review Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="metadata-job-name">Job Name</Label>
+                      <Input
+                        id="metadata-job-name"
+                        value={metadata.jobName}
+                        onChange={(e) => handleMetadataFieldChange("jobName", e.target.value)}
+                        placeholder="Enter job name"
+                        disabled={isMetadataSaving || !canEditReview}
+                      />
+                    </div>
+                    <div className="space-y-2 max-w-sm md:max-w-none">
+                      <Label htmlFor="metadata-status">Status</Label>
+                      <Select
+                        value={metadata.status}
+                        onValueChange={(value) =>
+                          handleMetadataFieldChange("status", value as StatusOption)
+                        }
+                        disabled={isMetadataSaving || !canEditReview}
+                      >
+                        <SelectTrigger id="metadata-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="metadata-wo">WO# (Work Order Number)</Label>
+                      <Input
+                        id="metadata-wo"
+                        value={metadata.woNumber}
+                        onChange={(e) => handleMetadataFieldChange("woNumber", e.target.value)}
+                        placeholder="Enter WO#"
+                        disabled={isMetadataSaving || !canEditReview}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="metadata-project">Project</Label>
+                      <Input
+                        id="metadata-project"
+                        value={metadata.project}
+                        onChange={(e) => handleMetadataFieldChange("project", e.target.value)}
+                        placeholder="Enter project name"
+                        disabled={isMetadataSaving || !canEditReview}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="metadata-designer">Designer</Label>
+                      <Input
+                        id="metadata-designer"
+                        value={metadata.designer}
+                        onChange={(e) => handleMetadataFieldChange("designer", e.target.value)}
+                        placeholder="Enter designer name"
+                        disabled={isMetadataSaving || !canEditReview}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="metadata-qa-tech">QA Tech</Label>
+                      <Input
+                        id="metadata-qa-tech"
+                        value={metadata.qaTech}
+                        onChange={(e) => handleMetadataFieldChange("qaTech", e.target.value)}
+                        placeholder="Enter QA technician name"
+                        disabled={isMetadataSaving || !canEditReview}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleMetadataSave}
+                      disabled={isMetadataSaving || !metadataChanged || !canEditReview}
+                    >
+                      {isMetadataSaving
+                        ? "Saving..."
+                        : !canEditReview
+                          ? "View Only"
+                          : metadataChanged
+                            ? "Save Details"
+                            : "Up to date"}
+                    </Button>
+                  </div>
+                  {!canEditReview && (
+                    <p className="text-sm text-muted-foreground">
+                      Only the review owner can update these details.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
               {qaData.length > 0 && <Dashboard metrics={metrics} />}
             </TabsContent>
 
@@ -326,6 +820,7 @@ export default function ReviewView() {
                 <QAReviewTable
                   data={qaData}
                   onUpdateRow={handleUpdateRow}
+                  onAddRow={handleAddRow}
                   cuOptions={cuOptions}
                   selectedStation={selectedStation}
                   stations={stations}
@@ -364,6 +859,11 @@ export default function ReviewView() {
             </TabsContent>
           </Tabs>
         </main>
+        <LoginDialog
+          open={showLoginDialog}
+          onOpenChange={setShowLoginDialog}
+          onLoginSuccess={handleLoginSuccess}
+        />
       </div>
     </div>
   );

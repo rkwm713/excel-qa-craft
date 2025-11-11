@@ -32,6 +32,28 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
         password: loginPassword,
       });
       if (error) throw error;
+      
+      // Check if user has a profile
+      const { data: profile, error: profileError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        throw new Error("Error checking user profile");
+      }
+
+      if (!profile) {
+        await supabase.auth.signOut();
+        toast({
+          title: "Access denied",
+          description: "Your account does not have a profile. Please contact an administrator.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Login successful",
         description: `Welcome back!`,
@@ -65,11 +87,14 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
         },
       });
       if (error) throw error;
+      
+      // Note: Registration creates auth user but profile must be created by admin
       toast({
         title: "Registration successful",
-        description: "Please check your email to verify your account.",
+        description: "Please check your email to verify your account. Your profile will need to be set up by an administrator before you can access the application.",
       });
-      onLoginSuccess(data.user);
+      
+      // Don't call onLoginSuccess for registration - user needs admin to create profile
       onOpenChange(false);
       setRegisterUsername("");
       setRegisterEmail("");

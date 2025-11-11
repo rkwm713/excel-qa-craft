@@ -167,6 +167,11 @@ export interface ReviewListItem {
   file_name?: string;
   kmz_file_name?: string;
   pdf_file_name?: string;
+  wo_number?: string | null;
+  designer?: string | null;
+  qa_tech?: string | null;
+  project?: string | null;
+  status?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -182,7 +187,9 @@ export const reviewsAPI = {
   ): Promise<{ reviews: ReviewListItem[] }> => {
     let query = supabase
       .from("reviews")
-      .select("id, title, created_by, created_at, updated_at")
+      .select(
+        "id, title, description, status, wo_number, designer, qa_tech, project, file_name, kmz_file_name, pdf_file_name, created_by, created_at, updated_at"
+      )
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -235,6 +242,11 @@ export const reviewsAPI = {
     kmzFileName?: string;
     pdfFileName?: string;
     pdfFile?: File;
+    woNumber?: string;
+    designer?: string;
+    qaTech?: string;
+    project?: string;
+    status?: string;
     reviewRows: ReviewRowInput[];
     cuLookup: Array<{ code: string; description: string }>;
     stationPageMapping?: Record<string, number>;
@@ -252,10 +264,14 @@ export const reviewsAPI = {
       {
         p_title: data.title,
         p_description: data.description ?? null,
-        p_status: "draft",
+        p_status: data.status ?? "Needs QA Review",
         p_file_name: data.fileName ?? null,
         p_kmz_file_name: data.kmzFileName ?? null,
         p_pdf_file_name: data.pdfFile ? null : data.pdfFileName ?? null,
+        p_wo_number: data.woNumber ?? null,
+        p_designer: data.designer ?? null,
+        p_qa_tech: data.qaTech ?? null,
+        p_project: data.project ?? null,
         p_rows: rowsPayload,
       }
     );
@@ -298,6 +314,11 @@ export const reviewsAPI = {
     data: {
       title?: string;
       description?: string;
+      woNumber?: string | null;
+      designer?: string | null;
+      qaTech?: string | null;
+      project?: string | null;
+      status?: string | null;
       reviewRows?: ReviewRowInput[];
       cuLookup?: Array<{ code: string; description: string }>;
       stationPageMapping?: Record<string, number>;
@@ -312,6 +333,11 @@ export const reviewsAPI = {
     const updateFields: ReviewUpdate = {};
     if (data.title !== undefined) updateFields.title = data.title;
     if (data.description !== undefined) updateFields.description = data.description;
+    if (data.woNumber !== undefined) updateFields.wo_number = data.woNumber;
+    if (data.designer !== undefined) updateFields.designer = data.designer;
+    if (data.qaTech !== undefined) updateFields.qa_tech = data.qaTech;
+    if (data.project !== undefined) updateFields.project = data.project;
+    if (data.status !== undefined) updateFields.status = data.status;
 
     if (Object.keys(updateFields).length > 0) {
       const { error: reviewUpdateError } = await supabase

@@ -258,6 +258,10 @@ export type Database = {
           kmz_file_name: string | null
           pdf_file_name: string | null
           status: string | null
+          wo_number: string | null
+          designer: string | null
+          qa_tech: string | null
+          project: string | null
           title: string
           updated_at: string | null
         }
@@ -270,6 +274,10 @@ export type Database = {
           kmz_file_name?: string | null
           pdf_file_name?: string | null
           status?: string | null
+          wo_number?: string | null
+          designer?: string | null
+          qa_tech?: string | null
+          project?: string | null
           title: string
           updated_at?: string | null
         }
@@ -281,6 +289,11 @@ export type Database = {
           id?: string
           kmz_file_name?: string | null
           pdf_file_name?: string | null
+          status?: string | null
+          wo_number?: string | null
+          designer?: string | null
+          qa_tech?: string | null
+          project?: string | null
           title?: string
           updated_at?: string | null
         }

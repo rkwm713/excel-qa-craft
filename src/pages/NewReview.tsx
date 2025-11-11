@@ -99,7 +99,14 @@ const NewReview = () => {
     });
   };
 
-  const handleSaveReview = async (title: string, description: string) => {
+  const handleSaveReview = async (saveData: {
+    title: string;
+    description: string;
+    woNumber: string;
+    designer: string;
+    project: string;
+    status: string;
+  }) => {
     if (!currentUser) {
       setShowLoginDialog(true);
       return;
@@ -107,13 +114,17 @@ const NewReview = () => {
 
     setIsSaving(true);
     try {
-      await reviewsAPI.create({
-        title,
-        description,
+      const { id: reviewId } = await reviewsAPI.create({
+        title: saveData.title,
+        description: saveData.description,
         fileName,
         kmzFileName,
         pdfFileName,
         pdfFile: pdfFile, // Include the actual PDF file
+        woNumber: saveData.woNumber,
+        designer: saveData.designer,
+        project: saveData.project,
+        status: saveData.status,
         reviewRows: qaData,
         cuLookup,
         stationPageMapping,
@@ -129,7 +140,7 @@ const NewReview = () => {
         description: "Your review has been saved successfully",
       });
       setShowSaveDialog(false);
-      navigate("/reviews");
+      navigate(`/review/${reviewId}`);
     } catch (error: any) {
       toast({
         title: "Error saving review",
@@ -498,7 +509,7 @@ const NewReview = () => {
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-between flex-1">
                   <div className="flex items-center gap-6">
-                    <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
+                    <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
                       <ArrowLeft className="w-4 h-4" />
                       Back to Dashboard
                     </Button>
