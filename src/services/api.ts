@@ -97,11 +97,9 @@ export const reviewsAPI = {
     kmzPlacemarks?: any[];
   }): Promise<{ id: string; message: string }> => {
     // Create review
-    const user = (await supabase.auth.getUser()).data.user;
-    const created_by = user?.id as string;
     const { data: review, error } = await supabase
       .from('reviews')
-      .insert([{ title: data.title, status: 'draft', created_by }])
+      .insert([{ title: data.title }]) // created_by is auto-set by trigger, status defaults to 'draft'
       .select()
       .single();
     if (error) throw error;
