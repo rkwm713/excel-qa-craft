@@ -27,8 +27,20 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
     e.preventDefault();
     setIsLoading(true);
     try {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const email = loginUsername.trim();
+      
+      if (!email) {
+        throw new Error("Email is required");
+      }
+      
+      if (!emailRegex.test(email)) {
+        throw new Error("Please enter a valid email address");
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginUsername,
+        email: email,
         password: loginPassword,
       });
       if (error) throw error;
@@ -103,13 +115,15 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
           <TabsContent value="login" className="space-y-4">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login-username">Username or Email</Label>
+                <Label htmlFor="login-username">Email</Label>
                 <Input
                   id="login-username"
+                  type="email"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
                   required
                   disabled={isLoading}
+                  placeholder="your.email@example.com"
                 />
               </div>
               <div className="space-y-2">

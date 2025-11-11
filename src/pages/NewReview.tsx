@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save, FolderOpen, User, LogOut, ArrowLeft } from "lucide-react";
 import { reviewsAPI } from "@/services/api";
+import { useCreateReview } from "@/hooks/useReviews";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDesignerUpload, convertToQAReviewRows, exportToExcel } from "@/utils/excelParser";
 import { exportDesignerPackage } from "@/utils/exportPackage";
@@ -23,6 +24,7 @@ import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
 import { QAReviewRow, DashboardMetrics, CULookupItem } from "@/types/qa-tool";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 import techservLogo from "@/assets/techserv-logo.png";
 
 const NewReview = () => {
@@ -52,9 +54,9 @@ const NewReview = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const createReview = useCreateReview();
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -70,13 +72,13 @@ const NewReview = () => {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (user) {
-        // Get profile data if needed
-        const { data: profile } = await supabase
-          .from('profiles')
+        // Get user data if needed
+        const { data: userData } = await supabase
+          .from('users')
           .select('*')
           .eq('id', user.id)
           .single();
-        setCurrentUser(profile || { id: user.id, email: user.email });
+        setCurrentUser(userData || { id: user.id, email: user.email });
       } else {
         setCurrentUser(null);
       }
@@ -105,9 +107,8 @@ const NewReview = () => {
       return;
     }
 
-    setIsSaving(true);
     try {
-      await reviewsAPI.create({
+      await createReview.mutateAsync({
         title,
         description,
         fileName,
@@ -136,8 +137,6 @@ const NewReview = () => {
         description: error.message || "Failed to save review",
         variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -179,7 +178,7 @@ const NewReview = () => {
         description: "Failed to parse the Excel file. Please check the format.",
         variant: "destructive",
       });
-      console.error("Error parsing file:", error);
+      logger.error("Error parsing file:", error);
     }
   };
 
@@ -209,7 +208,7 @@ const NewReview = () => {
         description: "Failed to parse the KMZ file. Please check the format.",
         variant: "destructive",
       });
-      console.error("Error parsing KMZ:", error);
+      logger.error("Error parsing KMZ:", error);
     }
   };
 
@@ -234,7 +233,7 @@ const NewReview = () => {
         description: `Found ${pdfInfo.numPages} pages. Mapped ${mappedCount} work points${specCount > 0 ? ` and ${specCount} spec numbers` : ''}.`,
       });
     } catch (error) {
-      console.error("Error parsing PDF:", error);
+      logger.error("Error parsing PDF:", error);
       
       // Still attach the file so the viewer works, even if parsing failed
       setPdfFile(file);
@@ -379,7 +378,7 @@ const NewReview = () => {
         description: "Failed to export data",
         variant: "destructive",
       });
-      console.error("Export error:", error);
+      logger.error("Export error:", error);
     }
   };
 
@@ -854,7 +853,7 @@ const NewReview = () => {
         onOpenChange={setShowSaveDialog}
         onSave={handleSaveReview}
         defaultTitle={fileName ? `Review: ${fileName}` : "QA Review"}
-        isLoading={isSaving}
+        isLoading={createReview.isPending}
       />
     </div>
   );
