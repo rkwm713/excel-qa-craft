@@ -160,11 +160,78 @@ export const reviewsAPI = {
     workPointNotes?: Record<string, string>;
     kmzPlacemarks?: any[];
   }): Promise<{ id: string; message: string }> => {
+    // Helper function to safely clone data (removes circular references and non-serializable objects)
+    const safeClone = (obj: any, seen = new WeakSet()): any => {
+      // Handle primitives and null
+      if (obj === null || typeof obj !== 'object') {
+        return obj;
+      }
+
+      // Handle circular references
+      if (seen.has(obj)) {
+        return null; // Replace circular reference with null
+      }
+
+      // Skip non-serializable objects
+      if (obj instanceof HTMLElement || obj instanceof Event || typeof obj === 'function') {
+        return null;
+      }
+
+      // Handle arrays
+      if (Array.isArray(obj)) {
+        seen.add(obj);
+        const result = obj.map(item => safeClone(item, seen));
+        seen.delete(obj);
+        return result;
+      }
+
+      // Handle Date
+      if (obj instanceof Date) {
+        return obj.toISOString();
+      }
+
+      // Handle Map
+      if (obj instanceof Map) {
+        seen.add(obj);
+        const result: Record<string, any> = {};
+        obj.forEach((value, key) => {
+          result[String(key)] = safeClone(value, seen);
+        });
+        seen.delete(obj);
+        return result;
+      }
+
+      // Handle Set
+      if (obj instanceof Set) {
+        seen.add(obj);
+        const result = Array.from(obj).map(item => safeClone(item, seen));
+        seen.delete(obj);
+        return result;
+      }
+
+      // Handle plain objects
+      seen.add(obj);
+      const result: Record<string, any> = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          try {
+            result[key] = safeClone(obj[key], seen);
+          } catch (e) {
+            // Skip properties that cause errors
+            result[key] = null;
+          }
+        }
+      }
+      seen.delete(obj);
+      return result;
+    };
+
     // Convert Map to object for JSON serialization
     const annotationsObj: Record<string, any[]> = {};
     if (data.pdfAnnotations) {
       data.pdfAnnotations.forEach((value, key) => {
-        annotationsObj[key.toString()] = value;
+        // Sanitize annotation data to remove any circular references
+        annotationsObj[key.toString()] = safeClone(value);
       });
     }
 
@@ -180,25 +247,28 @@ export const reviewsAPI = {
       };
     }
 
+    // Sanitize all data before stringifying
+    const sanitizedData = {
+      title: data.title,
+      description: data.description,
+      fileName: data.fileName,
+      kmzFileName: data.kmzFileName,
+      pdfFileName: data.pdfFileName || data.pdfFile?.name,
+      reviewRows: safeClone(data.reviewRows),
+      cuLookup: safeClone(data.cuLookup),
+      stationPageMapping: safeClone(data.stationPageMapping),
+      stationSpecMapping: safeClone(data.stationSpecMapping),
+      editedSpecMapping: safeClone(data.editedSpecMapping),
+      pdfAnnotations: annotationsObj,
+      workPointNotes: safeClone(data.workPointNotes),
+      kmzPlacemarks: safeClone(data.kmzPlacemarks),
+      pdfFile: pdfFileData,
+    };
+
     // Use JSON request (Netlify Functions work better with JSON)
     return apiRequest('/reviews', {
       method: 'POST',
-      body: JSON.stringify({
-        title: data.title,
-        description: data.description,
-        fileName: data.fileName,
-        kmzFileName: data.kmzFileName,
-        pdfFileName: data.pdfFileName || data.pdfFile?.name,
-        reviewRows: data.reviewRows,
-        cuLookup: data.cuLookup,
-        stationPageMapping: data.stationPageMapping,
-        stationSpecMapping: data.stationSpecMapping,
-        editedSpecMapping: data.editedSpecMapping,
-        pdfAnnotations: annotationsObj,
-        workPointNotes: data.workPointNotes,
-        kmzPlacemarks: data.kmzPlacemarks,
-        pdfFile: pdfFileData,
-      }),
+      body: JSON.stringify(sanitizedData),
     });
   },
 
