@@ -58,9 +58,9 @@ export default function ReviewsList() {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (user) {
-        // Get profile data if needed
+        // Get user data if needed
         const { data: profile } = await supabase
-          .from('profiles')
+          .from('users')
           .select('*')
           .eq('id', user.id)
           .single();

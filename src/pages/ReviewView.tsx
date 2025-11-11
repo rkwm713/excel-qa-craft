@@ -242,6 +242,12 @@ export default function ReviewView() {
     );
   };
 
+  const cuOptions = useMemo(() => {
+    const lookupCodes = reviewData?.cuLookup?.map((cu) => cu.code).filter(Boolean) ?? [];
+    const rowCodes = qaData.flatMap((row) => [row.designerCU, row.qaCU]).filter(Boolean) as string[];
+    return Array.from(new Set([...lookupCodes, ...rowCodes]));
+  }, [reviewData, qaData]);
+
   const metrics: DashboardMetrics = {
     totalRows: qaData.length,
     okCount: qaData.filter((r) => r.issueType === "OK").length,
@@ -320,7 +326,7 @@ export default function ReviewView() {
                 <QAReviewTable
                   data={qaData}
                   onUpdateRow={handleUpdateRow}
-                  cuOptions={reviewData.cuLookup.map((cu) => cu.code)}
+                  cuOptions={cuOptions}
                   selectedStation={selectedStation}
                   stations={stations}
                   onStationChange={setSelectedStation}
