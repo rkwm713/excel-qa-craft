@@ -1,4 +1,6 @@
 import { QAReviewRow, CULookupItem } from "@/types/qa-tool";
+import { WorkPointNote } from "@/types/pdf";
+import { normalizeWorkPointNotes } from "@/utils/workPointNotes";
 
 interface DraftReviewState {
   version: string;
@@ -15,7 +17,7 @@ interface DraftReviewState {
   placemarkNotes: Record<string, string>;
   mapDrawings: any[];
   pdfAnnotations: Record<number, any[]>;
-  pdfWorkPointNotes: Record<string, string>;
+  pdfWorkPointNotes: Record<string, WorkPointNote[] | string>;
   selectedStation: string;
   currentPdfPage: number;
   activeTab: string;
@@ -117,6 +119,12 @@ class DraftManager {
         pdfAnnotations.set(Number(page), annotations);
       });
       draftState.pdfAnnotations = pdfAnnotations;
+
+      const normalizedWorkPointNotes: Record<string, WorkPointNote[]> = {};
+      Object.entries(draftState.pdfWorkPointNotes || {}).forEach(([station, notes]) => {
+        normalizedWorkPointNotes[station] = normalizeWorkPointNotes(notes as WorkPointNote[] | string, station);
+      });
+      draftState.pdfWorkPointNotes = normalizedWorkPointNotes;
 
       console.log('Draft loaded from', new Date(draftState.timestamp).toLocaleString());
       return draftState;

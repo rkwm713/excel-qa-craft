@@ -1,4 +1,4 @@
-import { PDFDocument, PDFPage, rgb, PDFFont, RGB } from 'pdf-lib';
+import { PDFDocument, rgb, PDFFont, RGB, StandardFonts } from 'pdf-lib';
 import { PDFAnnotation } from '@/types/pdf';
 
 /**
@@ -11,6 +11,13 @@ export async function exportAnnotatedPDF(
 ): Promise<Blob> {
   const arrayBuffer = await pdfFile.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer);
+  const fontCache: Record<string, PDFFont> = {};
+  const getFont = async (fontName: string): Promise<PDFFont> => {
+    if (!fontCache[fontName]) {
+      fontCache[fontName] = await pdfDoc.embedFont(fontName);
+    }
+    return fontCache[fontName]!;
+  };
   
   const pages = pdfDoc.getPages();
   
@@ -70,8 +77,7 @@ export async function exportAnnotatedPDF(
         case 'text':
           if (annotation.x !== undefined && annotation.y !== undefined && annotation.text) {
             try {
-              // Try to embed a standard font
-              const font = await pdfDoc.embedFont('Helvetica');
+              const font = await getFont(StandardFonts.Helvetica);
               const fontSize = (annotation.fontSize || 12) * (width / 800); // Scale font size
               
               page.drawText(annotation.text, {
@@ -82,6 +88,47 @@ export async function exportAnnotatedPDF(
               });
             } catch (error) {
               console.warn('Failed to draw text annotation:', error);
+            }
+          }
+          break;
+
+        case 'callout':
+          if (annotation.x !== undefined && annotation.y !== undefined) {
+            const diameter = (annotation.width ?? (32 / width)) * width;
+            const radius = diameter / 2;
+            const centerX = annotation.x * width;
+            const centerY = height - (annotation.y * height);
+
+            const fillColor = parseColor(annotation.color);
+
+            page.drawCircle({
+              x: centerX,
+              y: centerY,
+              size: diameter,
+              color: fillColor,
+              borderColor: rgb(1, 1, 1),
+              borderWidth: Math.max(2, diameter * 0.08),
+            });
+
+            const label = annotation.calloutLabel ?? "";
+            if (label !== "") {
+              try {
+                const font = await getFont(StandardFonts.HelveticaBold);
+                const fontSize = Math.max(radius * 0.9, 10);
+                const text = String(label);
+                const textWidth = font.widthOfTextAtSize(text, fontSize);
+                const textHeight = font.heightAtSize(fontSize);
+
+                page.drawText(text, {
+                  x: centerX - textWidth / 2,
+                  y: centerY - textHeight / 2 + fontSize * 0.1,
+                  size: fontSize,
+                  font,
+                  color: rgb(1, 1, 1),
+                });
+              } catch (error) {
+                console.warn('Failed to draw callout label:', error);
+              }
             }
           }
           break;

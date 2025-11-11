@@ -7,7 +7,7 @@ import { MapViewer } from "@/components/MapViewer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, Save, Download, User, LogOut } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, Save, Download, User, LogOut, Edit2, Check, X } from "lucide-react";
 import { QAReviewRow, DashboardMetrics } from "@/types/qa-tool";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
@@ -27,6 +27,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { normalizeQaRow, normalizeQaRows } from "@/utils/qaValidation";
+import { findMatchingSpec } from "@/utils/stationNormalizer";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const STATUS_OPTIONS = [
   "Needs QA Review",
@@ -58,7 +68,7 @@ export default function ReviewView() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [currentPdfPage, setCurrentPdfPage] = useState<number>(1);
   const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
-  const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, string>>({});
+  const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, WorkPointNote[]>>({});
   const [currentWorkPoint, setCurrentWorkPoint] = useState<QAReviewRow | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -73,6 +83,8 @@ export default function ReviewView() {
   });
   const [isMetadataSaving, setIsMetadataSaving] = useState(false);
   const { toast } = useToast();
+  const [editingSpec, setEditingSpec] = useState<string | null>(null);
+  const [editingSpecValue, setEditingSpecValue] = useState<string>("");
 
   const handleSaveReview = useCallback(async () => {
     if (!id || !reviewData) return;
@@ -592,6 +604,23 @@ const handleExport = useCallback(async () => {
   }, [currentUser, id, metadata, reviewData, toast]);
 
   const stations = Array.from(new Set(qaData.map((r) => r.station))).sort();
+  const stationCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    qaData.forEach((r) => {
+      counts[r.station] = (counts[r.station] || 0) + 1;
+    });
+    return counts;
+  }, [qaData]);
+
+  const handlePreviousStation = useCallback(() => {
+    const idx = stations.indexOf(selectedStation);
+    if (idx > 0) setSelectedStation(stations[idx - 1]);
+  }, [stations, selectedStation]);
+
+  const handleNextStation = useCallback(() => {
+    const idx = stations.indexOf(selectedStation);
+    if (idx >= 0 && idx < stations.length - 1) setSelectedStation(stations[idx + 1]);
+  }, [stations, selectedStation]);
 
   if (isLoading) {
     return (
@@ -613,149 +642,183 @@ const handleExport = useCallback(async () => {
   return (
     <div className="min-h-screen flex w-full bg-background">
       <div className="flex-1 w-full">
-        <header className="sticky top-0 z-10 border-b bg-card shadow-sm">
-          <div className="flex flex-col gap-3 px-4 py-3">
+        <header className="sticky top-0 z-10 bg-white border-b border-border shadow-sm">
+          {/* Top Bar - Main Navigation */}
+          <div className="h-16 px-6 flex items-center justify-between">
+            {/* Left Section - Logo & Back */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-between flex-1">
-                <div className="flex items-center gap-6">
-                  <Button variant="ghost" onClick={() => navigate("/reviews")} className="gap-2">
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Reviews
-                  </Button>
-                  <img src={techservLogo} alt="TechServ" className="h-10 w-auto" />
-                  <div className="border-l border-border pl-6">
-                    <h1 className="text-2xl font-bold text-primary uppercase tracking-wide font-saira">
-                      {reviewData.review.title}
-                    </h1>
-                    <p className="text-sm text-muted-foreground font-neuton">
-                      {reviewData.review.description || "QA Review Session"}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {reviewData.review.status && (
-                        <Badge variant="secondary" className="uppercase tracking-wide font-saira text-xs">
-                          {reviewData.review.status}
-                        </Badge>
-                      )}
-                      {reviewData.review.wo_number && (
-                        <Badge variant="outline" className="text-xs font-saira">
-                          WO# {reviewData.review.wo_number}
-                        </Badge>
-                      )}
-                      {reviewData.review.project && (
-                        <Badge variant="outline" className="text-xs font-saira">
-                          Project: {reviewData.review.project}
-                        </Badge>
-                      )}
-                      {reviewData.review.designer && (
-                        <Badge variant="outline" className="text-xs font-saira">
-                          Designer: {reviewData.review.designer}
-                        </Badge>
-                      )}
-                      {reviewData.review.qa_tech && (
-                        <Badge variant="outline" className="text-xs font-saira">
-                          QA Tech: {reviewData.review.qa_tech}
-                        </Badge>
-                      )}
-                    </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate("/reviews")} 
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back to Reviews</span>
+              </Button>
+              <div className="h-8 w-px bg-border" />
+              <img src={techservLogo} alt="TechServ" className="h-8 w-auto" />
+            </div>
+
+            {/* Center Section - Title & Status */}
+            <div className="flex-1 px-6">
+              <div className="flex items-center gap-4">
+                <div>
+                  <h1 className="text-xl font-bold text-primary uppercase tracking-wide font-saira">
+                    {reviewData.review.title || metadata.woNumber || "Untitled Review"}
+                  </h1>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    {metadata.woNumber && (
+                      <>
+                        <span>WO# {metadata.woNumber}</span>
+                        <span className="text-xs">•</span>
+                      </>
+                    )}
+                    <Badge 
+                      variant={
+                        metadata.status === "Approved" ? "success" :
+                        metadata.status === "In Review" ? "default" :
+                        metadata.status === "Needs Corrections" ? "destructive" :
+                        "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {metadata.status}
+                    </Badge>
+                    {reviewData.review.description && reviewData.review.description !== "QA Review Session" && (
+                      <>
+                        <span className="text-xs">•</span>
+                        <span className="truncate max-w-xs">{reviewData.review.description}</span>
+                      </>
+                    )}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {currentUser && (
-                    <div className="flex items-center gap-2 text-sm mr-2">
-                      <User className="w-4 h-4" />
-                      <span className="font-semibold font-saira uppercase">
-                        {currentUser.username ?? currentUser.email ?? "User"}
-                      </span>
-                    </div>
-                  )}
-                  {qaData.length > 0 && (
-                    <>
-                      {canEditReview && (
-                        <Button
-                          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-                          onClick={handleSaveReview}
-                          disabled={isSaving || !canEditReview}
-                        >
-                          <Save className="w-4 h-4" />
-                          {isSaving ? "Saving..." : "Save Changes"}
-                        </Button>
-                      )}
-                      <Button
-                        onClick={handleExport}
-                        className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
-                      >
-                        <Download className="w-4 h-4" />
-                        Export QA Tool
-                      </Button>
-                    </>
-                  )}
-                  {currentUser ? (
-                    <Button variant="outline" onClick={handleLogout} className="gap-2">
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </Button>
-                  ) : (
-                    <Button variant="outline" onClick={() => setShowLoginDialog(true)} className="gap-2">
-                      <User className="w-4 h-4" />
-                      Login
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="flex gap-1 bg-muted/50 p-1.5 rounded-lg border border-border/50 shadow-sm">
+            {/* Right Section - Actions */}
+            <div className="flex items-center gap-2">
+              {qaData.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {canEditReview && (
+                    <Button
+                      size="sm"
+                      className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                      onClick={handleSaveReview}
+                      disabled={isSaving || !canEditReview}
+                    >
+                      <Save className="w-4 h-4" />
+                      <span className="hidden lg:inline">{isSaving ? "Saving..." : "Save Changes"}</span>
+                    </Button>
+                  )}
                   <Button
-                    variant={activeTab === "dashboard" ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setActiveTab("dashboard")}
-                    className={`gap-2 transition-all duration-200 ${
-                      activeTab === "dashboard"
-                        ? "bg-primary text-primary-foreground shadow-md font-semibold"
-                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
+                    variant="secondary"
+                    onClick={handleExport}
+                    className="gap-2 font-medium bg-accent text-accent-foreground hover:bg-accent/90"
                   >
-                    <TrendingUp className={`w-4 h-4 transition-transform ${activeTab === "dashboard" ? "scale-110" : ""}`} />
-                    Overview
-                  </Button>
-                  <Button
-                    variant={activeTab === "data" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setActiveTab("data")}
-                    className={`gap-2 transition-all duration-200 ${
-                      activeTab === "data"
-                        ? "bg-primary text-primary-foreground shadow-md font-semibold"
-                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <FileSpreadsheet className={`w-4 h-4 transition-transform ${activeTab === "data" ? "scale-110" : ""}`} />
-                    QA Data
-                  </Button>
-                  <Button
-                    variant={activeTab === "map" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setActiveTab("map")}
-                    className={`gap-2 transition-all duration-200 ${
-                      activeTab === "map"
-                        ? "bg-primary text-primary-foreground shadow-md font-semibold"
-                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <MapIcon className={`w-4 h-4 transition-transform ${activeTab === "map" ? "scale-110" : ""}`} />
-                    Map View
+                    <Download className="w-4 h-4" />
+                    <span className="hidden lg:inline">Export QA Tool</span>
                   </Button>
                 </div>
-                {activeTab === "data" && (
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold font-saira uppercase tracking-wide text-primary">
-                      QA Review: {reviewData.review.file_name || reviewData.review.title}
-                    </h2>
-                  </div>
-                )}
+              )}
+              
+              <div className="h-8 w-px bg-border" />
+              
+              {currentUser ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="ghost" className="gap-2 hover:bg-muted">
+                      <Avatar className="h-7 w-7">
+                        <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                          {(currentUser.username ?? currentUser.email ?? "U")
+                            .toString()
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden md:inline text-sm font-medium">
+                        {currentUser.username ?? currentUser.email ?? "User"}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {currentUser.username ?? "User"}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {currentUser.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="gap-2 text-destructive focus:text-destructive">
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => setShowLoginDialog(true)} className="gap-2">
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">Login</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom Bar - Tabs */}
+          <div className="bg-muted/30 border-t border-border">
+            <div className="px-6 flex items-center h-12">
+              <div className="flex gap-1">
+                <Button
+                  variant={activeTab === "dashboard" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab("dashboard")}
+                  className={`
+                    gap-2 rounded-b-none h-10 font-medium
+                    ${activeTab === "dashboard" 
+                      ? "bg-background text-primary border-t-2 border-x border-primary shadow-sm" 
+                      : "hover:bg-muted/50 text-muted-foreground"
+                    }
+                  `}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  Overview
+                </Button>
+                <Button
+                  variant={activeTab === "data" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab("data")}
+                  className={`
+                    gap-2 rounded-b-none h-10 font-medium
+                    ${activeTab === "data" 
+                      ? "bg-background text-primary border-t-2 border-x border-primary shadow-sm" 
+                      : "hover:bg-muted/50 text-muted-foreground"
+                    }
+                  `}
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  QA Data
+                </Button>
+                <Button
+                  variant={activeTab === "map" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab("map")}
+                  className={`
+                    gap-2 rounded-b-none h-10 font-medium
+                    ${activeTab === "map" 
+                      ? "bg-background text-primary border-t-2 border-x border-primary shadow-sm" 
+                      : "hover:bg-muted/50 text-muted-foreground"
+                    }
+                  `}
+                >
+                  <MapIcon className="w-4 h-4" />
+                  Map View
+                </Button>
               </div>
-              <div className="flex gap-2" />
             </div>
           </div>
         </header>
@@ -873,6 +936,140 @@ const handleExport = useCallback(async () => {
             </TabsContent>
 
             <TabsContent value="data" className="space-y-6">
+              {/* WP Navigation Row */}
+              {qaData.length > 0 && (
+                <Card className="p-2">
+                  <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+                    {/* Left: empty spacer since tabs now appear on title hover */}
+                    <div />
+                    {/* Center: WP navigation + records */}
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePreviousStation}
+                        disabled={stations.indexOf(selectedStation) <= 0}
+                        className="h-7 px-2"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                      </Button>
+                      <Select value={selectedStation} onValueChange={setSelectedStation}>
+                        <SelectTrigger className="w-[160px] h-8 border-primary/40 bg-primary/10 hover:bg-primary/20 font-saira font-semibold text-primary">
+                          <SelectValue placeholder="Select WP" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stations.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              WP {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextStation}
+                        disabled={stations.indexOf(selectedStation) >= stations.length - 1}
+                        className="h-7 px-2"
+                      >
+                        <ArrowLeft className="w-4 h-4 rotate-180" />
+                      </Button>
+                      <Badge variant="default" className="font-saira text-sm px-3 py-1">
+                        {stationCounts[selectedStation] || 0} {stationCounts[selectedStation] === 1 ? "record" : "records"}
+                      </Badge>
+                    </div>
+                    {/* Right: Spec display / edit */}
+                    <div className="flex items-center justify-end gap-2">
+                      {(() => {
+                        const editedSpec = reviewData.editedSpecMapping?.[selectedStation];
+                        const originalSpec = reviewData.stationSpecMapping
+                          ? findMatchingSpec(selectedStation, reviewData.stationSpecMapping)
+                          : null;
+                        const specNumber =
+                          editedSpec !== undefined && editedSpec !== "" ? editedSpec : originalSpec;
+                        const isEdited =
+                          editedSpec !== undefined && editedSpec !== "" && editedSpec !== originalSpec;
+
+                        if (editingSpec === selectedStation) {
+                          return (
+                            <>
+                              <Input
+                                value={editingSpecValue}
+                                onChange={(e) => setEditingSpecValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleSpecNumberChange(selectedStation, editingSpecValue.trim());
+                                    setEditingSpec(null);
+                                    setEditingSpecValue("");
+                                  } else if (e.key === "Escape") {
+                                    setEditingSpec(null);
+                                    setEditingSpecValue("");
+                                  }
+                                }}
+                                placeholder="Enter spec number"
+                                className="h-8 w-40 text-sm font-saira text-center"
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={() => {
+                                  handleSpecNumberChange(selectedStation, editingSpecValue.trim());
+                                  setEditingSpec(null);
+                                  setEditingSpecValue("");
+                                }}
+                              >
+                                <Check className="w-4 h-4 text-green-600" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={() => {
+                                  setEditingSpec(null);
+                                  setEditingSpecValue("");
+                                }}
+                              >
+                                <X className="w-4 h-4 text-red-600" />
+                              </Button>
+                            </>
+                          );
+                        }
+
+                        return specNumber ? (
+                          <Badge
+                            variant={isEdited ? "default" : "secondary"}
+                            className={`font-saira cursor-pointer hover:opacity-80 transition-opacity ${
+                              isEdited ? "bg-orange-500 hover:bg-orange-600" : ""
+                            }`}
+                            onClick={() => {
+                              setEditingSpec(selectedStation);
+                              setEditingSpecValue(specNumber);
+                            }}
+                          >
+                            Spec: {specNumber}
+                            {isEdited && <span className="ml-1 text-xs">(edited)</span>}
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 font-saira text-xs"
+                            onClick={() => {
+                              setEditingSpec(selectedStation);
+                              setEditingSpecValue("");
+                            }}
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Add Spec
+                          </Button>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </Card>
+              )}
               {qaData.length > 0 ? (
                 <QAReviewTable
                   data={qaData}

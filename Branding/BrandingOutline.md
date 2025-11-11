@@ -1,194 +1,60 @@
-# TechServ Web Application Brand Guidelines
-
-**Last Updated:** May 2023
-
----
+# TechServ Complete Brand Guide & Design System
 
 ## Table of Contents
-
-1. [Logos](#logos)
-2. [Typography](#typography)
-3. [Color System](#color-system)
-4. [UI Components](#ui-components)
-5. [Layout & Spacing](#layout--spacing)
-6. [Iconography](#iconography)
-7. [Patterns & Backgrounds](#patterns--backgrounds)
-8. [Accessibility](#accessibility)
-
----
-
-## Logos
-
-### Overview
-
-TechServ has three main logo variations for web applications:
-
-#### Primary Logo
-Use the primary logo in the main navigation header and splash screens. This should be your default choice for most applications.
-
-**Recommended Sizes:**
-- Desktop Header: 180-220px width
-- Mobile Header: 120-140px width
-- Favicon: 32x32px (use logomark)
-
-#### Secondary Logo
-Use when space is limited or brand recognition is already established (e.g., internal dashboards, compact mobile views).
-
-**Recommended Sizes:**
-- Compact Navigation: 60-80px width
-- Mobile Footer: 50-60px width
-
-#### Logomark
-Perfect for favicons, app icons, loading spinners, and decorative elements. Can be used as a standalone brand element.
-
-**Recommended Sizes:**
-- Favicon: 32x32px, 192x192px, 512x512px
-- App Icon: 512x512px
-- Loading Indicator: 48-64px
-
-#### Reverse Colors
-Use white logos on dark backgrounds (TechServ Blue, TechServ Black, Storm Blue). Ensure minimum contrast ratio of 4.5:1.
+- [Overview](#overview)
+- [Logo System](#logo-system)
+- [Color System](#color-system)
+- [Typography](#typography)
+- [UI Components](#ui-components)
+- [Background Patterns](#background-patterns)
+- [Lightning Bolt Patterns](#lightning-bolt-patterns)
+- [CSS Variables & Code](#css-variables--code)
+- [Design Resources](#design-resources)
 
 ---
 
-### Logo Spacing Guidelines
+## Overview
 
-**Clearspace Rules:**
-- Primary Logo: Use the height of the "E" as minimum clearspace on all sides
-- Secondary Logo: Use the height of the "S" as minimum clearspace
-- Logomark: Use half the bolt height as minimum clearspace
+Welcome to the TechServ Design System - a comprehensive brand guide and component library for building consistent, professional, and accessible user interfaces. This system includes typography, color palettes, UI components, background patterns, and code snippets ready for implementation in your web applications.
 
-**Minimum Sizes:**
-- Primary Logo: 100px width (web), 80px (mobile)
-- Secondary Logo: 50px width
-- Logomark: 24px width
+### What's Included
 
----
-
-### Logo Implementation
-
-```css
-/* Primary Logo Container */
-.logo-primary {
-  width: 200px;
-  height: auto;
-  padding: 16px;
-}
-
-/* Secondary Logo Container */
-.logo-secondary {
-  width: 60px;
-  height: auto;
-  padding: 12px;
-}
-
-/* Logomark Container */
-.logo-mark {
-  width: 32px;
-  height: auto;
-  padding: 8px;
-}
-```
+- **Logo Guidelines:** Primary, secondary, and logomark usage rules
+- **Color System:** Primary, secondary, and semantic color palettes
+- **Typography:** Saira (headings) and Neuton (body) font specifications
+- **UI Components:** Buttons, forms, cards, alerts, and navigation
+- **Background Patterns:** 12 general patterns + 12 bolt-focused designs
+- **CSS Variables:** Complete design token system
+- **Accessibility:** WCAG AA compliance guidelines
+- **Code Examples:** Ready-to-use HTML and CSS snippets
 
 ---
 
-## Typography
+## Logo System
 
-### Font Loading
+### Three Logo Variations
 
-```html
-<!-- Google Fonts Import -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira:wght@700&family=Neuton:wght@400;700&display=swap" rel="stylesheet">
-```
+**Primary Logo**
+- Use for main branding, headers, and primary applications
+- Includes "TECH" and "SERV" text with lightning bolt
+- File naming: `TechServ_PrimaryLogo_[Color/White/Black/ColorWhite].png`
 
----
+**Secondary Logo**
+- Use when space is limited or brand recognition exists
+- Shows "T" and "S" with lightning bolt
+- File naming: `TechServ_SecondaryLogo_[Color/White/Black/ColorWhite].png`
 
-### Heading Styles: Saira
+**Logomark**
+- The lightning bolt symbol alone
+- Perfect for favicons, app icons, and design elements
+- File naming: `TechServ_Logomark_[Color/White/Black/ColorWhite].png`
 
-**Font:** Saira Bold  
-**Style:** ALL CAPS  
-**Letter Spacing:** 0.05em (50/1000)  
+### Logo Usage Rules
 
-**Scale:**
-
-| Element | Size | Line Height | Use Case |
-|---------|------|-------------|----------|
-| H1 | 48px / 3rem | 1.2 | Page titles, hero sections |
-| H2 | 36px / 2.25rem | 1.3 | Section headers |
-| H3 | 28px / 1.75rem | 1.3 | Subsection headers |
-| H4 | 22px / 1.375rem | 1.4 | Card titles, modal headers |
-| H5 | 18px / 1.125rem | 1.4 | Small headings, labels |
-| H6 | 16px / 1rem | 1.4 | Micro headings |
-
-**Responsive Scale (Mobile):**
-- H1: 32px / 2rem
-- H2: 28px / 1.75rem
-- H3: 24px / 1.5rem
-- H4: 20px / 1.25rem
-
-```css
-/* Heading Styles */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Saira', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-h1 { font-size: 3rem; line-height: 1.2; }
-h2 { font-size: 2.25rem; line-height: 1.3; }
-h3 { font-size: 1.75rem; line-height: 1.3; }
-h4 { font-size: 1.375rem; line-height: 1.4; }
-
-/* Responsive headings */
-@media (max-width: 768px) {
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.75rem; }
-}
-```
-
----
-
-### Body Text: Neuton
-
-**Font:** Neuton Regular  
-**Weights:** 400 (Regular), 700 (Bold)  
-
-**Scale:**
-
-| Element | Size | Line Height | Use Case |
-|---------|------|-------------|----------|
-| Large | 20px / 1.25rem | 1.6 | Lead paragraphs, introductions |
-| Body | 16px / 1rem | 1.6 | Standard body text, descriptions |
-| Small | 14px / 0.875rem | 1.5 | Helper text, captions |
-| Tiny | 12px / 0.75rem | 1.5 | Footnotes, legal text |
-
-```css
-/* Body Text Styles */
-body {
-  font-family: 'Neuton', serif;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: #282A30;
-}
-
-.text-large {
-  font-size: 1.25rem;
-  line-height: 1.6;
-}
-
-.text-small {
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-.text-tiny {
-  font-size: 0.75rem;
-  line-height: 1.5;
-}
-```
+- **Spacing:** Use letter height ("E" or "S") as minimum clearspace
+- **Minimum Size:** 100px width (web), 80px (mobile) for primary logo
+- **Do Not:** Stretch, add effects, or use insufficient contrast
+- **Reverse Logos:** Use white logos on dark backgrounds only
 
 ---
 
@@ -196,105 +62,101 @@ body {
 
 ### Primary Colors
 
-#### TechServ Blue
-**Primary brand color - Use for primary actions, links, and key UI elements**
+**TechServ Blue**
+- Hex: `#04458D`
+- RGB: `4, 69, 141`
+- Usage: Primary Brand Color
+- CSS Variable: `--color-primary`
 
-- **HEX:** `#04458D`
-- **RGB:** `rgb(4, 69, 141)`
-- **RGBA:** `rgba(4, 69, 141, 1)`
-- **CSS Variable:** `--color-primary`
+**Storm Blue**
+- Hex: `#0A3251`
+- RGB: `10, 50, 81`
+- Usage: Headers & Dark Sections
+- CSS Variable: `--color-dark`
 
-```css
-:root {
-  --color-primary: #04458D;
-  --color-primary-rgb: 4, 69, 141;
-}
-```
+**TechServ Gray**
+- Hex: `#4E525B`
+- RGB: `78, 82, 91`
+- Usage: Secondary Text
+- CSS Variable: `--color-secondary`
 
-#### TechServ Gray
-**Neutral color for secondary text and borders**
-
-- **HEX:** `#4E525B`
-- **RGB:** `rgb(78, 82, 91)`
-- **CSS Variable:** `--color-gray`
-
-#### TechServ Black
-**Primary text color and high-contrast elements**
-
-- **HEX:** `#282A30`
-- **RGB:** `rgb(40, 42, 48)`
-- **CSS Variable:** `--color-text`
-
----
+**Charcoal Text**
+- Hex: `#282A30`
+- RGB: `40, 42, 48`
+- Usage: Body Text
+- CSS Variable: `--color-text`
 
 ### Secondary Colors
 
-#### Storm Blue
-**Dark accent color for headers, footers, and dark mode**
+**Sky Blue**
+- Hex: `#D9E8F7`
+- RGB: `217, 232, 247`
+- Usage: Light Backgrounds
+- CSS Variable: `--color-light`
 
-- **HEX:** `#0A3251`
-- **RGB:** `rgb(10, 50, 81)`
-- **CSS Variable:** `--color-dark`
+**Safety Yellow**
+- Hex: `#FFFF00`
+- RGB: `255, 255, 0`
+- Usage: Call to Action
+- CSS Variable: `--color-cta`
+- **Accessibility Note:** Safety Yellow fails WCAG AA contrast on white backgrounds. Always use with dark text or dark backgrounds.
 
-#### Sky Blue
-**Light background color for sections and cards**
-
-- **HEX:** `#D9E8F7`
-- **RGB:** `rgb(217, 232, 247)`
-- **CSS Variable:** `--color-light`
-
-#### Safety Yellow
-**Call-to-action color - Use sparingly for important actions**
-
-- **HEX:** `#FFFF00`
-- **RGB:** `rgb(255, 255, 0)`
-- **CSS Variable:** `--color-cta`
-
-⚠️ **Accessibility Note:** Safety Yellow fails WCAG AA contrast on white backgrounds. Use with dark text or backgrounds.
-
-#### Conduit Gray
-**Background color for disabled states and subtle sections**
-
-- **HEX:** `#E6E7E8`
-- **RGB:** `rgb(230, 231, 232)`
-- **CSS Variable:** `--color-disabled`
-
----
+**Conduit Gray**
+- Hex: `#E6E7E8`
+- RGB: `230, 231, 232`
+- Usage: Disabled States
+- CSS Variable: `--color-disabled`
 
 ### Semantic Colors
 
-```css
-:root {
-  /* Feedback Colors */
-  --color-success: #28A745;
-  --color-warning: #FFC107;
-  --color-error: #DC3545;
-  --color-info: #04458D;
-  
-  /* Backgrounds */
-  --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #D9E8F7;
-  --color-bg-dark: #0A3251;
-  
-  /* Borders */
-  --color-border-light: #E6E7E8;
-  --color-border-medium: #4E525B;
-  --color-border-dark: #282A30;
-}
-```
+- **Success:** `#28A745` - Green for success states
+- **Warning:** `#FFC107` - Yellow/amber for warnings
+- **Error:** `#DC3545` - Red for error states
+- **Info:** `#04458D` - Primary blue for information
 
 ---
 
-### Color Usage Guide
+## Typography
 
-| Color | Primary Use | Avoid Using For |
-|-------|-------------|-----------------|
-| TechServ Blue | Primary buttons, links, active states | Large backgrounds, body text |
-| Safety Yellow | CTAs, important alerts, highlights | Body text, large areas |
-| Storm Blue | Headers, footers, dark sections | Body text (contrast issues) |
-| Sky Blue | Section backgrounds, card backgrounds | Text, small UI elements |
-| TechServ Gray | Secondary text, icons, dividers | Primary text, backgrounds |
-| TechServ Black | Body text, headings | Buttons (low engagement) |
+### Font Families
+
+**Saira (Headings)**
+- Weight: 700 (Bold)
+- Style: Sans-serif
+- Transform: ALL CAPS
+- Letter Spacing: 0.05em (50pt)
+- Usage: All headings, buttons, navigation
+- Google Fonts: `https://fonts.googleapis.com/css2?family=Saira:wght@700&display=swap`
+- CSS Variable: `--font-heading: 'Saira', sans-serif;`
+
+**Neuton (Body Text)**
+- Weight: 400 (Regular), 700 (Bold)
+- Style: Serif
+- Line Height: 1.6
+- Usage: Body copy, paragraphs, descriptions
+- Google Fonts: `https://fonts.googleapis.com/css2?family=Neuton:wght@400;700&display=swap`
+- CSS Variable: `--font-body: 'Neuton', serif;`
+
+### Heading Sizes
+
+- **H1:** 48px / 3rem - Line Height: 1.2 - Color: Primary Blue
+- **H2:** 36px / 2.25rem - Line Height: 1.3 - Color: Primary Blue
+- **H3:** 28px / 1.75rem - Line Height: 1.3 - Color: Storm Blue
+- **H4:** 22px / 1.375rem - Line Height: 1.4
+- **H5:** 18px / 1.125rem - Line Height: 1.4
+
+### Body Text
+
+- **Body:** 16px / 1rem - Line Height: 1.6
+- **Small:** 14px / 0.875rem
+- **Large:** 18px / 1.125rem
+
+### Typography Guidelines
+
+- **Headings:** Always use Saira Bold, ALL CAPS, with 50pt letter spacing
+- **Body Text:** Use Neuton Regular at 16px with 1.6 line height
+- **Buttons:** Use Saira Bold, ALL CAPS for all button labels
+- **Font Loading:** Import from Google Fonts for optimal performance
 
 ---
 
@@ -302,554 +164,156 @@ body {
 
 ### Buttons
 
-#### Primary Button
+**Button Types**
 
-```css
-.btn-primary {
-  font-family: 'Saira', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 12px 24px;
-  font-size: 16px;
-  background-color: #04458D;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+1. **Primary Button**
+   - Background: TechServ Blue (`#04458D`)
+   - Text: White
+   - Hover: Storm Blue (`#033562`)
+   - Class: `.btn-primary`
 
-.btn-primary:hover {
-  background-color: #033562;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(4, 69, 141, 0.3);
-}
+2. **Secondary Button**
+   - Background: Transparent
+   - Text: TechServ Blue
+   - Border: 2px solid TechServ Blue
+   - Hover: TechServ Blue background, White text
+   - Class: `.btn-secondary`
 
-.btn-primary:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(4, 69, 141, 0.3);
-}
+3. **CTA Button**
+   - Background: Safety Yellow (`#FFFF00`)
+   - Text: Charcoal Text
+   - Border: 2px solid Charcoal Text
+   - Hover: Darker yellow, slight scale
+   - Class: `.btn-cta`
 
-.btn-primary:disabled {
-  background-color: #E6E7E8;
-  color: #4E525B;
-  cursor: not-allowed;
-  transform: none;
-}
-```
+**Button Sizes**
+- **Small:** 8px 16px padding, 14px font
+- **Medium (Default):** 12px 24px padding, 16px font
+- **Large:** 16px 32px padding, 18px font
 
-#### CTA Button (Safety Yellow)
-
-```css
-.btn-cta {
-  font-family: 'Saira', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 14px 28px;
-  font-size: 18px;
-  background-color: #FFFF00;
-  color: #282A30;
-  border: 2px solid #282A30;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-cta:hover {
-  background-color: #E6E600;
-  transform: scale(1.02);
-}
-```
-
-#### Secondary Button
-
-```css
-.btn-secondary {
-  font-family: 'Saira', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 12px 24px;
-  font-size: 16px;
-  background-color: transparent;
-  color: #04458D;
-  border: 2px solid #04458D;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background-color: #04458D;
-  color: #FFFFFF;
-}
-```
-
-**Button Sizes:**
-- Large: `padding: 16px 32px; font-size: 18px;`
-- Medium (default): `padding: 12px 24px; font-size: 16px;`
-- Small: `padding: 8px 16px; font-size: 14px;`
-
----
-
-### Form Inputs
-
-```css
-.form-input {
-  font-family: 'Neuton', serif;
-  font-size: 16px;
-  padding: 12px 16px;
-  border: 2px solid #E6E7E8;
-  border-radius: 4px;
-  background-color: #FFFFFF;
-  color: #282A30;
-  transition: border-color 0.2s ease;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #04458D;
-  box-shadow: 0 0 0 3px rgba(4, 69, 141, 0.1);
-}
-
-.form-input:disabled {
-  background-color: #E6E7E8;
-  color: #4E525B;
-  cursor: not-allowed;
-}
-
-.form-input.error {
-  border-color: #DC3545;
-}
-
-.form-label {
-  font-family: 'Saira', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 14px;
-  color: #282A30;
-  margin-bottom: 8px;
-  display: block;
-}
-```
-
----
+**Button States**
+- **Default:** Full opacity, interactive
+- **Hover:** Transform translateY(-2px), shadow increase
+- **Disabled:** Conduit Gray background, secondary gray text, no interaction
 
 ### Cards
 
-```css
-.card {
-  background-color: #FFFFFF;
-  border: 1px solid #E6E7E8;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 4px rgba(40, 42, 48, 0.08);
-  transition: all 0.2s ease;
-}
+- Background: White
+- Border: 1px solid Conduit Gray
+- Border Radius: 8px
+- Padding: 24px
+- Shadow: Small (0 2px 4px rgba(40, 42, 48, 0.08))
+- Hover: Shadow increase, translateY(-4px)
 
-.card:hover {
-  box-shadow: 0 4px 12px rgba(40, 42, 48, 0.12);
-  transform: translateY(-2px);
-}
-
-.card-header {
-  font-family: 'Saira', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 1.375rem;
-  color: #04458D;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #D9E8F7;
-}
-```
-
----
-
-### Navigation
-
-```css
-.navbar {
-  background-color: #0A3251;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(10, 50, 81, 0.2);
-}
-
-.nav-link {
-  font-family: 'Saira', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 14px;
-  color: #FFFFFF;
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-}
-
-.nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.nav-link.active {
-  background-color: #04458D;
-}
-```
-
----
+**Card Header**
+- Font: Saira Bold
+- Text Transform: UPPERCASE
+- Letter Spacing: 0.05em
+- Font Size: 22px
+- Color: TechServ Blue
+- Border Bottom: 2px solid Sky Blue
 
 ### Alerts & Notifications
 
-```css
-.alert {
-  padding: 16px 20px;
-  border-radius: 4px;
-  border-left: 4px solid;
-  margin-bottom: 16px;
-}
+**Alert Types**
 
-.alert-success {
-  background-color: #D4EDDA;
-  border-color: #28A745;
-  color: #155724;
-}
+1. **Success Alert**
+   - Background: `#D4EDDA`
+   - Border: 4px left solid `#28A745`
+   - Text: `#155724`
 
-.alert-warning {
-  background-color: #FFF3CD;
-  border-color: #FFC107;
-  color: #856404;
-}
+2. **Warning Alert**
+   - Background: `#FFF3CD`
+   - Border: 4px left solid `#FFC107`
+   - Text: `#856404`
 
-.alert-error {
-  background-color: #F8D7DA;
-  border-color: #DC3545;
-  color: #721C24;
-}
+3. **Error Alert**
+   - Background: `#F8D7DA`
+   - Border: 4px left solid `#DC3545`
+   - Text: `#721C24`
 
-.alert-info {
-  background-color: #D9E8F7;
-  border-color: #04458D;
-  color: #0A3251;
-}
-```
+4. **Info Alert**
+   - Background: Sky Blue
+   - Border: 4px left solid TechServ Blue
+   - Text: Storm Blue
+
+### Form Elements
+
+**Inputs, Selects, Textareas**
+- Font: Neuton
+- Font Size: 16px
+- Padding: 12px 16px
+- Border: 2px solid Conduit Gray
+- Border Radius: 4px
+- Focus Border: TechServ Blue
+- Focus Shadow: 0 0 0 3px rgba(4, 69, 141, 0.1)
+
+**Form Labels**
+- Font: Saira Bold
+- Text Transform: UPPERCASE
+- Letter Spacing: 0.05em
+- Font Size: 14px
+- Color: Charcoal Text
 
 ---
 
-## Layout & Spacing
+## Background Patterns
 
-### Spacing System
+### General Patterns
 
-Use a consistent 8px spacing scale:
+Keep opacity at 10-20% to ensure readability.
+
+1. **Technical Grid**
+   - Grid pattern on primary blue
+   - Perfect for dashboards and technical sections
+   - CSS: Linear gradients creating grid lines
+
+2. **Blue Gradient**
+   - Smooth gradient from Storm Blue to TechServ Blue
+   - Great for hero sections
+   - CSS: `linear-gradient(135deg, #0A3251 0%, #04458D 100%)`
+
+3. **Light Background**
+   - Subtle light blue for section backgrounds and cards
+   - Background: Sky Blue (`#D9E8F7`)
+
+### Pattern Library
+
+View complete pattern library with all 24 patterns (12 general + 12 bolt-focused) in the full pattern showcase files.
+
+---
+
+## Lightning Bolt Patterns
+
+Creative patterns featuring the iconic TechServ lightning bolt logomark. These designs emphasize energy and power.
+
+### 12 Bolt-Focused Designs Include:
+
+1. **Corner Power:** Rotated bolts in opposite corners
+2. **Electric Trail:** Animated horizontal flowing bolts
+3. **Power Surge:** Pulsing animated bolt with radial gradient
+4. **Lightning Strike:** Vertical repeating bolts
+5. **Energized Grid:** Technical grid with scattered bolt accents
+6. **Yellow Charge:** Glowing animated bolt with safety yellow aura
+7. ...and 6 more creative bolt patterns!
+
+**Animation Note:** Always respect `prefers-reduced-motion` for users sensitive to animation.
+
+---
+
+## CSS Variables & Code
+
+### Complete CSS Variable System
 
 ```css
+/* TechServ Design System Variables */
 :root {
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
-  --space-3xl: 64px;
-}
-```
-
-**Usage Guidelines:**
-- Component padding: `--space-md` to `--space-lg`
-- Section spacing: `--space-2xl` to `--space-3xl`
-- Element spacing: `--space-sm` to `--space-md`
-- Tight spacing: `--space-xs` to `--space-sm`
-
----
-
-### Grid System
-
-```css
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.container-fluid {
-  width: 100%;
-  padding: 0 24px;
-}
-
-/* 12-column grid */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 24px;
-}
-
-.col-12 { grid-column: span 12; }
-.col-6 { grid-column: span 6; }
-.col-4 { grid-column: span 4; }
-.col-3 { grid-column: span 3; }
-
-@media (max-width: 768px) {
-  .col-12, .col-6, .col-4, .col-3 {
-    grid-column: span 12;
-  }
-}
-```
-
----
-
-### Breakpoints
-
-```css
-/* Mobile First Approach */
-:root {
-  --breakpoint-sm: 576px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 992px;
-  --breakpoint-xl: 1200px;
-}
-
-/* Usage */
-@media (min-width: 768px) { /* Tablet */ }
-@media (min-width: 992px) { /* Desktop */ }
-@media (min-width: 1200px) { /* Large Desktop */ }
-```
-
----
-
-## Iconography
-
-### Icon Guidelines
-
-**Style:** Use outline/stroke icons for consistency  
-**Size:** 16px, 24px, 32px, 48px  
-**Stroke Width:** 2px  
-**Color:** Match surrounding text or use TechServ Gray (#4E525B)
-
-```css
-.icon {
-  width: 24px;
-  height: 24px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2px;
-}
-
-.icon-sm { width: 16px; height: 16px; }
-.icon-lg { width: 32px; height: 32px; }
-.icon-xl { width: 48px; height: 48px; }
-```
-
-**Recommended Icon Library:** Feather Icons, Heroicons, or Lucide
-
----
-
-### Logomark as Icon
-
-The lightning bolt logomark can be used as an icon for:
-- Loading states (animated)
-- Action indicators
-- Success confirmations
-- Decorative accents
-
-```css
-.loading-icon {
-  width: 48px;
-  height: 48px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-```
-
----
-
-## Patterns & Backgrounds
-
-### Circuit Diagram Pattern
-
-**Use Cases:**
-- Page backgrounds
-- Section dividers
-- Card backgrounds (subtle)
-- Hero sections
-
-**Implementation:**
-
-```css
-.circuit-bg {
-  background-image: url('/assets/circuit-pattern.svg');
-  background-repeat: repeat;
-  background-size: 200px;
-  opacity: 0.1; /* 10-20% recommended */
-}
-
-/* Alternative: CSS Grid Pattern */
-.circuit-bg-grid {
-  background-image: 
-    linear-gradient(rgba(4, 69, 141, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(4, 69, 141, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-```
-
----
-
-### Grid Pattern
-
-**Use Cases:**
-- Technical section backgrounds
-- Dashboard cards
-- Data visualization backgrounds
-
-```css
-.grid-pattern {
-  background-image: 
-    linear-gradient(#E6E7E8 1px, transparent 1px),
-    linear-gradient(90deg, #E6E7E8 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-.grid-pattern-blue {
-  background-image: 
-    linear-gradient(rgba(4, 69, 141, 0.2) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(4, 69, 141, 0.2) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-```
-
----
-
-### Gradient Overlays
-
-```css
-/* Blue Gradient */
-.gradient-blue {
-  background: linear-gradient(135deg, #0A3251 0%, #04458D 100%);
-}
-
-/* Blue to Yellow (CTA) */
-.gradient-cta {
-  background: linear-gradient(135deg, #04458D 0%, #FFFF00 100%);
-}
-
-/* Subtle light gradient */
-.gradient-light {
-  background: linear-gradient(180deg, #FFFFFF 0%, #D9E8F7 100%);
-}
-```
-
----
-
-## Accessibility
-
-### WCAG AA Compliance
-
-**Minimum Contrast Ratios:**
-- Normal text (< 18px): 4.5:1
-- Large text (≥ 18px or 14px bold): 3:1
-- UI components: 3:1
-
-**Approved Color Combinations:**
-
-| Background | Text Color | Contrast Ratio | Pass |
-|------------|-----------|----------------|------|
-| White (#FFFFFF) | TechServ Black (#282A30) | 14.3:1 | ✅ AAA |
-| White (#FFFFFF) | TechServ Blue (#04458D) | 6.8:1 | ✅ AA |
-| White (#FFFFFF) | TechServ Gray (#4E525B) | 7.2:1 | ✅ AA |
-| TechServ Blue (#04458D) | White (#FFFFFF) | 6.8:1 | ✅ AA |
-| Storm Blue (#0A3251) | White (#FFFFFF) | 11.7:1 | ✅ AAA |
-| Sky Blue (#D9E8F7) | TechServ Black (#282A30) | 12.1:1 | ✅ AAA |
-
-⚠️ **Warning:** Safety Yellow (#FFFF00) on white has only 1.1:1 contrast and fails WCAG. Use dark borders or backgrounds.
-
----
-
-### Focus States
-
-```css
-/* Keyboard Focus Indicator */
-*:focus-visible {
-  outline: 3px solid #04458D;
-  outline-offset: 2px;
-}
-
-/* Skip to main content link */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: #04458D;
-  color: white;
-  padding: 8px 16px;
-  text-decoration: none;
-  z-index: 9999;
-}
-
-.skip-link:focus {
-  top: 0;
-}
-```
-
----
-
-### Screen Reader Support
-
-```html
-<!-- Image alt text -->
-<img src="logo.svg" alt="TechServ Logo">
-
-<!-- Icon with label -->
-<button aria-label="Close menu">
-  <svg class="icon" aria-hidden="true"><!-- icon --></svg>
-</button>
-
-<!-- Form labels -->
-<label for="email">Email Address</label>
-<input type="email" id="email" name="email" required>
-```
-
----
-
-### Motion & Animation
-
-**Reduced Motion Support:**
-
-```css
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-```
-
----
-
-## Complete CSS Variables Reference
-
-```css
-:root {
-  /* Colors */
+  /* Primary Colors */
   --color-primary: #04458D;
   --color-primary-dark: #033562;
-  --color-primary-light: #0558B3;
-  
-  --color-secondary: #4E525B;
   --color-dark: #0A3251;
   --color-text: #282A30;
+  --color-secondary: #4E525B;
   --color-light: #D9E8F7;
   --color-cta: #FFFF00;
   --color-disabled: #E6E7E8;
@@ -860,16 +324,11 @@ The lightning bolt logomark can be used as an icon for:
   --color-error: #DC3545;
   --color-info: #04458D;
   
-  /* Backgrounds */
-  --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #D9E8F7;
-  --color-bg-dark: #0A3251;
-  
   /* Typography */
   --font-heading: 'Saira', sans-serif;
   --font-body: 'Neuton', serif;
   
-  /* Spacing */
+  /* Spacing (8px scale) */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -877,12 +336,6 @@ The lightning bolt logomark can be used as an icon for:
   --space-xl: 32px;
   --space-2xl: 48px;
   --space-3xl: 64px;
-  
-  /* Breakpoints */
-  --breakpoint-sm: 576px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 992px;
-  --breakpoint-xl: 1200px;
   
   /* Shadows */
   --shadow-sm: 0 2px 4px rgba(40, 42, 48, 0.08);
@@ -893,96 +346,138 @@ The lightning bolt logomark can be used as an icon for:
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  --radius-full: 9999px;
-  
-  /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-base: 0.2s ease;
-  --transition-slow: 0.3s ease;
 }
 ```
 
----
-
-## Quick Start Example
+### Quick Start HTML Template
 
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TechServ App</title>
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Saira:wght@700&family=Neuton:wght@400;700&display=swap" rel="stylesheet">
-  
   <style>
     :root {
       --color-primary: #04458D;
-      --color-text: #282A30;
-      --color-light: #D9E8F7;
       --font-heading: 'Saira', sans-serif;
       --font-body: 'Neuton', serif;
-      --space-md: 16px;
-      --space-lg: 24px;
     }
     
     body {
       font-family: var(--font-body);
-      color: var(--color-text);
-      margin: 0;
-      padding: 0;
-    }
-    
-    .navbar {
-      background-color: #0A3251;
-      padding: var(--space-md) var(--space-lg);
-      color: white;
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: var(--space-lg);
+      color: #282A30;
     }
     
     h1 {
       font-family: var(--font-heading);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--color-primary);
-    }
-    
-    .btn-primary {
-      font-family: var(--font-heading);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 12px 24px;
-      background-color: var(--color-primary);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <nav class="navbar">
-    <img src="logo.svg" alt="TechServ Logo" style="height: 40px;">
-  </nav>
-  
-  <div class="container">
-    <h1>Welcome to TechServ</h1>
-    <p>Scalability and reliability when and where you need it.</p>
-    <button class="btn-primary">Get Started</button>
-  </div>
+  <h1>Welcome to TechServ</h1>
+  <p>Scalability and reliability when and where you need it.</p>
 </body>
 </html>
 ```
 
+### Accessibility Implementation
+
+```css
+/* Respect User Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus Indicators for Keyboard Navigation */
+*:focus-visible {
+  outline: 3px solid #04458D;
+  outline-offset: 2px;
+}
+```
+
+### Accessibility Checklist
+
+| Requirement | Implementation | Status |
+|-------------|----------------|--------|
+| Color Contrast | Minimum 4.5:1 for normal text, 3:1 for large text | AA Compliant |
+| Focus Indicators | Visible outline on all interactive elements | Implemented |
+| Keyboard Navigation | All functionality accessible via keyboard | Supported |
+| Screen Readers | Proper ARIA labels and alt text | Included |
+| Motion Preferences | Respects prefers-reduced-motion | Implemented |
+
 ---
 
-*TechServ Web Application Brand Guidelines - May 2023*
+## Design Resources
+
+### Available Files
+
+**Logo Files**
+- Primary, secondary, and logomark in multiple formats
+- Variations: Color, White, Black, ColorWhite
+
+**Pattern Library**
+- 24 ready-to-use background patterns with CSS code snippets
+
+**Component Kit**
+- Complete UI component library with HTML and CSS examples
+
+### Additional Documentation
+
+- **Web App Guidelines:** TechServ_WebApp_Brand_Guidelines.md
+- **Style Guide Demo:** techserv-styleguide.html
+- **Pattern Showcase:** techserv-patterns.html
+- **Bolt Patterns:** techserv-bolt-patterns.html
+
+---
+
+## Brand Tagline
+
+**"Scalability and reliability when and where you need it"**
+
+---
+
+## Quick Reference
+
+### Brand Colors (Hex Codes)
+- Primary Blue: `#04458D`
+- Storm Blue: `#0A3251`
+- TechServ Gray: `#4E525B`
+- Charcoal Text: `#282A30`
+- Sky Blue: `#D9E8F7`
+- Safety Yellow: `#FFFF00`
+- Conduit Gray: `#E6E7E8`
+
+### Font Stack
+```css
+/* Headings */
+font-family: 'Saira', sans-serif;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.05em;
+
+/* Body Text */
+font-family: 'Neuton', serif;
+font-weight: 400;
+line-height: 1.6;
+```
+
+### Standard Spacing Scale (8px)
+- XS: 4px
+- SM: 8px
+- MD: 16px
+- LG: 24px
+- XL: 32px
+- 2XL: 48px
+- 3XL: 64px
+
+---
+
+*Last Updated: May 2023 | TechServ Engineering Consulting*

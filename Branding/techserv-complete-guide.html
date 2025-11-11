@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechServ Complete Brand Guide & Design System</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Saira:wght@700&family=Neuton:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* CSS Variables */
+    :root {
+      /* Colors */
+      --color-primary: #04458D;
+      --color-primary-dark: #033562;
+      --color-secondary: #4E525B;
+      --color-dark: #0A3251;
+      --color-text: #282A30;
+      --color-light: #D9E8F7;
+      --color-cta: #FFFF00;
+      --color-disabled: #E6E7E8;
+      
+      /* Semantic Colors */
+      --color-success: #28A745;
+      --color-warning: #FFC107;
+      --color-error: #DC3545;
+      --color-info: #04458D;
+      
+      /* Typography */
+      --font-heading: 'Saira', sans-serif;
+      --font-body: 'Neuton', serif;
+      
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      
+      /* Shadows */
+      --shadow-sm: 0 2px 4px rgba(40, 42, 48, 0.08);
+      --shadow-md: 0 4px 8px rgba(40, 42, 48, 0.12);
+      --shadow-lg: 0 8px 16px rgba(40, 42, 48, 0.16);
+      
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+    
+    /* Reset & Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background-color: #FFFFFF;
+    }
+    
+    /* Typography */
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-md);
+    }
+    
+    h1 { font-size: 3rem; line-height: 1.2; color: var(--color-primary); }
+    h2 { font-size: 2.25rem; line-height: 1.3; color: var(--color-primary); }
+    h3 { font-size: 1.75rem; line-height: 1.3; color: var(--color-dark); }
+    h4 { font-size: 1.375rem; line-height: 1.4; }
+    h5 { font-size: 1.125rem; line-height: 1.4; }
+    
+    p {
+      margin-bottom: var(--space-md);
+    }
+    
+    /* Navigation */
+    .navbar {
+      background-color: var(--color-dark);
+      padding: var(--space-md) var(--space-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    
+    .logo-text {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: var(--space-sm);
+      list-style: none;
+      flex-wrap: wrap;
+    }
+    
+    .nav-link {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 13px;
+      color: white;
+      text-decoration: none;
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-sm);
+      transition: background-color 0.2s ease;
+    }
+    
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .nav-link.active {
+      background-color: var(--color-primary);
+    }
+    
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--space-lg);
+    }
+    
+    /* Section */
+    .section {
+      margin-bottom: var(--space-3xl);
+      scroll-margin-top: 80px;
+    }
+    
+    .section-title {
+      border-bottom: 3px solid var(--color-light);
+      padding-bottom: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--space-lg);
+      margin-bottom: var(--space-xl);
+    }
+    
+    .grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    }
+    
+    .grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    /* Color Swatches */
+    .color-swatch {
+      border-radius: var(--radius-md);
+      padding: var(--space-xl);
+      color: white;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease;
+    }
+    
+    .color-swatch:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .color-swatch h4 {
+      color: inherit;
+      margin-bottom: var(--space-sm);
+      font-size: 1rem;
+    }
+    
+    .color-info {
+      font-family: var(--font-body);
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .swatch-primary { background-color: var(--color-primary); }
+    .swatch-dark { background-color: var(--color-dark); }
+    .swatch-gray { background-color: var(--color-secondary); }
+    .swatch-light { background-color: var(--color-light); color: var(--color-text); }
+    .swatch-cta { background-color: var(--color-cta); color: var(--color-text); }
+    .swatch-disabled { background-color: var(--color-disabled); color: var(--color-text); }
+    
+    /* Buttons */
+    .btn {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-block;
+      text-decoration: none;
+      margin-right: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+    
+    .btn-primary {
+      background-color: var(--color-primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--color-primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--color-primary);
+      border: 2px solid var(--color-primary);
+    }
+    
+    .btn-secondary:hover {
+      background-color: var(--color-primary);
+      color: white;
+    }
+    
+    .btn-cta {
+      background-color: var(--color-cta);
+      color: var(--color-text);
+      border: 2px solid var(--color-text);
+      padding: 14px 28px;
+      font-size: 18px;
+    }
+    
+    .btn-cta:hover {
+      background-color: #E6E600;
+      transform: scale(1.02);
+    }
+    
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+    
+    .btn-lg {
+      padding: 16px 32px;
+      font-size: 18px;
+    }
+    
+    .btn:disabled {
+      background-color: var(--color-disabled);
+      color: var(--color-secondary);
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Cards */
+    .card {
+      background-color: white;
+      border: 1px solid var(--color-disabled);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+    
+    .card-header {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 1.375rem;
+      color: var(--color-primary);
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-sm);
+      border-bottom: 2px solid var(--color-light);
+    }
+    
+    /* Forms */
+    .form-group {
+      margin-bottom: var(--space-lg);
+    }
+    
+    .form-label {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 14px;
+      color: var(--color-text);
+      margin-bottom: var(--space-sm);
+      display: block;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+      font-family: var(--font-body);
+      font-size: 16px;
+      padding: 12px 16px;
+      border: 2px solid var(--color-disabled);
+      border-radius: var(--radius-sm);
+      background-color: white;
+      color: var(--color-text);
+      width: 100%;
+      transition: border-color 0.2s ease;
+    }
+    
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(4, 69, 141, 0.1);
+    }
+    
+    .form-textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    
+    /* Alerts */
+    .alert {
+      padding: var(--space-md) var(--space-lg);
+      border-radius: var(--radius-sm);
+      border-left: 4px solid;
+      margin-bottom: var(--space-md);
+    }
+    
+    .alert-success {
+      background-color: #D4EDDA;
+      border-color: var(--color-success);
+      color: #155724;
+    }
+    
+    .alert-warning {
+      background-color: #FFF3CD;
+      border-color: var(--color-warning);
+      color: #856404;
+    }
+    
+    .alert-error {
+      background-color: #F8D7DA;
+      border-color: var(--color-error);
+      color: #721C24;
+    }
+    
+    .alert-info {
+      background-color: var(--color-light);
+      border-color: var(--color-primary);
+      color: var(--color-dark);
+    }
+    
+    /* Pattern Showcase */
+    .pattern-card {
+      background: white;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    
+    .pattern-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+    
+    .pattern-preview {
+      height: 250px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .pattern-info {
+      padding: var(--space-lg);
+    }
+    
+    .pattern-info h4 {
+      margin-bottom: var(--space-sm);
+      font-size: 1.125rem;
+    }
+    
+    .pattern-info p {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: var(--space-sm);
+    }
+    
+    /* Typography Showcase */
+    .type-example {
+      padding: var(--space-md);
+      background-color: #F8F9FA;
+      border-left: 4px solid var(--color-primary);
+      margin-bottom: var(--space-md);
+      border-radius: var(--radius-sm);
+    }
+    
+    .font-info {
+      font-size: 14px;
+      color: var(--color-secondary);
+      margin-bottom: var(--space-sm);
+      font-style: italic;
+    }
+    
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, var(--color-dark) 0%, var(--color-primary) 100%);
+      color: white;
+      padding: var(--space-3xl) var(--space-lg);
+      text-align: center;
+      margin-bottom: var(--space-3xl);
+      position: relative;
+    }
+    
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background-image: url('TechServ_PrimaryLogo_White.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      opacity: 0.08;
+    }
+    
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .hero h1 {
+      color: white;
+      margin-bottom: var(--space-md);
+      font-size: 3.5rem;
+    }
+    
+    .hero p {
+      font-size: 1.5rem;
+      margin-bottom: var(--space-xl);
+      opacity: 0.95;
+    }
+    
+    /* Pattern Backgrounds */
+    .grid-pattern {
+      background-color: var(--color-primary);
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    
+    .gradient-blue {
+      background: linear-gradient(135deg, var(--color-dark) 0%, var(--color-primary) 100%);
+    }
+    
+    /* Table */
+    .table-container {
+      overflow-x: auto;
+      margin-bottom: var(--space-xl);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    thead {
+      background-color: var(--color-light);
+    }
+    
+    th {
+      font-family: var(--font-heading);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.875rem;
+      padding: var(--space-md);
+      text-align: left;
+      color: var(--color-text);
+    }
+    
+    td {
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-disabled);
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    /* Code Block */
+    .code-block {
+      background: #282A30;
+      color: #D9E8F7;
+      padding: var(--space-lg);
+      border-radius: var(--radius-md);
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      overflow-x: auto;
+      margin-bottom: var(--space-xl);
+    }
+    
+    .code-block code {
+      color: #4EC9B0;
+    }
+    
+    .code-comment {
+      color: #6A9955;
+    }
+    
+    /* Info Box */
+    .info-box {
+      background: var(--color-light);
+      border-left: 4px solid var(--color-primary);
+      padding: var(--space-lg);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-xl);
+    }
+    
+    .info-box h3 {
+      color: var(--color-text);
+      margin-bottom: var(--space-md);
+      font-size: 1.25rem;
+    }
+    
+    .info-box ul {
+      margin-left: 1.5rem;
+      color: #666;
+    }
+    
+    .info-box li {
+      margin-bottom: var(--space-sm);
+      line-height: 1.8;
+    }
+    
+    /* Footer */
+    .footer {
+      background-color: var(--color-dark);
+      color: white;
+      padding: var(--space-3xl) var(--space-lg);
+      text-align: center;
+      margin-top: var(--space-3xl);
+    }
+    
+    .footer-logo {
+      font-family: var(--font-heading);
+      font-size: 2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-md);
+    }
+    
+    /* Mobile Menu Toggle */
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 { font-size: 2rem; }
+      h2 { font-size: 1.75rem; }
+      h3 { font-size: 1.5rem; }
+      
+      .hero h1 { font-size: 2.5rem; }
+      .hero p { font-size: 1.125rem; }
+      
+      .grid,
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--color-dark);
+        flex-direction: column;
+        padding: var(--space-md);
+      }
+      
+      .nav-links.active {
+        display: flex;
+      }
+      
+      .menu-toggle {
+        display: block;
+      }
+      
+      .hero {
+        padding: var(--space-2xl) var(--space-md);
+      }
+      
+      .btn {
+        width: 100%;
+        margin-right: 0;
+      }
+    }
+    
+    /* Scroll to top button */
+    .scroll-top {
+      position: fixed;
+      bottom: var(--space-xl);
+      right: var(--space-xl);
+      background-color: var(--color-primary);
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 999;
+    }
+    
+    .scroll-top.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    .scroll-top:hover {
+      background-color: var(--color-primary-dark);
+      transform: translateY(-4px);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="logo-text">⚡ TECHSERV BRAND GUIDE</div>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#overview" class="nav-link">Overview</a></li>
+      <li><a href="#logos" class="nav-link">Logos</a></li>
+      <li><a href="#colors" class="nav-link">Colors</a></li>
+      <li><a href="#typography" class="nav-link">Typography</a></li>
+      <li><a href="#components" class="nav-link">Components</a></li>
+      <li><a href="#patterns" class="nav-link">Patterns</a></li>
+      <li><a href="#bolt-patterns" class="nav-link">Bolt Designs</a></li>
+      <li><a href="#code" class="nav-link">Code</a></li>
+    </ul>
+  </nav>
+  
+  <!-- Hero Section -->
+  <div class="hero">
+    <div class="hero-content">
+      <h1>TechServ Design System</h1>
+      <p>Complete Brand Guidelines & Component Library</p>
+      <button class="btn btn-cta">Get Started</button>
+    </div>
+  </div>
+  
+  <!-- Main Content -->
+  <div class="container">
+    
+    <!-- Overview Section -->
+    <section id="overview" class="section">
+      <h2 class="section-title">Overview</h2>
+      <p style="font-size: 1.125rem; color: #666; line-height: 1.8;">
+        Welcome to the TechServ Design System - a comprehensive brand guide and component library for building consistent, 
+        professional, and accessible user interfaces. This system includes typography, color palettes, UI components, 
+        background patterns, and code snippets ready for implementation in your web applications.
+      </p>
+      
+      <div class="info-box">
+        <h3>What's Included</h3>
+        <ul>
+          <li><strong>Logo Guidelines:</strong> Primary, secondary, and logomark usage rules</li>
+          <li><strong>Color System:</strong> Primary, secondary, and semantic color palettes</li>
+          <li><strong>Typography:</strong> Saira (headings) and Neuton (body) font specifications</li>
+          <li><strong>UI Components:</strong> Buttons, forms, cards, alerts, and navigation</li>
+          <li><strong>Background Patterns:</strong> 12 general patterns + 12 bolt-focused designs</li>
+          <li><strong>CSS Variables:</strong> Complete design token system</li>
+          <li><strong>Accessibility:</strong> WCAG AA compliance guidelines</li>
+          <li><strong>Code Examples:</strong> Ready-to-use HTML and CSS snippets</li>
+        </ul>
+      </div>
+    </section>
+    
+    <!-- Logos Section -->
+    <section id="logos" class="section">
+      <h2 class="section-title">Logo System</h2>
+      
+      <div class="grid-3">
+        <div>
+          <h3>Primary Logo</h3>
+          <p>Use for main branding, headers, and primary applications. Includes "TECH" and "SERV" text with lightning bolt.</p>
+        </div>
+        <div>
+          <h3>Secondary Logo</h3>
+          <p>Use when space is limited or brand recognition exists. Shows "T" and "S" with lightning bolt.</p>
+        </div>
+        <div>
+          <h3>Logomark</h3>
+          <p>The lightning bolt symbol alone. Perfect for favicons, app icons, and design elements.</p>
+        </div>
+      </div>
+      
+      <div class="info-box">
+        <h3>Logo Usage Rules</h3>
+        <ul>
+          <li><strong>Spacing:</strong> Use letter height ("E" or "S") as minimum clearspace</li>
+          <li><strong>Minimum Size:</strong> 100px width (web), 80px (mobile) for primary logo</li>
+          <li><strong>Do Not:</strong> Stretch, add effects, or use insufficient contrast</li>
+          <li><strong>Reverse Logos:</strong> Use white logos on dark backgrounds only</li>
+        </ul>
+      </div>
+    </section>
+    
+    <!-- Colors Section -->
+    <section id="colors" class="section">
+      <h2 class="section-title">Color System</h2>
+      
+      <h3>Primary Colors</h3>
+      <div class="grid">
+        <div class="color-swatch swatch-primary">
+          <h4>TechServ Blue</h4>
+          <div class="color-info">#04458D</div>
+          <div class="color-info">RGB: 4, 69, 141</div>
+          <div class="color-info">Primary Brand Color</div>
+        </div>
+        
+        <div class="color-swatch swatch-dark">
+          <h4>Storm Blue</h4>
+          <div class="color-info">#0A3251</div>
+          <div class="color-info">RGB: 10, 50, 81</div>
+          <div class="color-info">Headers & Dark Sections</div>
+        </div>
+        
+        <div class="color-swatch swatch-gray">
+          <h4>TechServ Gray</h4>
+          <div class="color-info">#4E525B</div>
+          <div class="color-info">RGB: 78, 82, 91</div>
+          <div class="color-info">Secondary Text</div>
+        </div>
+      </div>
+      
+      <h3>Secondary Colors</h3>
+      <div class="grid">
+        <div class="color-swatch swatch-light">
+          <h4>Sky Blue</h4>
+          <div class="color-info">#D9E8F7</div>
+          <div class="color-info">RGB: 217, 232, 247</div>
+          <div class="color-info">Light Backgrounds</div>
+        </div>
+        
+        <div class="color-swatch swatch-cta">
+          <h4>Safety Yellow</h4>
+          <div class="color-info">#FFFF00</div>
+          <div class="color-info">RGB: 255, 255, 0</div>
+          <div class="color-info">Call to Action</div>
+        </div>
+        
+        <div class="color-swatch swatch-disabled">
+          <h4>Conduit Gray</h4>
+          <div class="color-info">#E6E7E8</div>
+          <div class="color-info">RGB: 230, 231, 232</div>
+          <div class="color-info">Disabled States</div>
+        </div>
+      </div>
+      
+      <div class="alert alert-warning">
+        <strong>Accessibility Note:</strong> Safety Yellow (#FFFF00) fails WCAG AA contrast on white backgrounds. Always use with dark text or dark backgrounds.
+      </div>
+    </section>
+    
+    <!-- Typography Section -->
+    <section id="typography" class="section">
+      <h2 class="section-title">Typography</h2>
+      
+      <div class="type-example">
+        <div class="font-info">Saira Bold - All Caps - H1 (48px / 3rem)</div>
+        <h1 style="margin-bottom: 0;">This is Heading 1</h1>
+      </div>
+      
+      <div class="type-example">
+        <div class="font-info">Saira Bold - All Caps - H2 (36px / 2.25rem)</div>
+        <h2 style="margin-bottom: 0;">This is Heading 2</h2>
+      </div>
+      
+      <div class="type-example">
+        <div class="font-info">Saira Bold - All Caps - H3 (28px / 1.75rem)</div>
+        <h3 style="margin-bottom: 0;">This is Heading 3</h3>
+      </div>
+      
+      <div class="type-example">
+        <div class="font-info">Neuton Regular - Body Copy (16px / 1rem)</div>
+        <p style="margin-bottom: 0;">This is body text using Neuton. Lorem ipsum dolor sit amet, consectetur adipiscing elit. The combination of Saira for headers and Neuton for body creates an industrial pairing of classic and modern typography.</p>
+      </div>
+      
+      <div class="info-box">
+        <h3>Typography Guidelines</h3>
+        <ul>
+          <li><strong>Headings:</strong> Always use Saira Bold, ALL CAPS, with 50pt letter spacing</li>
+          <li><strong>Body Text:</strong> Use Neuton Regular at 16px with 1.6 line height</li>
+          <li><strong>Buttons:</strong> Use Saira Bold, ALL CAPS for all button labels</li>
+          <li><strong>Font Loading:</strong> Import from Google Fonts for optimal performance</li>
+        </ul>
+      </div>
+    </section>
+    
+    <!-- Components Section -->
+    <section id="components" class="section">
+      <h2 class="section-title">UI Components</h2>
+      
+      <h3>Buttons</h3>
+      <div style="margin-bottom: 2rem;">
+        <button class="btn btn-primary">Primary Button</button>
+        <button class="btn btn-secondary">Secondary Button</button>
+        <button class="btn btn-cta">CTA Button</button>
+        <button class="btn btn-primary" disabled>Disabled Button</button>
+      </div>
+      
+      <h4>Button Sizes</h4>
+      <div style="margin-bottom: 2rem;">
+        <button class="btn btn-primary btn-lg">Large Button</button>
+        <button class="btn btn-primary">Medium Button</button>
+        <button class="btn btn-primary btn-sm">Small Button</button>
+      </div>
+      
+      <h3>Cards</h3>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-header">Project Overview</div>
+          <p>Cards contain related information and actions. Use for dashboards, project lists, and grouped content.</p>
+          <button class="btn btn-primary btn-sm">View Details</button>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">System Metrics</div>
+          <p>Hover effects and proper spacing create professional, interactive components.</p>
+          <button class="btn btn-secondary btn-sm">Learn More</button>
+        </div>
+      </div>
+      
+      <h3>Alerts & Notifications</h3>
+      <div class="alert alert-success">
+        <strong>Success!</strong> Your changes have been saved successfully.
+      </div>
+      
+      <div class="alert alert-warning">
+        <strong>Warning:</strong> This action requires additional verification.
+      </div>
+      
+      <div class="alert alert-error">
+        <strong>Error:</strong> Unable to complete the request. Please try again.
+      </div>
+      
+      <div class="alert alert-info">
+        <strong>Info:</strong> System maintenance scheduled for tonight at 2:00 AM.
+      </div>
+      
+      <h3>Form Elements</h3>
+      <div class="grid grid-2">
+        <div>
+          <div class="form-group">
+            <label class="form-label" for="name">Full Name</label>
+            <input type="text" id="name" class="form-input" placeholder="Enter your name">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <input type="email" id="email" class="form-input" placeholder="you@example.com">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="role">Your Role</label>
+            <select id="role" class="form-select">
+              <option>Project Coordinator</option>
+              <option>Electrical Engineer</option>
+              <option>QA Specialist</option>
+              <option>Designer</option>
+            </select>
+          </div>
+        </div>
+        
+        <div>
+          <div class="form-group">
+            <label class="form-label" for="message">Message</label>
+            <textarea id="message" class="form-textarea" placeholder="Enter your message here..."></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Patterns Section -->
+    <section id="patterns" class="section">
+      <h2 class="section-title">Background Patterns</h2>
+      <p style="color: #666; margin-bottom: 2rem;">
+        General-purpose background patterns using TechServ logos. Keep opacity at 10-20% to ensure readability.
+      </p>
+      
+      <div class="grid">
+        <div class="pattern-card">
+          <div class="pattern-preview grid-pattern">
+            <div style="position: relative; z-index: 1;">Grid Pattern</div>
+          </div>
+          <div class="pattern-info">
+            <h4>Technical Grid</h4>
+            <p>Grid pattern on primary blue. Perfect for dashboards and technical sections.</p>
+          </div>
+        </div>
+        
+        <div class="pattern-card">
+          <div class="pattern-preview gradient-blue">
+            <div style="position: relative; z-index: 1;">Gradient</div>
+          </div>
+          <div class="pattern-info">
+            <h4>Blue Gradient</h4>
+            <p>Smooth gradient from Storm Blue to TechServ Blue. Great for hero sections.</p>
+          </div>
+        </div>
+        
+        <div class="pattern-card">
+          <div class="pattern-preview" style="background-color: var(--color-light); color: var(--color-primary);">
+            Light Background
+          </div>
+          <div class="pattern-info">
+            <h4>Sky Blue Background</h4>
+            <p>Subtle light blue for section backgrounds and cards.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="alert alert-info">
+        <strong>View Complete Pattern Library:</strong> See all 24 patterns (12 general + 12 bolt-focused) in the full pattern showcase files.
+      </div>
+    </section>
+    
+    <!-- Bolt Patterns Section -->
+    <section id="bolt-patterns" class="section">
+      <h2 class="section-title">Lightning Bolt Patterns</h2>
+      <p style="color: #666; margin-bottom: 2rem;">
+        Creative patterns featuring the iconic TechServ lightning bolt logomark. These designs emphasize energy and power.
+      </p>
+      
+      <div class="info-box">
+        <h3>12 Bolt-Focused Designs Include:</h3>
+        <ul>
+          <li><strong>Corner Power:</strong> Rotated bolts in opposite corners</li>
+          <li><strong>Electric Trail:</strong> Animated horizontal flowing bolts</li>
+          <li><strong>Power Surge:</strong> Pulsing animated bolt with radial gradient</li>
+          <li><strong>Lightning Strike:</strong> Vertical repeating bolts</li>
+          <li><strong>Energized Grid:</strong> Technical grid with scattered bolt accents</li>
+          <li><strong>Yellow Charge:</strong> Glowing animated bolt with safety yellow aura</li>
+          <li>...and 6 more creative bolt patterns!</li>
+        </ul>
+      </div>
+      
+      <div class="alert alert-warning">
+        <strong>Animation Note:</strong> Always respect prefers-reduced-motion for users sensitive to animation. See code section for implementation.
+      </div>
+    </section>
+    
+    <!-- Code Section -->
+    <section id="code" class="section">
+      <h2 class="section-title">CSS Variables & Code</h2>
+      
+      <h3>Complete CSS Variable System</h3>
+      <div class="code-block">
+<span class="code-comment">/* TechServ Design System Variables */</span>
+:root {
+  <span class="code-comment">/* Primary Colors */</span>
+  <code>--color-primary: #04458D;</code>
+  <code>--color-dark: #0A3251;</code>
+  <code>--color-text: #282A30;</code>
+  <code>--color-light: #D9E8F7;</code>
+  <code>--color-cta: #FFFF00;</code>
+  
+  <span class="code-comment">/* Typography */</span>
+  <code>--font-heading: 'Saira', sans-serif;</code>
+  <code>--font-body: 'Neuton', serif;</code>
+  
+  <span class="code-comment">/* Spacing (8px scale) */</span>
+  <code>--space-sm: 8px;</code>
+  <code>--space-md: 16px;</code>
+  <code>--space-lg: 24px;</code>
+  <code>--space-xl: 32px;</code>
+  <code>--space-2xl: 48px;</code>
+}
+      </div>
+      
+      <h3>Quick Start HTML Template</h3>
+      <div class="code-block">
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;link href="https://fonts.googleapis.com/css2?family=Saira:wght@700&family=Neuton:wght@400;700&display=swap" rel="stylesheet"&gt;
+  &lt;style&gt;
+    :root {
+      --color-primary: #04458D;
+      --font-heading: 'Saira', sans-serif;
+      --font-body: 'Neuton', serif;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      color: #282A30;
+    }
+    
+    h1 {
+      font-family: var(--font-heading);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Welcome to TechServ&lt;/h1&gt;
+  &lt;p&gt;Scalability and reliability when and where you need it.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+      </div>
+      
+      <h3>Accessibility Implementation</h3>
+      <div class="code-block">
+<span class="code-comment">/* Respect User Motion Preferences */</span>
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+<span class="code-comment">/* Focus Indicators for Keyboard Navigation */</span>
+*:focus-visible {
+  outline: 3px solid #04458D;
+  outline-offset: 2px;
+}
+      </div>
+      
+      <h3>Accessibility Checklist</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Requirement</th>
+              <th>Implementation</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Color Contrast</td>
+              <td>Minimum 4.5:1 for normal text, 3:1 for large text</td>
+              <td>✅ AA Compliant</td>
+            </tr>
+            <tr>
+              <td>Focus Indicators</td>
+              <td>Visible outline on all interactive elements</td>
+              <td>✅ Implemented</td>
+            </tr>
+            <tr>
+              <td>Keyboard Navigation</td>
+              <td>All functionality accessible via keyboard</td>
+              <td>✅ Supported</td>
+            </tr>
+            <tr>
+              <td>Screen Readers</td>
+              <td>Proper ARIA labels and alt text</td>
+              <td>✅ Included</td>
+            </tr>
+            <tr>
+              <td>Motion Preferences</td>
+              <td>Respects prefers-reduced-motion</td>
+              <td>✅ Implemented</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    
+    <!-- Resources Section -->
+    <section class="section">
+      <h2 class="section-title">Design Resources</h2>
+      
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header">Logo Files</div>
+          <p>Primary, secondary, and logomark in multiple formats (Color, White, Black, ColorWhite)</p>
+          <button class="btn btn-primary btn-sm">Download Logos</button>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">Pattern Library</div>
+          <p>24 ready-to-use background patterns with CSS code snippets</p>
+          <button class="btn btn-primary btn-sm">View Patterns</button>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">Component Kit</div>
+          <p>Complete UI component library with HTML and CSS examples</p>
+          <button class="btn btn-primary btn-sm">Get Components</button>
+        </div>
+      </div>
+      
+      <div class="info-box">
+        <h3>Additional Documentation</h3>
+        <ul>
+          <li><strong>Web App Guidelines:</strong> TechServ_WebApp_Brand_Guidelines.md</li>
+          <li><strong>Style Guide Demo:</strong> techserv-styleguide.html</li>
+          <li><strong>Pattern Showcase:</strong> techserv-patterns.html</li>
+          <li><strong>Bolt Patterns:</strong> techserv-bolt-patterns.html</li>
+        </ul>
+      </div>
+    </section>
+    
+  </div>
+  
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-logo">⚡ TECHSERV</div>
+    <p style="margin: 0; opacity: 0.9; font-size: 1.125rem;">TechServ Complete Design System</p>
+    <p style="margin: 0.5rem 0 0 0; opacity: 0.7;">Scalability and reliability when and where you need it</p>
+    <p style="margin-top: var(--space-xl); font-size: 0.875rem;">Last Updated: May 2023 | © TechServ Engineering Consulting</p>
+  </div>
+  
+  <!-- Scroll to Top Button -->
+  <div class="scroll-top" id="scrollTop" onclick="scrollToTop()">↑</div>
+  
+  <script>
+    // Mobile Menu Toggle
+    function toggleMenu() {
+      const navLinks = document.getElementById('navLinks');
+      navLinks.classList.toggle('active');
+    }
+    
+    // Scroll to Top
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    // Show/Hide Scroll to Top Button
+    window.addEventListener('scroll', () => {
+      const scrollTop = document.getElementById('scrollTop');
+      if (window.scrollY > 300) {
+        scrollTop.classList.add('visible');
+      } else {
+        scrollTop.classList.remove('visible');
+      }
+    });
+    
+    // Smooth scroll for navigation links
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = link.getAttribute('href');
+        const targetSection = document.querySelector(targetId);
+        if (targetSection) {
+          targetSection.scrollIntoView({ behavior: 'smooth' });
+          // Close mobile menu after click
+          document.getElementById('navLinks').classList.remove('active');
+        }
+      });
+    });
+    
+    // Update active nav link on scroll
+    const sections = document.querySelectorAll('.section');
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (scrollY >= (sectionTop - 100)) {
+          current = section.getAttribute('id');
+        }
+      });
+      
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

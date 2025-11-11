@@ -27,6 +27,8 @@ import { draftManager } from "@/utils/draftManager";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import techservLogo from "@/assets/techserv-logo.png";
 import { normalizeQaRow, normalizeQaRows } from "@/utils/qaValidation";
+import { WorkPointNote } from "@/types/pdf";
+import { normalizeWorkPointNotes } from "@/utils/workPointNotes";
 
 const NewReview = () => {
   const [qaData, setQaData] = useState<QAReviewRow[]>([]);
@@ -50,7 +52,7 @@ const NewReview = () => {
   const [placemarkNotes, setPlacemarkNotes] = useState<Record<string, string>>({});
   const [mapDrawings, setMapDrawings] = useState<any[]>([]);
   const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
-  const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, string>>({});
+  const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, WorkPointNote[]>>({});
   const [currentWorkPoint, setCurrentWorkPoint] = useState<QAReviewRow | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -174,7 +176,13 @@ const NewReview = () => {
         setPlacemarkNotes(draft.placemarkNotes);
         setMapDrawings(draft.mapDrawings);
         setPdfAnnotations(draft.pdfAnnotations);
-        setPdfWorkPointNotes(draft.pdfWorkPointNotes);
+        if (draft.pdfWorkPointNotes) {
+          const normalizedNotes: Record<string, WorkPointNote[]> = {};
+          Object.entries(draft.pdfWorkPointNotes).forEach(([station, notes]) => {
+            normalizedNotes[station] = normalizeWorkPointNotes(notes as WorkPointNote[] | string, station);
+          });
+          setPdfWorkPointNotes(normalizedNotes);
+        }
         setSelectedStation(draft.selectedStation);
         setCurrentPdfPage(draft.currentPdfPage);
         setActiveTab(draft.activeTab);
@@ -446,7 +454,7 @@ const NewReview = () => {
     setPdfAnnotations(prev => new Map(prev).set(pageNumber, annotations));
   };
 
-  const handlePDFWorkPointNotesChange = (workPoint: string, notes: string) => {
+  const handlePDFWorkPointNotesChange = (workPoint: string, notes: WorkPointNote[]) => {
     setPdfWorkPointNotes(prev => ({ ...prev, [workPoint]: notes }));
   };
 

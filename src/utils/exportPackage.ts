@@ -2,7 +2,8 @@ import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
 import { exportAnnotatedPDF } from './pdfExporter';
 import { QAReviewRow, CULookupItem } from '@/types/qa-tool';
-import { PDFAnnotation } from '@/types/pdf';
+import { PDFAnnotation, WorkPointNote } from '@/types/pdf';
+import { stripHtml } from '@/utils/workPointNotes';
 
 /**
  * Export a package containing:
@@ -15,7 +16,7 @@ export async function exportDesignerPackage(
   pdfFile: File | null,
   pdfAnnotations: Map<number, PDFAnnotation[]>,
   stationPageMapping: Record<string, number>,
-  pdfWorkPointNotes: Record<string, string>
+  pdfWorkPointNotes: Record<string, WorkPointNote[]>
 ): Promise<void> {
   const zip = new JSZip();
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
@@ -72,21 +73,26 @@ export async function exportDesignerPackage(
   XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
   
   // Work Point Notes Sheet
-  // Helper function to strip HTML tags and convert to plain text
-  const stripHtml = (html: string): string => {
-    if (!html) return '';
-    // Create a temporary div element to parse HTML
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
-  };
-
   const notesData = Object.entries(pdfWorkPointNotes)
-    .filter(([_, notes]) => notes.trim().length > 0)
-    .map(([wp, notes]) => ({
-      'WP': wp,
-      'QA Notes': stripHtml(notes), // Convert HTML to plain text for Excel
-    }));
+    .map(([wp, notes]) => {
+      const sanitizedNotes = (notes ?? []).filter(note => (note.text ?? '').trim().length > 0);
+      if (sanitizedNotes.length === 0) return null;
+
+      const formatted = sanitizedNotes
+        .map(note => {
+          const label = note.calloutNumber ? `#${note.calloutNumber}` : '-';
+          const text = stripHtml(note.text);
+          return `${label} ${text}`.trim();
+        })
+        .join('\n');
+
+      return {
+        'WP': wp,
+        'QA Notes': formatted,
+        'Comment Count': sanitizedNotes.length,
+      };
+    })
+    .filter((entry): entry is { WP: string; 'QA Notes': string; 'Comment Count': number } => entry !== null);
   
   if (notesData.length > 0) {
     const notesSheet = XLSX.utils.json_to_sheet(notesData);

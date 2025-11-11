@@ -1,23 +1,24 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Pen, 
-  Square, 
-  Type, 
-  Undo, 
-  Trash2, 
-  Eye, 
+import {
+  Pen,
+  Square,
+  Type,
+  Undo,
+  Trash2,
+  Eye,
   EyeOff,
   Hand,
   MousePointer2,
   Copy,
-  Clipboard
+  Clipboard,
+  MessageCircle
 } from "lucide-react";
 
 interface PDFAnnotationToolbarProps {
-  activeTool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'text';
-  onToolChange: (tool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'text') => void;
+  activeTool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'text' | 'callout';
+  onToolChange: (tool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'text' | 'callout') => void;
   onUndo: () => void;
   onClear: () => void;
   showAnnotations: boolean;
@@ -48,6 +49,7 @@ export function PDFAnnotationToolbar({
     { id: 'freehand' as const, icon: Pen, label: 'Redline' },
     { id: 'rectangle' as const, icon: Square, label: 'Rectangle' },
     { id: 'text' as const, icon: Type, label: 'Text' },
+    { id: 'callout' as const, icon: MessageCircle, label: 'Callout' },
   ];
 
   return (

@@ -1,6 +1,7 @@
 import { useRef, useCallback, useMemo, useState, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { QAReviewRow as QAReviewRowType } from "@/types/qa-tool";
+import { WorkPointNote } from "@/types/pdf";
 import { QAReviewRow } from "./QAReviewRow";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,8 +32,8 @@ interface QAReviewTableProps {
   onSpecNumberChange?: (station: string, specNumber: string) => void;
   onAnnotationsChange?: (pageNumber: number, annotations: any[]) => void;
   initialAnnotations?: Map<number, any[]>;
-  onWorkPointNotesChange?: (workPoint: string, notes: string) => void;
-  initialWorkPointNotes?: Record<string, string>;
+  onWorkPointNotesChange?: (workPoint: string, notes: WorkPointNote[]) => void;
+  initialWorkPointNotes?: Record<string, WorkPointNote[] | string>;
   currentWorkPoint?: QAReviewRowType | null;
   onJumpToWorkPoint?: (station: string) => void;
   onSetCurrentWorkPoint?: (row: QAReviewRowType) => void;
@@ -249,159 +250,11 @@ export const QAReviewTable = ({
 
   // Render function for table content
   const renderTableContent = () => (
-    <div className="space-y-2 pr-2 h-full">
-      {/* View Mode Toggle */}
+    <div className="h-full space-y-2">
+      {/* Controls */}
       <Card className="p-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePreviousStation}
-                disabled={!canGoPreviousStation}
-                className="h-6 px-2"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              {onStationChange && stations.length > 0 && (
-                <Select value={selectedStation} onValueChange={onStationChange}>
-                  <SelectTrigger className="w-[140px] h-7 border-primary/30 bg-primary/10 hover:bg-primary/20 font-saira font-semibold text-primary">
-                    <SelectValue placeholder="Select WP">
-                      WP {selectedStation}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stations.map((station) => (
-                      <SelectItem key={station} value={station}>
-                        WP {station}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextStation}
-                disabled={!canGoNextStation}
-                className="h-6 px-2"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="font-saira">
-                {filteredData.length} {filteredData.length === 1 ? 'record' : 'records'}
-              </Badge>
-              {selectedStation && (() => {
-                // Get spec number - prioritize edited over original
-                // If editedSpec is empty string, it means user cleared it, so use original
-                const editedSpec = editedSpecMapping?.[selectedStation];
-                const originalSpec = stationSpecMapping ? findMatchingSpec(selectedStation, stationSpecMapping) : null;
-                const specNumber = (editedSpec !== undefined && editedSpec !== "") ? editedSpec : originalSpec;
-                const isEdited = editedSpec !== undefined && editedSpec !== "" && editedSpec !== originalSpec;
-                
-                if (editingSpec === selectedStation) {
-                  // Edit mode
-                  return (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        value={editingSpecValue}
-                        onChange={(e) => setEditingSpecValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            if (onSpecNumberChange && selectedStation) {
-                              const trimmedValue = editingSpecValue.trim();
-                              // If empty, we'll clear the edited spec by storing empty string
-                              onSpecNumberChange(selectedStation, trimmedValue);
-                            }
-                            setEditingSpec(null);
-                            setEditingSpecValue("");
-                          } else if (e.key === 'Escape') {
-                            setEditingSpec(null);
-                            setEditingSpecValue("");
-                          }
-                        }}
-                        placeholder="Enter spec number"
-                        className="h-7 w-32 text-sm font-saira text-center"
-                        autoFocus
-                      />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0"
-                        onClick={() => {
-                          if (onSpecNumberChange && selectedStation) {
-                            const trimmedValue = editingSpecValue.trim();
-                            onSpecNumberChange(selectedStation, trimmedValue);
-                          }
-                          setEditingSpec(null);
-                          setEditingSpecValue("");
-                        }}
-                      >
-                        <Check className="w-4 h-4 text-green-600" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0"
-                        onClick={() => {
-                          setEditingSpec(null);
-                          setEditingSpecValue("");
-                        }}
-                      >
-                        <X className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </div>
-                  );
-                }
-                
-                // Display mode
-                return specNumber ? (
-                  <div className="flex items-center gap-1">
-                    <Badge 
-                      variant={isEdited ? "default" : "secondary"} 
-                      className={`font-saira cursor-pointer hover:opacity-80 transition-opacity ${
-                        isEdited ? 'bg-orange-500 hover:bg-orange-600' : ''
-                      }`}
-                      onClick={() => {
-                        setEditingSpec(selectedStation);
-                        setEditingSpecValue(specNumber);
-                      }}
-                    >
-                      Spec: {specNumber}
-                      {isEdited && <span className="ml-1 text-xs">(edited)</span>}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0"
-                      onClick={() => {
-                        setEditingSpec(selectedStation);
-                        setEditingSpecValue(specNumber);
-                      }}
-                      title="Edit spec number"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 font-saira text-xs"
-                    onClick={() => {
-                      setEditingSpec(selectedStation);
-                      setEditingSpecValue("");
-                    }}
-                  >
-                    <Edit2 className="w-3 h-3 mr-1" />
-                    Add Spec
-                  </Button>
-                );
-              })()}
-            </div>
             <Button
               variant={showOnlyNeedsCorrection ? "default" : "outline"}
               size="sm"

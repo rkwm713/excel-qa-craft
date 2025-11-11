@@ -3,6 +3,7 @@ import { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/type
 import { logger } from "@/lib/logger";
 import { normalizeQaRow, normalizeQaRows } from "@/utils/qaValidation";
 import type { QAReviewRow } from "@/types/qa-tool";
+import type { WorkPointNote } from "@/types/pdf";
 import type { PostgrestError } from "@supabase/supabase-js";
 
 type Review = Tables<"reviews">;
@@ -157,7 +158,7 @@ export interface ReviewData {
   stationSpecMapping: Record<string, string>;
   editedSpecMapping: Record<string, string>;
   pdfAnnotations: Record<number, Array<Record<string, unknown>>>;
-  workPointNotes: Record<string, string>;
+  workPointNotes: Record<string, WorkPointNote[] | string>;
   kmzPlacemarks: Array<Record<string, unknown>>;
   pdfFile?: null;
 }
@@ -255,7 +256,7 @@ export const reviewsAPI = {
     stationSpecMapping?: Record<string, string>;
     editedSpecMapping?: Record<string, string>;
     pdfAnnotations?: Map<number, Array<Record<string, unknown>>>;
-    workPointNotes?: Record<string, string>;
+    workPointNotes?: Record<string, WorkPointNote[]>;
     kmzPlacemarks?: Array<Record<string, unknown>>;
   }): Promise<{ id: string; message: string }> => {
     await ensureUserProfile();
@@ -327,7 +328,7 @@ export const reviewsAPI = {
       stationSpecMapping?: Record<string, string>;
       editedSpecMapping?: Record<string, string>;
       pdfAnnotations?: Map<number, Array<Record<string, unknown>>>;
-      workPointNotes?: Record<string, string>;
+      workPointNotes?: Record<string, WorkPointNote[]>;
     }
   ): Promise<{ message: string }> => {
     await ensureUserProfile();

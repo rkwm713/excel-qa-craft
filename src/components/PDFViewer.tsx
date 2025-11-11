@@ -1,17 +1,20 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, Plus, Trash2, LocateFixed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PDFAnnotationToolbar } from "@/components/PDFAnnotationToolbar";
 import { PDFCanvas } from "@/components/PDFCanvas";
-import { PDFAnnotation } from "@/types/pdf";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import { PDFAnnotation, WorkPointNote } from "@/types/pdf";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { normalizeWorkPointNotes, relabelCalloutNotes } from "@/utils/workPointNotes";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+const generateId = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
 
 interface PDFViewerProps {
   file: File | null;
@@ -21,8 +24,8 @@ interface PDFViewerProps {
   currentStation?: string | null;
   onAnnotationsChange?: (pageNumber: number, annotations: PDFAnnotation[]) => void;
   initialAnnotations?: Map<number, PDFAnnotation[]>;
-  onWorkPointNotesChange?: (workPoint: string, notes: string) => void;
-  initialWorkPointNotes?: Record<string, string>;
+  onWorkPointNotesChange?: (workPoint: string, notes: WorkPointNote[]) => void;
+  initialWorkPointNotes?: Record<string, WorkPointNote[] | string>;
 }
 
 export function PDFViewer({
@@ -42,11 +45,96 @@ export function PDFViewer({
   const [actualPageWidth, setActualPageWidth] = useState<number>(700); // Fixed reference width for annotations
   const [actualPageHeight, setActualPageHeight] = useState<number>(990); // Fixed reference height for annotations
   const pageRef = useRef<HTMLDivElement>(null);
-  const [activeTool, setActiveTool] = useState<'pan' | 'select' | 'freehand' | 'rectangle' | 'text'>('pan');
+  const [activeTool, setActiveTool] = useState<'pan' | 'select' | 'freehand' | 'rectangle' | 'text' | 'callout'>('pan');
   const [annotationsByPage, setAnnotationsByPage] = useState<Map<number, PDFAnnotation[]>>(new Map());
   const [showAnnotations, setShowAnnotations] = useState(true);
-  const [workPointNotes, setWorkPointNotes] = useState<string>('');
+  const [workPointNotes, setWorkPointNotes] = useState<WorkPointNote[]>([]);
   const [copiedAnnotation, setCopiedAnnotation] = useState<PDFAnnotation | null>(null);
+
+  const commitWorkPointNotes = useCallback(
+    (notes: WorkPointNote[]) => {
+      if (!currentStation) return;
+      onWorkPointNotesChange?.(currentStation, notes);
+    },
+    [currentStation, onWorkPointNotesChange]
+  );
+
+  const persistAnnotationsMap = useCallback(
+    (map: Map<number, PDFAnnotation[]>, changedPages: number[] = []) => {
+      setAnnotationsByPage(map);
+      changedPages.forEach(pageNumber => {
+        const annotations = map.get(pageNumber) || [];
+        onAnnotationsChange?.(pageNumber, annotations);
+      });
+    },
+    [onAnnotationsChange]
+  );
+
+  const syncCalloutAnnotationsWithNotes = useCallback(
+    (notes: WorkPointNote[], baseMap?: Map<number, PDFAnnotation[]>) => {
+      const sourceMap = baseMap ?? annotationsByPage;
+      const calloutMeta = new Map<string, { label?: number; noteId: string }>();
+      notes.forEach(note => {
+        if (note.calloutAnnotationId) {
+          calloutMeta.set(note.calloutAnnotationId, {
+            label: note.calloutNumber,
+            noteId: note.id,
+          });
+        }
+      });
+
+      let mutated = false;
+      const changedPages: number[] = [];
+      const newMap = new Map<number, PDFAnnotation[]>();
+
+      sourceMap.forEach((pageAnnotations, pageNumber) => {
+        let pageChanged = false;
+        const updatedAnnotations: PDFAnnotation[] = [];
+
+        pageAnnotations.forEach(annotation => {
+          if (annotation.type !== 'callout') {
+            updatedAnnotations.push(annotation);
+            return;
+          }
+
+          const meta = calloutMeta.get(annotation.id);
+          if (!meta) {
+            mutated = true;
+            pageChanged = true;
+            return; // Drop orphaned callout annotation
+          }
+
+          if (
+            annotation.calloutLabel !== meta.label ||
+            annotation.calloutCommentId !== meta.noteId
+          ) {
+            updatedAnnotations.push({
+              ...annotation,
+              calloutLabel: meta.label,
+              calloutCommentId: meta.noteId,
+            });
+            mutated = true;
+            pageChanged = true;
+          } else {
+            updatedAnnotations.push(annotation);
+          }
+        });
+
+        if (pageChanged) {
+          changedPages.push(pageNumber);
+          newMap.set(pageNumber, updatedAnnotations);
+        } else {
+          newMap.set(pageNumber, pageAnnotations);
+        }
+      });
+
+      return {
+        map: mutated ? newMap : sourceMap,
+        changedPages: mutated ? changedPages : [],
+      };
+    },
+    [annotationsByPage]
+  );
 
   // Initialize annotations from props
   useEffect(() => {
@@ -57,12 +145,17 @@ export function PDFViewer({
 
   // Initialize work point notes
   useEffect(() => {
-    if (currentStation && initialWorkPointNotes?.[currentStation]) {
-      setWorkPointNotes(initialWorkPointNotes[currentStation]);
-    } else {
-      setWorkPointNotes('');
+    if (!currentStation) {
+      setWorkPointNotes([]);
+      return;
     }
-  }, [currentStation, initialWorkPointNotes]);
+    const normalized = normalizeWorkPointNotes(initialWorkPointNotes?.[currentStation], currentStation);
+    setWorkPointNotes(normalized);
+    const { map, changedPages } = syncCalloutAnnotationsWithNotes(normalized);
+    if (changedPages.length > 0) {
+      persistAnnotationsMap(map, changedPages);
+    }
+  }, [currentStation, initialWorkPointNotes, syncCalloutAnnotationsWithNotes, persistAnnotationsMap]);
 
   useEffect(() => {
     const updateWidth = () => {
@@ -143,40 +236,103 @@ export function PDFViewer({
 
   const handleAnnotationAdd = (annotation: PDFAnnotation) => {
     const currentAnnotations = annotationsByPage.get(currentPage) || [];
-    const updatedAnnotations = [...currentAnnotations, annotation];
-    const newMap = new Map(annotationsByPage);
-    newMap.set(currentPage, updatedAnnotations);
-    setAnnotationsByPage(newMap);
-    onAnnotationsChange?.(currentPage, updatedAnnotations);
+    let annotationWithPage: PDFAnnotation = {
+      ...annotation,
+      pageNumber: currentPage,
+    };
+
+    let notesToPersist = workPointNotes;
+
+    if (annotation.type === 'callout') {
+      const commentId = generateId('comment');
+      const newNote: WorkPointNote = {
+        id: commentId,
+        text: '',
+        calloutAnnotationId: annotationWithPage.id,
+        pageNumber: currentPage,
+        createdAt: new Date().toISOString(),
+      };
+
+      const relabeledNotes = relabelCalloutNotes([...workPointNotes, newNote]);
+      const noteMeta = relabeledNotes.find(note => note.id === commentId);
+      annotationWithPage = {
+        ...annotationWithPage,
+        calloutCommentId: commentId,
+        calloutLabel: noteMeta?.calloutNumber,
+      };
+
+      setWorkPointNotes(relabeledNotes);
+      commitWorkPointNotes(relabeledNotes);
+      notesToPersist = relabeledNotes;
+    }
+
+    const updatedAnnotations = [...currentAnnotations, annotationWithPage];
+    const baseMap = new Map(annotationsByPage);
+    baseMap.set(currentPage, updatedAnnotations);
+
+    const { map, changedPages } = syncCalloutAnnotationsWithNotes(notesToPersist, baseMap);
+    const pagesToNotify = new Set<number>([currentPage, ...changedPages]);
+    persistAnnotationsMap(map, Array.from(pagesToNotify));
   };
 
   const handleAnnotationUpdate = (annotationId: string, updates: Partial<PDFAnnotation>) => {
     const currentAnnotations = annotationsByPage.get(currentPage) || [];
-    const updatedAnnotations = currentAnnotations.map(ann =>
-      ann.id === annotationId ? { ...ann, ...updates } : ann
-    );
-    const newMap = new Map(annotationsByPage);
-    newMap.set(currentPage, updatedAnnotations);
-    setAnnotationsByPage(newMap);
-    onAnnotationsChange?.(currentPage, updatedAnnotations);
+    const updatedAnnotations = currentAnnotations.map(ann => {
+      if (ann.id !== annotationId) return ann;
+      return {
+        ...ann,
+        ...updates,
+        pageNumber: currentPage,
+      };
+    });
+    const baseMap = new Map(annotationsByPage);
+    baseMap.set(currentPage, updatedAnnotations);
+    const { map, changedPages } = syncCalloutAnnotationsWithNotes(workPointNotes, baseMap);
+    const pagesToNotify = new Set<number>([currentPage, ...changedPages]);
+    persistAnnotationsMap(map, Array.from(pagesToNotify));
   };
 
   const handleUndo = () => {
     const currentAnnotations = annotationsByPage.get(currentPage) || [];
     if (currentAnnotations.length === 0) return;
     
+    const removedAnnotation = currentAnnotations[currentAnnotations.length - 1];
     const updatedAnnotations = currentAnnotations.slice(0, -1);
-    const newMap = new Map(annotationsByPage);
-    newMap.set(currentPage, updatedAnnotations);
-    setAnnotationsByPage(newMap);
-    onAnnotationsChange?.(currentPage, updatedAnnotations);
+
+    let nextNotes = workPointNotes;
+    if (removedAnnotation.type === 'callout') {
+      const filtered = workPointNotes.filter(note => note.calloutAnnotationId !== removedAnnotation.id);
+      nextNotes = relabelCalloutNotes(filtered);
+      setWorkPointNotes(nextNotes);
+      commitWorkPointNotes(nextNotes);
+    }
+
+    const baseMap = new Map(annotationsByPage);
+    baseMap.set(currentPage, updatedAnnotations);
+    const { map, changedPages } = syncCalloutAnnotationsWithNotes(nextNotes, baseMap);
+    const pagesToNotify = new Set<number>([currentPage, ...changedPages]);
+    persistAnnotationsMap(map, Array.from(pagesToNotify));
   };
 
   const handleClearAnnotations = () => {
-    const newMap = new Map(annotationsByPage);
-    newMap.set(currentPage, []);
-    setAnnotationsByPage(newMap);
-    onAnnotationsChange?.(currentPage, []);
+    const existingAnnotations = annotationsByPage.get(currentPage) || [];
+    const removedCalloutIds = existingAnnotations
+      .filter(annotation => annotation.type === 'callout')
+      .map(annotation => annotation.id);
+
+    let nextNotes = workPointNotes;
+    if (removedCalloutIds.length > 0) {
+      const filteredNotes = workPointNotes.filter(note => !note.calloutAnnotationId || !removedCalloutIds.includes(note.calloutAnnotationId));
+      nextNotes = relabelCalloutNotes(filteredNotes);
+      setWorkPointNotes(nextNotes);
+      commitWorkPointNotes(nextNotes);
+    }
+
+    const baseMap = new Map(annotationsByPage);
+    baseMap.set(currentPage, []);
+    const { map, changedPages } = syncCalloutAnnotationsWithNotes(nextNotes, baseMap);
+    const pagesToNotify = new Set<number>([currentPage, ...changedPages]);
+    persistAnnotationsMap(map, Array.from(pagesToNotify));
   };
 
   const handleCopy = () => {
@@ -198,14 +354,77 @@ export function PDFViewer({
         x: copiedAnnotation.x !== undefined ? (copiedAnnotation.x + 0.02) : undefined, // Offset by 2% of page width
         y: copiedAnnotation.y !== undefined ? (copiedAnnotation.y + 0.02) : undefined, // Offset by 2% of page height
       };
+      if (copiedAnnotation.type === 'callout') {
+        newAnnotation.calloutCommentId = undefined;
+        newAnnotation.calloutLabel = undefined;
+      }
       handleAnnotationAdd(newAnnotation);
     }
   };
 
-  const handleSaveNotes = () => {
-    if (currentStation) {
-      onWorkPointNotesChange?.(currentStation, workPointNotes);
+  const handleAddGeneralNote = () => {
+    const newNote: WorkPointNote = {
+      id: generateId('note'),
+      text: '',
+      pageNumber: currentPage,
+      createdAt: new Date().toISOString(),
+    };
+    const nextNotes = [...workPointNotes, newNote];
+    setWorkPointNotes(nextNotes);
+    commitWorkPointNotes(nextNotes);
+    const { map, changedPages } = syncCalloutAnnotationsWithNotes(nextNotes);
+    if (changedPages.length > 0) {
+      persistAnnotationsMap(map, changedPages);
     }
+  };
+
+  const handleNoteTextChange = (noteId: string, text: string) => {
+    const nextNotes = workPointNotes.map(note =>
+      note.id === noteId
+        ? {
+            ...note,
+            text,
+            updatedAt: new Date().toISOString(),
+          }
+        : note
+    );
+    setWorkPointNotes(nextNotes);
+    commitWorkPointNotes(nextNotes);
+  };
+
+  const handleDeleteNote = (noteId: string) => {
+    const noteToDelete = workPointNotes.find(note => note.id === noteId);
+    if (!noteToDelete) return;
+
+    let workingMap = annotationsByPage;
+    const removalPages: number[] = [];
+
+    if (noteToDelete.calloutAnnotationId) {
+      workingMap = new Map(annotationsByPage);
+      workingMap.forEach((pageAnnotations, pageNumber) => {
+        const filtered = pageAnnotations.filter(annotation => annotation.id !== noteToDelete.calloutAnnotationId);
+        if (filtered.length !== pageAnnotations.length) {
+          workingMap.set(pageNumber, filtered);
+          removalPages.push(pageNumber);
+        }
+      });
+    }
+
+    const filteredNotes = workPointNotes.filter(note => note.id !== noteId);
+    const relabeledNotes = relabelCalloutNotes(filteredNotes);
+    setWorkPointNotes(relabeledNotes);
+    commitWorkPointNotes(relabeledNotes);
+
+    const { map, changedPages } = syncCalloutAnnotationsWithNotes(relabeledNotes, workingMap instanceof Map ? workingMap : new Map(annotationsByPage));
+    const pagesToNotify = new Set<number>([...removalPages, ...changedPages]);
+    if (pagesToNotify.size > 0 || workingMap !== annotationsByPage) {
+      persistAnnotationsMap(map, Array.from(pagesToNotify));
+    }
+  };
+
+  const handleJumpToNotePage = (note: WorkPointNote) => {
+    if (!note.pageNumber || note.pageNumber === currentPage) return;
+    onPageChange(note.pageNumber);
   };
 
   const currentPageAnnotations = annotationsByPage.get(currentPage) || [];
@@ -340,38 +559,66 @@ export function PDFViewer({
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center justify-between">
               <span>QA Notes for WP {currentStation}</span>
+              <Badge variant="secondary" className="text-xs">
+                {workPointNotes.length} {workPointNotes.length === 1 ? 'comment' : 'comments'}
+              </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="rich-text-editor">
-              <ReactQuill
-                theme="snow"
-                value={workPointNotes}
-                onChange={setWorkPointNotes}
-                placeholder="Add notes for this work point..."
-                modules={{
-                  toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'color': [] }, { 'background': [] }],
-                    ['link'],
-                    ['clean']
-                  ],
-                }}
-                formats={[
-                  'header',
-                  'bold', 'italic', 'underline', 'strike',
-                  'list', 'bullet',
-                  'color', 'background',
-                  'link'
-                ]}
-                style={{ minHeight: '150px' }}
-              />
-            </div>
+          <CardContent className="space-y-3">
+            {workPointNotes.length === 0 ? (
+              <div className="rounded-md border border-dashed border-muted-foreground/40 px-4 py-6 text-center text-sm text-muted-foreground">
+                No comments yet. Use the Callout tool on the PDF to drop a numbered note or add a general comment below.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {workPointNotes.map((note) => (
+                  <div key={note.id} className="rounded-md border border-border bg-background p-3 shadow-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={note.calloutNumber ? "default" : "outline"} className="text-xs">
+                          {note.calloutNumber ? `Callout #${note.calloutNumber}` : 'Comment'}
+                        </Badge>
+                        {note.pageNumber && (
+                          <span className="text-xs text-muted-foreground">
+                            Page {note.pageNumber}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {note.pageNumber && note.pageNumber !== currentPage && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleJumpToNotePage(note)}
+                            title={`Jump to page ${note.pageNumber}`}
+                          >
+                            <LocateFixed className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteNote(note.id)}
+                          title="Delete comment"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <Textarea
+                      value={note.text}
+                      onChange={(event) => handleNoteTextChange(note.id, event.target.value)}
+                      placeholder={note.calloutNumber ? `Details for callout #${note.calloutNumber}` : "Add your comment..."}
+                      className="mt-2 min-h-[80px]"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex justify-end">
-              <Button size="sm" onClick={handleSaveNotes}>
-                Save Notes
+              <Button size="sm" variant="outline" className="gap-2" onClick={handleAddGeneralNote}>
+                <Plus className="h-4 w-4" />
+                Add Comment
               </Button>
             </div>
           </CardContent>

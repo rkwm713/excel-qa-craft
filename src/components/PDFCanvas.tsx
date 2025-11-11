@@ -5,7 +5,7 @@ interface PDFCanvasProps {
   width: number;
   height: number;
   annotations: PDFAnnotation[];
-  activeTool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'text';
+  activeTool: 'pan' | 'select' | 'freehand' | 'rectangle' | 'text' | 'callout';
   showAnnotations: boolean;
   onAnnotationAdd: (annotation: PDFAnnotation) => void;
   onAnnotationUpdate: (annotationId: string, updates: Partial<PDFAnnotation>) => void;
@@ -37,6 +37,7 @@ export function PDFCanvas({
   // Hardcoded to red color and medium line width
   const color = '#FF0000';
   const lineWidth = 4;
+  const calloutDiameter = 32;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPoints, setCurrentPoints] = useState<{ x: number; y: number }[]>([]);
@@ -158,6 +159,24 @@ export function PDFCanvas({
         ctx.font = `${fontSize}px sans-serif`;
         ctx.fillStyle = annotation.color;
         ctx.fillText(annotation.text, canvasPos.x, canvasPos.y);
+      } else if (annotation.type === 'callout' && annotation.x !== undefined && annotation.y !== undefined) {
+        const center = normalizedToCanvas(annotation.x, annotation.y);
+        const diameterX = (annotation.width || calloutDiameter / baseWidth) * baseWidth;
+        const radius = diameterX / 2;
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = annotation.color;
+        ctx.fill();
+        ctx.lineWidth = Math.max(2, radius * 0.2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `600 ${Math.max(radius, 12)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const label = annotation.calloutLabel ?? '?';
+        ctx.fillText(String(label), center.x, center.y);
       }
     });
 
@@ -190,7 +209,7 @@ export function PDFCanvas({
       const height = currentY - startPoint.y;
       ctx.strokeRect(startPoint.x, startPoint.y, width, height);
     }
-  }, [annotations, showAnnotations, isDrawing, currentPoints, startPoint, activeTool, color, lineWidth, baseWidth, baseHeight]);
+  }, [annotations, showAnnotations, isDrawing, currentPoints, startPoint, activeTool, color, lineWidth, baseWidth, baseHeight, calloutDiameter]);
 
   const lastMouseXRef = useRef<number>(0);
   const lastMouseYRef = useRef<number>(0);
@@ -245,6 +264,14 @@ export function PDFCanvas({
         normalizedPoint.y >= annotation.y - textHeight &&
         normalizedPoint.y <= annotation.y
       );
+    } else if (annotation.type === 'callout' && annotation.x !== undefined && annotation.y !== undefined) {
+      const canvasPoint = normalizedToCanvas(normalizedPoint.x, normalizedPoint.y);
+      const calloutCenter = normalizedToCanvas(annotation.x, annotation.y);
+      const diameter = (annotation.width || calloutDiameter / baseWidth) * baseWidth;
+      const radius = diameter / 2;
+      const dx = canvasPoint.x - calloutCenter.x;
+      const dy = canvasPoint.y - calloutCenter.y;
+      return Math.sqrt(dx * dx + dy * dy) <= radius;
     }
     return false;
   };
@@ -305,6 +332,21 @@ export function PDFCanvas({
       return;
     }
 
+    if (activeTool === 'callout') {
+      const calloutAnnotation: PDFAnnotation = {
+        id: `callout-${Date.now()}`,
+        type: 'callout',
+        color,
+        lineWidth: lineWidth / baseWidth,
+        x: normalizedPoint.x,
+        y: normalizedPoint.y,
+        width: calloutDiameter / baseWidth,
+        height: calloutDiameter / baseHeight,
+      };
+      onAnnotationAdd(calloutAnnotation);
+      return;
+    }
+
     setIsDrawing(true);
 
     if (activeTool === 'freehand') {
@@ -317,19 +359,17 @@ export function PDFCanvas({
       // Show inline text input at click position
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const container = document.getElementById('pdf-container');
-      if (container) {
-        const containerRect = container.getBoundingClientRect();
-        setTextInput({
-          x: e.clientX - containerRect.left + container.scrollLeft,
-          y: e.clientY - containerRect.top + container.scrollTop,
-          visible: true
-        });
-        setTextInputValue('');
-        // Focus input after state update
-        setTimeout(() => textInputRef.current?.focus(), 0);
-      }
+      
+      // Store the click position and the canvas position at the time of click
+      // This will be used to calculate the annotation position later
+      setTextInput({
+        x: e.clientX,
+        y: e.clientY,
+        visible: true
+      });
+      setTextInputValue('');
+      // Focus input after state update
+      setTimeout(() => textInputRef.current?.focus(), 0);
     }
   };
 
@@ -483,10 +523,10 @@ export function PDFCanvas({
         height: canvasDisplayHeight,
         maxWidth: '100%',
         maxHeight: '100%',
-        cursor: activeTool === 'pan' 
-          ? (isPanning ? 'grabbing' : 'grab') 
-          : activeTool === 'select' 
-            ? (isDragging ? 'grabbing' : 'pointer') 
+        cursor: activeTool === 'pan'
+          ? (isPanning ? 'grabbing' : 'grab')
+          : activeTool === 'select'
+            ? (isDragging ? 'grabbing' : 'pointer')
             : 'crosshair',
         pointerEvents: 'auto',
       }}
@@ -504,56 +544,16 @@ export function PDFCanvas({
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            if (textInputValue.trim()) {
-              const container = document.getElementById('pdf-container');
-              if (container && textInput) {
-                const containerRect = container.getBoundingClientRect();
-                const relativeX = textInput.x - container.scrollLeft;
-                const relativeY = textInput.y - container.scrollTop;
-                const canvas = canvasRef.current;
-                if (canvas) {
-                  const canvasRect = canvas.getBoundingClientRect();
-                  const canvasPoint = {
-                    x: ((relativeX - (canvasRect.left - containerRect.left)) / canvasRect.width) * canvas.width,
-                    y: ((relativeY - (canvasRect.top - containerRect.top)) / canvasRect.height) * canvas.height,
-                  };
-                  const normalizedPoint = canvasToNormalized(canvasPoint.x, canvasPoint.y);
-                  const annotation: PDFAnnotation = {
-                    id: `text-${Date.now()}`,
-                    type: 'text',
-                    color,
-                    lineWidth: lineWidth / baseWidth,
-                    x: normalizedPoint.x,
-                    y: normalizedPoint.y,
-                    text: textInputValue,
-                    fontSize: 16 / baseHeight,
-                  };
-                  onAnnotationAdd(annotation);
-                }
-              }
-            }
-            setTextInput(null);
-            setTextInputValue('');
-          } else if (e.key === 'Escape') {
-            setTextInput(null);
-            setTextInputValue('');
-          }
-        }}
-        onBlur={() => {
-          if (textInputValue.trim()) {
-            const container = document.getElementById('pdf-container');
-            if (container && textInput) {
-              const containerRect = container.getBoundingClientRect();
-              const relativeX = textInput.x - container.scrollLeft;
-              const relativeY = textInput.y - container.scrollTop;
+            if (textInputValue.trim() && textInput) {
               const canvas = canvasRef.current;
               if (canvas) {
+                // Get the current canvas position
                 const canvasRect = canvas.getBoundingClientRect();
-                const canvasPoint = {
-                  x: ((relativeX - (canvasRect.left - containerRect.left)) / canvasRect.width) * canvas.width,
-                  y: ((relativeY - (canvasRect.top - containerRect.top)) / canvasRect.height) * canvas.height,
-                };
-                const normalizedPoint = canvasToNormalized(canvasPoint.x, canvasPoint.y);
+                // Calculate the canvas coordinates from the stored click position
+                const canvasX = (textInput.x - canvasRect.left) / canvasRect.width * canvas.width;
+                const canvasY = (textInput.y - canvasRect.top) / canvasRect.height * canvas.height;
+                
+                const normalizedPoint = canvasToNormalized(canvasX, canvasY);
                 const annotation: PDFAnnotation = {
                   id: `text-${Date.now()}`,
                   type: 'text',
@@ -567,14 +567,43 @@ export function PDFCanvas({
                 onAnnotationAdd(annotation);
               }
             }
+            setTextInput(null);
+            setTextInputValue('');
+          } else if (e.key === 'Escape') {
+            setTextInput(null);
+            setTextInputValue('');
+          }
+        }}
+        onBlur={() => {
+          if (textInputValue.trim() && textInput) {
+            const canvas = canvasRef.current;
+            if (canvas) {
+              // Same calculation as Enter key handler
+              const canvasRect = canvas.getBoundingClientRect();
+              const canvasX = (textInput.x - canvasRect.left) / canvasRect.width * canvas.width;
+              const canvasY = (textInput.y - canvasRect.top) / canvasRect.height * canvas.height;
+              
+              const normalizedPoint = canvasToNormalized(canvasX, canvasY);
+              const annotation: PDFAnnotation = {
+                id: `text-${Date.now()}`,
+                type: 'text',
+                color,
+                lineWidth: lineWidth / baseWidth,
+                x: normalizedPoint.x,
+                y: normalizedPoint.y,
+                text: textInputValue,
+                fontSize: 16 / baseHeight,
+              };
+              onAnnotationAdd(annotation);
+            }
           }
           setTextInput(null);
           setTextInputValue('');
         }}
         style={{
-          position: 'absolute',
+          position: 'fixed',
           left: `${textInput.x}px`,
-          top: `${textInput.y}px`,
+          top: `${textInput.y - 10}px`,
           border: '2px solid #FF0000',
           padding: '4px 8px',
           fontSize: '16px',
@@ -584,6 +613,7 @@ export function PDFCanvas({
           zIndex: 1000,
           minWidth: '100px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          transform: 'translateX(-50%)',
         }}
         autoFocus
       />
