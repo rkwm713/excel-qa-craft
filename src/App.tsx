@@ -2,8 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider } from "react-router-dom";
-import { router } from "./router";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Landing from "./pages/Landing";
+import Index from "./pages/Index";
+import NewReview from "./pages/NewReview";
+import ReviewsList from "./pages/ReviewsList";
+import ReviewView from "./pages/ReviewView";
+import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -12,7 +18,45 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <RouterProvider router={router} />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/new-review" 
+            element={
+              <ProtectedRoute>
+                <NewReview />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/reviews" 
+            element={
+              <ProtectedRoute>
+                <ReviewsList />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/review/:id" 
+            element={
+              <ProtectedRoute>
+                <ReviewView />
+              </ProtectedRoute>
+            } 
+          />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
