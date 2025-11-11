@@ -161,10 +161,17 @@ export const reviewsAPI = {
     kmzPlacemarks?: any[];
   }): Promise<{ id: string; message: string }> => {
     // Helper function to safely clone data (removes circular references and non-serializable objects)
-    const safeClone = (obj: any, seen = new WeakSet()): any => {
+    const safeClone = (obj: any, seen = new WeakSet(), depth = 0): any => {
+      const MAX_DEPTH = 5;
+
       // Handle primitives and null
       if (obj === null || typeof obj !== 'object') {
         return obj;
+      }
+
+      // Depth guard
+      if (depth > MAX_DEPTH) {
+        return null;
       }
 
       // Handle circular references
@@ -172,41 +179,51 @@ export const reviewsAPI = {
         return null; // Replace circular reference with null
       }
 
-      // Skip non-serializable objects
-      if (obj instanceof HTMLElement || obj instanceof Event || typeof obj === 'function') {
+      // Skip DOM elements, events, functions, and non-plain instances
+      if (
+        typeof obj === 'function' ||
+        obj instanceof HTMLElement ||
+        obj instanceof Event
+      ) {
         return null;
       }
 
-      // Handle arrays
+      // Allow arrays
       if (Array.isArray(obj)) {
         seen.add(obj);
-        const result = obj.map(item => safeClone(item, seen));
+        const result = obj.map(item => safeClone(item, seen, depth + 1));
         seen.delete(obj);
         return result;
       }
 
-      // Handle Date
+      // Allow Date
       if (obj instanceof Date) {
         return obj.toISOString();
       }
 
-      // Handle Map
+      // Allow Map
       if (obj instanceof Map) {
         seen.add(obj);
         const result: Record<string, any> = {};
         obj.forEach((value, key) => {
-          result[String(key)] = safeClone(value, seen);
+          result[String(key)] = safeClone(value, seen, depth + 1);
         });
         seen.delete(obj);
         return result;
       }
 
-      // Handle Set
+      // Allow Set
       if (obj instanceof Set) {
         seen.add(obj);
-        const result = Array.from(obj).map(item => safeClone(item, seen));
+        const result = Array.from(obj).map(item => safeClone(item, seen, depth + 1));
         seen.delete(obj);
         return result;
+      }
+
+      // Only allow plain objects
+      const isPlainObject = Object.getPrototypeOf(obj) === Object.prototype || Object.getPrototypeOf(obj) === null;
+      if (!isPlainObject) {
+        return null;
       }
 
       // Handle plain objects
@@ -215,9 +232,8 @@ export const reviewsAPI = {
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           try {
-            result[key] = safeClone(obj[key], seen);
-          } catch (e) {
-            // Skip properties that cause errors
+            result[key] = safeClone((obj as any)[key], seen, depth + 1);
+          } catch (_) {
             result[key] = null;
           }
         }
@@ -238,8 +254,24 @@ export const reviewsAPI = {
     // Convert PDF file to base64 if provided
     let pdfFileData: { data: string; fileName: string; mimeType: string } | undefined;
     if (data.pdfFile) {
-      const arrayBuffer = await data.pdfFile.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+        try {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // data:[mime];base64,XXXXX
+            const commaIndex = result.indexOf(',');
+            const base64 = commaIndex >= 0 ? result.substring(commaIndex + 1) : result;
+            resolve(base64);
+          };
+          reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      const base64 = await toBase64(data.pdfFile);
       pdfFileData = {
         data: base64,
         fileName: data.pdfFile.name,
