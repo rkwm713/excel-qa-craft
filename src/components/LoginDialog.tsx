@@ -14,7 +14,7 @@ interface LoginDialogProps {
 }
 
 export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogProps) {
-  const [loginUsername, setLoginUsername] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerUsername, setRegisterUsername] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
@@ -26,9 +26,22 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(loginEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginUsername,
+        email: loginEmail,
         password: loginPassword,
       });
       if (error) throw error;
@@ -38,7 +51,7 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
       });
       onLoginSuccess(data.user);
       onOpenChange(false);
-      setLoginUsername("");
+      setLoginEmail("");
       setLoginPassword("");
     } catch (error: any) {
       toast({
@@ -103,13 +116,15 @@ export function LoginDialog({ open, onOpenChange, onLoginSuccess }: LoginDialogP
           <TabsContent value="login" className="space-y-4">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login-username">Username or Email</Label>
+                <Label htmlFor="login-email">Email</Label>
                 <Input
-                  id="login-username"
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
+                  id="login-email"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
                   required
                   disabled={isLoading}
+                  placeholder="your.email@example.com"
                 />
               </div>
               <div className="space-y-2">

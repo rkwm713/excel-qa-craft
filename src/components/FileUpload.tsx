@@ -9,26 +9,54 @@ interface FileUploadProps {
   onClear?: () => void;
 }
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_EXTENSIONS = ['.xlsx', '.xls'];
+
 export const FileUpload = ({ onFileSelect, fileName, onClear }: FileUploadProps) => {
+  const validateFile = useCallback((file: File): string | null => {
+    // Check file extension
+    const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    if (!ALLOWED_EXTENSIONS.includes(extension)) {
+      return `Invalid file type. Please upload a file with one of these extensions: ${ALLOWED_EXTENSIONS.join(', ')}`;
+    }
+    
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return `File size exceeds the maximum limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB`;
+    }
+    
+    return null;
+  }, []);
+
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith(".xlsx")) {
+      if (file) {
+        const error = validateFile(file);
+        if (error) {
+          // Could show toast here, but for now just return
+          return;
+        }
         onFileSelect(file);
       }
     },
-    [onFileSelect]
+    [onFileSelect, validateFile]
   );
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
+        const error = validateFile(file);
+        if (error) {
+          // Could show toast here, but for now just return
+          return;
+        }
         onFileSelect(file);
       }
     },
-    [onFileSelect]
+    [onFileSelect, validateFile]
   );
 
   return (

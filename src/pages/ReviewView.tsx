@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { reviewsAPI, ReviewData } from "@/services/api";
 import { QAReviewTable } from "@/components/QAReviewTable";
 import { Dashboard } from "@/components/Dashboard";
 import { MapViewer } from "@/components/MapViewer";
@@ -8,17 +7,40 @@ import { PDFUpload } from "@/components/PDFUpload";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useReview, useUpdateReview } from "@/hooks/useReviews";
 import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText } from "lucide-react";
 import { QAReviewRow, DashboardMetrics } from "@/types/qa-tool";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
+import type { Tables } from "@/integrations/supabase/types";
+
+// Helper function to convert database ReviewRow to QAReviewRow
+function convertReviewRowToQA(row: Tables<'review_rows'>): QAReviewRow {
+  return {
+    id: row.id,
+    issueType: (row.issue_type === 'OK' ? 'OK' : 'NEEDS REVISIONS') as QAReviewRow['issueType'],
+    station: row.station,
+    workSet: row.work_set || '',
+    designerCU: row.designer_cu || '',
+    qaCU: row.qa_cu || '',
+    description: row.description || '',
+    designerWF: row.designer_wf || '',
+    qaWF: row.qa_wf || '',
+    designerQty: row.designer_qty || 0,
+    qaQty: row.qa_qty || 0,
+    qaComments: row.qa_comments || '',
+    mapNotes: row.map_notes || undefined,
+    cuCheck: (row.cu_check ?? 0) === 1,
+    wfCheck: (row.wf_check ?? 0) === 1,
+    qtyCheck: (row.qty_check ?? 0) === 1,
+  };
+}
 
 export default function ReviewView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [reviewData, setReviewData] = useState<ReviewData | null>(null);
-  const [qaData, setQaData] = useState<QAReviewRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: reviewData, isLoading, error } = useReview(id);
+  const updateReview = useUpdateReview();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedStation, setSelectedStation] = useState<string>("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -28,98 +50,88 @@ export default function ReviewView() {
   const [currentWorkPoint, setCurrentWorkPoint] = useState<QAReviewRow | null>(null);
   const { toast } = useToast();
 
+  // Convert review rows to QAReviewRow format
+  const qaData = useMemo(() => {
+    if (!reviewData) return [];
+    return reviewData.reviewRows.map(convertReviewRowToQA);
+  }, [reviewData]);
+  
+  if (error) {
+    toast({
+      title: "Error loading review",
+      description: error instanceof Error ? error.message : "Failed to load review",
+      variant: "destructive",
+    });
+    navigate("/reviews");
+    return null;
+  }
+  
+  // Load PDF file when review data is available - using useEffect for side effects
   useEffect(() => {
-    if (id) {
-      loadReview(id);
-    }
-  }, [id]);
-
-  const loadReview = async (reviewId: string) => {
-    setIsLoading(true);
-    try {
-      const data = await reviewsAPI.get(reviewId);
-      setReviewData(data);
-      
-      // Convert review rows to QAReviewRow format
-      const rows = data.reviewRows.map((row) => ({
-        ...row,
-        id: row.id,
-      }));
-      setQaData(rows);
-      
-      // Load PDF file if available
-      if (data.pdfFile && data.pdfFile.data) {
-        try {
-          // Convert base64 to blob
-          const byteCharacters = atob(data.pdfFile.data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: data.pdfFile.mimeType || 'application/pdf' });
-          const file = new File([blob], data.pdfFile.fileName, { type: data.pdfFile.mimeType || 'application/pdf' });
-          setPdfFile(file);
-        } catch (error) {
-          console.error('Error loading PDF file:', error);
+    if (!reviewData) return;
+    
+    // Load PDF file if available
+    if (reviewData.pdfFile && reviewData.pdfFile.data) {
+      try {
+        // Convert base64 to blob
+        const byteCharacters = atob(reviewData.pdfFile.data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-      } else if (data.review?.pdf_file_name) {
-        // Treat pdf_file_name as a Supabase Storage path
-        try {
-          const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string | undefined;
-          const path = data.review.pdf_file_name as string;
-          if (supabaseUrl && path) {
-            const publicUrl = `${supabaseUrl}/storage/v1/object/public/pdf-files/${path}`;
-            const res = await fetch(publicUrl);
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: reviewData.pdfFile.mimeType || 'application/pdf' });
+        const file = new File([blob], reviewData.pdfFile.fileName, { type: reviewData.pdfFile.mimeType || 'application/pdf' });
+        setPdfFile(file);
+      } catch (error) {
+        // Error loading PDF file - will show in UI if needed
+      }
+    } else if (reviewData.review?.pdf_file_name) {
+      // Try to load from storage bucket
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+      const path = reviewData.review.pdf_file_name;
+      if (supabaseUrl && path) {
+        const publicUrl = `${supabaseUrl}/storage/v1/object/public/pdf-files/${path}`;
+        fetch(publicUrl)
+          .then((res) => {
             if (res.ok) {
-              const blob = await res.blob();
+              return res.blob();
+            }
+            return null;
+          })
+          .then((blob) => {
+            if (blob) {
               const file = new File([blob], path.split('/').pop() || 'document.pdf', { type: blob.type || 'application/pdf' });
               setPdfFile(file);
-            } else {
-              console.warn('Failed to fetch PDF from storage:', res.status);
             }
-          }
-        } catch (e) {
-          console.error('Error fetching PDF from storage:', e);
-        }
+          })
+          .catch((e) => {
+            // Error fetching PDF from storage - will show in UI if needed
+          });
       }
-      
-      // Load PDF annotations
-      if (data.pdfAnnotations) {
-        const annotationsMap = new Map<number, any[]>();
-        Object.entries(data.pdfAnnotations).forEach(([page, annotations]) => {
-          annotationsMap.set(parseInt(page), annotations);
-        });
-        setPdfAnnotations(annotationsMap);
-      }
-      
-      // Load work point notes
-      if (data.workPointNotes) {
-        setPdfWorkPointNotes(data.workPointNotes);
-      }
-      
-      // Auto-select first station
-      if (rows.length > 0) {
-        const firstStation = rows[0].station;
-        setSelectedStation(firstStation);
-        setCurrentWorkPoint(rows[0]);
-      }
-      
-      toast({
-        title: "Review loaded",
-        description: `Loaded review: ${data.review.title}`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error loading review",
-        description: error.message || "Failed to load review",
-        variant: "destructive",
-      });
-      navigate("/reviews");
-    } finally {
-      setIsLoading(false);
     }
-  };
+    
+    // Load PDF annotations
+    if (reviewData.pdfAnnotations) {
+      const annotationsMap = new Map<number, any[]>();
+      Object.entries(reviewData.pdfAnnotations).forEach(([page, annotations]) => {
+        annotationsMap.set(parseInt(page), annotations);
+      });
+      setPdfAnnotations(annotationsMap);
+    }
+    
+    // Load work point notes
+    if (reviewData.workPointNotes) {
+      setPdfWorkPointNotes(reviewData.workPointNotes);
+    }
+    
+    // Auto-select first station
+    if (qaData.length > 0) {
+      const firstStation = qaData[0].station;
+      setSelectedStation(firstStation);
+      setCurrentWorkPoint(qaData[0]);
+    }
+  }, [reviewData, qaData]);
 
   const handlePDFFileSelect = async (file: File) => {
     try {
@@ -150,7 +162,7 @@ export default function ReviewView() {
         description: `Found ${pdfInfo.numPages} pages. Mapped ${mappedCount} work points${specCount > 0 ? ` and ${specCount} spec numbers` : ''}.`,
       });
     } catch (error) {
-      console.error("Error parsing PDF:", error);
+      // Error already handled by toast notification
       toast({
         title: "Error loading PDF",
         description: "Failed to parse the PDF file",
@@ -226,20 +238,51 @@ export default function ReviewView() {
   }, [currentWorkPoint, qaData, handleJumpToWorkPoint]);
 
   const handleSpecNumberChange = (station: string, specNumber: string) => {
-    if (!reviewData) return;
-    setReviewData({
-      ...reviewData,
-      editedSpecMapping: {
-        ...reviewData.editedSpecMapping,
-        [station]: specNumber.trim() || undefined,
+    if (!reviewData || !id) return;
+    const newEditedSpecMapping = {
+      ...reviewData.editedSpecMapping,
+      [station]: specNumber.trim() || undefined,
+    };
+    // Update local state immediately
+    // Optionally save to server
+    updateReview.mutate({
+      id,
+      data: {
+        editedSpecMapping: newEditedSpecMapping,
       },
     });
   };
 
   const handleUpdateRow = (rowId: string, field: keyof QAReviewRow, value: any) => {
-    setQaData((prev) =>
-      prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row))
-    );
+    if (!id) return;
+    const updatedRows = qaData.map((row) => (row.id === rowId ? { ...row, [field]: value } : row));
+    // Convert back to database format and update
+    const dbRows = updatedRows.map((row) => ({
+      id: row.id,
+      review_id: id,
+      station: row.station,
+      issue_type: row.issueType,
+      designer_cu: row.designerCU || null,
+      qa_cu: row.qaCU || null,
+      designer_wf: row.designerWF || null,
+      qa_wf: row.qaWF || null,
+      designer_qty: row.designerQty || null,
+      qa_qty: row.qaQty || null,
+      description: row.description || null,
+      qa_comments: row.qaComments || null,
+      cu_check: row.cuCheck ? 1 : 0,
+      wf_check: row.wfCheck ? 1 : 0,
+      qty_check: row.qtyCheck ? 1 : 0,
+      work_set: row.workSet || null,
+      map_notes: row.mapNotes || null,
+      row_order: null,
+    }));
+    updateReview.mutate({
+      id,
+      data: {
+        reviewRows: dbRows as any,
+      },
+    });
   };
 
   const metrics: DashboardMetrics = {
@@ -251,7 +294,7 @@ export default function ReviewView() {
     qtyMatchRate: qaData.length > 0 ? (qaData.filter((r) => r.qtyCheck).length / qaData.length) * 100 : 0,
   };
 
-  const stations = Array.from(new Set(qaData.map((r) => r.station))).sort();
+  const stations = useMemo(() => Array.from(new Set(qaData.map((r) => r.station))).sort(), [qaData]);
 
   if (isLoading) {
     return (
@@ -264,7 +307,7 @@ export default function ReviewView() {
     );
   }
 
-  if (!reviewData) {
+  if (!reviewData || !id) {
     return null;
   }
 
