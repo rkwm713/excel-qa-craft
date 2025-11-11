@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { reviewsAPI, ReviewListItem } from "@/services/api";
-import { authAPI, removeAuthToken } from "@/services/api";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Search, LogOut, User, Plus, Trash2, TrendingUp, Calendar, FileSpreadsheet, Map as MapIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -58,8 +58,12 @@ export default function Index() {
 
   const loadUser = async () => {
     try {
-      const response = await authAPI.getCurrentUser();
-      setCurrentUser(response.user);
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        setCurrentUser(null);
+      } else {
+        setCurrentUser(data.user);
+      }
     } catch (error) {
       setCurrentUser(null);
     }
@@ -88,8 +92,8 @@ export default function Index() {
     loadReviews();
   };
 
-  const handleLogout = () => {
-    removeAuthToken();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setCurrentUser(null);
     toast({
       title: "Logged out",
