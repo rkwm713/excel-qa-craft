@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { logger } from "@/lib/logger";
 import {
   Dialog,
   DialogContent,
@@ -91,7 +92,7 @@ export const StreetViewModal = ({
           }
         );
       } catch (err) {
-        console.error("Street View initialization error:", err);
+        logger.error("Street View initialization error:", err);
         // Fall back to static image on error
         setUseStaticImage(true);
         setIsLoading(false);

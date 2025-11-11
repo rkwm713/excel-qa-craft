@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { logger } from "@/lib/logger";
 import * as XLSX from 'xlsx';
 import { exportAnnotatedPDF } from './pdfExporter';
 import { QAReviewRow, CULookupItem } from '@/types/qa-tool';
@@ -122,7 +123,7 @@ export async function exportDesignerPackage(
       const pdfArrayBuffer = await annotatedPdfBlob.arrayBuffer();
       zip.file(`Annotated_PDF_${timestamp}.pdf`, pdfArrayBuffer);
     } catch (error) {
-      console.error('Error exporting annotated PDF:', error);
+      logger.error('Error exporting annotated PDF:', error);
       // Still include original PDF if annotation export fails
       const pdfArrayBuffer = await pdfFile.arrayBuffer();
       zip.file(`Original_PDF_${timestamp}.pdf`, pdfArrayBuffer);

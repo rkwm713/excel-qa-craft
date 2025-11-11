@@ -1,5 +1,6 @@
 import { PDFDocument, PDFPage, rgb, PDFFont, RGB } from 'pdf-lib';
 import { PDFAnnotation } from '@/types/pdf';
+import { logger } from "@/lib/logger";
 
 /**
  * Export PDF with annotations merged onto the pages
@@ -81,7 +82,7 @@ export async function exportAnnotatedPDF(
                 color: color,
               });
             } catch (error) {
-              console.warn('Failed to draw text annotation:', error);
+              logger.warn('Failed to draw text annotation:', error);
             }
           }
           break;

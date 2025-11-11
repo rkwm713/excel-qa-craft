@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { logger } from "@/lib/logger";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
@@ -223,7 +224,7 @@ export const MapViewer = ({
             drawLayer.addLayer(layer);
           }
         } catch (e) {
-          console.error("Error loading drawing:", e);
+          logger.error("Error loading drawing:", e);
         }
       });
     }

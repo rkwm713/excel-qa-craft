@@ -1,5 +1,6 @@
 import { getDocument, GlobalWorkerOptions, version } from "pdfjs-dist";
 import { PDFPageInfo, PDFDocumentInfo } from "@/types/pdf";
+import { logger } from "@/lib/logger";
 
 // Configure PDF.js worker - must be done before any PDF operations
 if (!GlobalWorkerOptions.workerSrc) {
@@ -7,14 +8,14 @@ if (!GlobalWorkerOptions.workerSrc) {
 }
 
 export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo> {
-  console.log("Starting PDF parse for file:", file.name);
+  logger.debug("Starting PDF parse for file:", file.name);
   
   try {
     const arrayBuffer = await file.arrayBuffer();
-    console.log("PDF arrayBuffer loaded, size:", arrayBuffer.byteLength);
+    logger.debug("PDF arrayBuffer loaded, size:", arrayBuffer.byteLength);
     
     const pdf = await getDocument({ data: arrayBuffer }).promise;
-    console.log("PDF document loaded, pages:", pdf.numPages);
+    logger.debug("PDF document loaded, pages:", pdf.numPages);
     
     const numPages = pdf.numPages;
     const pages: PDFPageInfo[] = [];
@@ -105,15 +106,15 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
           stationSpecMapping[normalized] = specNumber;
           stationSpecMapping[padded4] = specNumber;
           stationSpecMapping[normalizedPadded4] = specNumber;
-          console.log(`Found WP ${workPoint} with Spec ${specNumber} on page ${pageNum}`);
+          logger.debug(`Found WP ${workPoint} with Spec ${specNumber} on page ${pageNum}`);
         } else {
-          console.log(`Found WP ${workPoint} on page ${pageNum} (no spec number found)`);
+          logger.debug(`Found WP ${workPoint} on page ${pageNum} (no spec number found)`);
         }
       }
     }
 
-    console.log("PDF parsing complete. Total work points found:", Object.keys(stationPageMapping).length);
-    console.log("Total spec numbers mapped:", Object.keys(stationSpecMapping).length);
+    logger.debug("PDF parsing complete. Total work points found:", Object.keys(stationPageMapping).length);
+    logger.debug("Total spec numbers mapped:", Object.keys(stationSpecMapping).length);
 
     return {
       file,
@@ -124,7 +125,7 @@ export async function parsePDFForWorkPoints(file: File): Promise<PDFDocumentInfo
       stationSpecMapping,
     };
   } catch (error) {
-    console.error("PDF parsing error:", error);
+    logger.error("PDF parsing error:", error);
     throw new Error(`Failed to parse PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { reviewsAPI, ReviewData } from "@/services/api";
+import { ReviewData } from "@/services/api";
+import { useReview, useUpdateReview } from "@/hooks/useReviews";
 import { QAReviewTable } from "@/components/QAReviewTable";
 import { Dashboard } from "@/components/Dashboard";
 import { MapViewer } from "@/components/MapViewer";
@@ -8,17 +9,19 @@ import { PDFUpload } from "@/components/PDFUpload";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save } from "lucide-react";
 import { QAReviewRow, DashboardMetrics } from "@/types/qa-tool";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
+import { logger } from "@/lib/logger";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ReviewView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [reviewData, setReviewData] = useState<ReviewData | null>(null);
+  const { data: reviewData, isLoading, error } = useReview(id);
+  const updateReview = useUpdateReview();
   const [qaData, setQaData] = useState<QAReviewRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedStation, setSelectedStation] = useState<string>("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -29,73 +32,50 @@ export default function ReviewView() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (id) {
-      loadReview(id);
-    }
-  }, [id]);
-
-  const loadReview = async (reviewId: string) => {
-    setIsLoading(true);
-    try {
-      const data = await reviewsAPI.get(reviewId);
-      setReviewData(data);
+    if (reviewData) {
       
       // Convert review rows to QAReviewRow format
-      const rows = data.reviewRows.map((row) => ({
+      const rows = reviewData.reviewRows.map((row) => ({
         ...row,
         id: row.id,
       }));
       setQaData(rows);
       
-      // Load PDF file if available
-      if (data.pdfFile && data.pdfFile.data) {
+      // Load PDF file from storage bucket
+      if (reviewData.review?.pdf_file_name) {
+        // Load PDF from Supabase Storage bucket
         try {
-          // Convert base64 to blob
-          const byteCharacters = atob(data.pdfFile.data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: data.pdfFile.mimeType || 'application/pdf' });
-          const file = new File([blob], data.pdfFile.fileName, { type: data.pdfFile.mimeType || 'application/pdf' });
-          setPdfFile(file);
-        } catch (error) {
-          console.error('Error loading PDF file:', error);
-        }
-      } else if (data.review?.pdf_file_name) {
-        // Treat pdf_file_name as a Supabase Storage path
-        try {
-          const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string | undefined;
-          const path = data.review.pdf_file_name as string;
-          if (supabaseUrl && path) {
-            const publicUrl = `${supabaseUrl}/storage/v1/object/public/pdf-files/${path}`;
-            const res = await fetch(publicUrl);
-            if (res.ok) {
-              const blob = await res.blob();
-              const file = new File([blob], path.split('/').pop() || 'document.pdf', { type: blob.type || 'application/pdf' });
-              setPdfFile(file);
-            } else {
-              console.warn('Failed to fetch PDF from storage:', res.status);
-            }
+          const path = reviewData.review.pdf_file_name;
+          // Path format: reviews/{reviewId}/{filename} or just the filename
+          const { data, error: downloadError } = await supabase.storage
+            .from('pdf-files')
+            .download(path);
+          
+          if (downloadError) {
+            logger.warn('Failed to fetch PDF from storage:', downloadError);
+          } else if (data) {
+            const file = new File([data], path.split('/').pop() || 'document.pdf', { 
+              type: 'application/pdf' 
+            });
+            setPdfFile(file);
           }
         } catch (e) {
-          console.error('Error fetching PDF from storage:', e);
+          logger.error('Error fetching PDF from storage:', e);
         }
       }
       
       // Load PDF annotations
-      if (data.pdfAnnotations) {
+      if (reviewData.pdfAnnotations) {
         const annotationsMap = new Map<number, any[]>();
-        Object.entries(data.pdfAnnotations).forEach(([page, annotations]) => {
+        Object.entries(reviewData.pdfAnnotations).forEach(([page, annotations]) => {
           annotationsMap.set(parseInt(page), annotations);
         });
         setPdfAnnotations(annotationsMap);
       }
       
       // Load work point notes
-      if (data.workPointNotes) {
-        setPdfWorkPointNotes(data.workPointNotes);
+      if (reviewData.workPointNotes) {
+        setPdfWorkPointNotes(reviewData.workPointNotes);
       }
       
       // Auto-select first station
@@ -107,19 +87,21 @@ export default function ReviewView() {
       
       toast({
         title: "Review loaded",
-        description: `Loaded review: ${data.review.title}`,
+        description: `Loaded review: ${reviewData.review.title}`,
       });
-    } catch (error: any) {
+    }
+  }, [reviewData, toast]);
+
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Error loading review",
         description: error.message || "Failed to load review",
         variant: "destructive",
       });
       navigate("/reviews");
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [error, toast, navigate]);
 
   const handlePDFFileSelect = async (file: File) => {
     try {
@@ -150,7 +132,7 @@ export default function ReviewView() {
         description: `Found ${pdfInfo.numPages} pages. Mapped ${mappedCount} work points${specCount > 0 ? ` and ${specCount} spec numbers` : ''}.`,
       });
     } catch (error) {
-      console.error("Error parsing PDF:", error);
+      logger.error("Error parsing PDF:", error);
       toast({
         title: "Error loading PDF",
         description: "Failed to parse the PDF file",
@@ -242,6 +224,35 @@ export default function ReviewView() {
     );
   };
 
+  const handleSave = async () => {
+    if (!id || !reviewData) return;
+    
+    try {
+      await updateReview.mutateAsync({
+        id,
+        data: {
+          reviewRows: qaData,
+          stationPageMapping: reviewData.stationPageMapping,
+          stationSpecMapping: reviewData.stationSpecMapping,
+          editedSpecMapping: reviewData.editedSpecMapping,
+          pdfAnnotations: pdfAnnotations,
+          workPointNotes: pdfWorkPointNotes,
+        },
+      });
+      
+      toast({
+        title: "Review updated",
+        description: "Your changes have been saved successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error saving review",
+        description: error.message || "Failed to save review",
+        variant: "destructive",
+      });
+    }
+  };
+
   const metrics: DashboardMetrics = {
     totalRows: qaData.length,
     okCount: qaData.filter((r) => r.issueType === "OK").length,
@@ -288,6 +299,14 @@ export default function ReviewView() {
                   </p>
                 </div>
               </div>
+              <Button
+                onClick={handleSave}
+                disabled={updateReview.isPending}
+                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+              >
+                <Save className="w-4 h-4" />
+                {updateReview.isPending ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

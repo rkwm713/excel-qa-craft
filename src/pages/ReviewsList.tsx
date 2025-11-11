@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { reviewsAPI, ReviewListItem } from "@/services/api";
+import { ReviewListItem } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Search, LogOut, User, Plus, Trash2 } from "lucide-react";
+import { useReviews, useDeleteReview } from "@/hooks/useReviews";
+import { FileText, Search, LogOut, User, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -20,51 +21,56 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const ITEMS_PER_PAGE = 20;
+
 export default function ReviewsList() {
-  const [reviews, setReviews] = useState<ReviewListItem[]>([]);
-  const [filteredReviews, setFilteredReviews] = useState<ReviewListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+  const { data: reviews = [], isLoading, error } = useReviews(undefined, ITEMS_PER_PAGE, offset);
+  const deleteReview = useDeleteReview();
 
   useEffect(() => {
     loadUser();
-    loadReviews();
   }, []);
 
-  useEffect(() => {
+  const filteredReviews = useMemo(() => {
     if (searchQuery.trim() === "") {
-      setFilteredReviews(reviews);
-    } else {
-      const query = searchQuery.toLowerCase();
-      setFilteredReviews(
-        reviews.filter(
-          (review) =>
-            review.title.toLowerCase().includes(query) ||
-            review.description?.toLowerCase().includes(query) ||
-            review.file_name?.toLowerCase().includes(query) ||
-            review.username?.toLowerCase().includes(query)
-        )
-      );
+      return reviews;
     }
+    const query = searchQuery.toLowerCase();
+    return reviews.filter(
+      (review) =>
+        review.title.toLowerCase().includes(query) ||
+        review.description?.toLowerCase().includes(query) ||
+        review.file_name?.toLowerCase().includes(query) ||
+        review.username?.toLowerCase().includes(query)
+    );
   }, [searchQuery, reviews]);
+
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const loadUser = async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       if (user) {
-        // Get profile data if needed
-        const { data: profile } = await supabase
-          .from('profiles')
+        // Get user data if needed
+        const { data: userData } = await supabase
+          .from('users')
           .select('*')
           .eq('id', user.id)
           .single();
-        setCurrentUser(profile || { id: user.id, email: user.email });
+        setCurrentUser(userData || { id: user.id, email: user.email });
       } else {
         setCurrentUser(null);
       }
@@ -74,22 +80,15 @@ export default function ReviewsList() {
     }
   };
 
-  const loadReviews = async () => {
-    setIsLoading(true);
-    try {
-      const response = await reviewsAPI.list();
-      setReviews(response.reviews);
-      setFilteredReviews(response.reviews);
-    } catch (error: any) {
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Error loading reviews",
         description: error.message || "Failed to load reviews",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [error, toast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -103,12 +102,11 @@ export default function ReviewsList() {
   const handleDelete = async () => {
     if (!reviewToDelete) return;
     try {
-      await reviewsAPI.delete(reviewToDelete);
+      await deleteReview.mutateAsync(reviewToDelete);
       toast({
         title: "Review deleted",
         description: "The review has been deleted successfully",
       });
-      loadReviews();
       setDeleteDialogOpen(false);
       setReviewToDelete(null);
     } catch (error: any) {
@@ -253,6 +251,38 @@ export default function ReviewsList() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!isLoading && filteredReviews.length > 0 && searchQuery.trim() === "" && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-muted-foreground">
+              Showing {offset + 1} to {Math.min(offset + ITEMS_PER_PAGE, reviews.length)} of {reviews.length} reviews
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1 || isLoading}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                disabled={reviews.length < ITEMS_PER_PAGE || isLoading}
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         )}
       </div>
