@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" fill="none"/>
+  <g stroke="#04458D" stroke-width="1" stroke-opacity="0.35">
+    <path d="M0 20H200" />
+    <path d="M0 60H200" />
+    <path d="M0 100H200" />
+    <path d="M0 140H200" />
+    <path d="M0 180H200" />
+    <path d="M20 0V200" />
+    <path d="M60 0V200" />
+    <path d="M100 0V200" />
+    <path d="M140 0V200" />
+    <path d="M180 0V200" />
+  </g>
+  <g stroke="#0A3251" stroke-width="2" stroke-linecap="round" stroke-opacity="0.45">
+    <path d="M20 40h40" />
+    <path d="M60 40v40" />
+    <path d="M60 80h20" />
+    <path d="M100 20v40" />
+    <path d="M100 60h40" />
+    <path d="M140 60v40" />
+    <path d="M140 100h20" />
+    <circle cx="40" cy="140" r="8" />
+    <path d="M40 148v32" />
+    <circle cx="120" cy="140" r="6" />
+    <path d="M120 146v34" />
+  </g>
+</svg>
+

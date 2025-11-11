@@ -19,6 +19,34 @@ export default {
         sans: ['Saira', 'sans-serif'],
         serif: ['Neuton', 'serif'],
       },
+      spacing: {
+        xs: 'var(--space-xs)',
+        sm: 'var(--space-sm)',
+        md: 'var(--space-md)',
+        lg: 'var(--space-lg)',
+        xl: 'var(--space-xl)',
+        '2xl': 'var(--space-2xl)',
+        '3xl': 'var(--space-3xl)',
+      },
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        DEFAULT: 'var(--shadow-md)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+      },
+      backgroundImage: {
+        'gradient-blue': 'var(--gradient-blue)',
+        'gradient-cta': 'var(--gradient-cta)',
+        'gradient-light': 'var(--gradient-light)',
+      },
+      transitionDuration: {
+        fast: 'var(--transition-fast)',
+        brand: 'var(--transition-base)',
+        slow: 'var(--transition-slow)',
+      },
+      transitionTimingFunction: {
+        brand: 'var(--transition-smooth)',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

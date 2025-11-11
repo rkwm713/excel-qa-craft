@@ -166,8 +166,21 @@ export default function ReviewView() {
 
   const loadReview = async (reviewId: string) => {
     setIsLoading(true);
+    
+    // Set a timeout to prevent infinite loading
+    const loadingTimeoutId = setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Loading timeout",
+        description: "Review loading took too long. Please try refreshing the page.",
+        variant: "destructive",
+      });
+    }, 15000); // 15 second timeout for review loading
+
     try {
       const data = await reviewsAPI.get(reviewId);
+      clearTimeout(loadingTimeoutId);
+      
       setReviewData(data);
       
       // Convert review rows to QAReviewRow format
@@ -177,7 +190,7 @@ export default function ReviewView() {
       }));
       setQaData(rows);
       
-      // Load PDF file if available
+      // Load PDF file if available (async, don't block)
       if (data.pdfFile && data.pdfFile.data) {
         try {
           // Convert base64 to blob
@@ -192,30 +205,58 @@ export default function ReviewView() {
           setPdfFile(file);
         } catch (error) {
           console.error('Error loading PDF file:', error);
+          toast({
+            title: "PDF loading error",
+            description: "Could not load the PDF file. The review data is still available.",
+          });
         }
       } else if (data.review?.pdf_file_name) {
-        // Treat pdf_file_name as a Supabase Storage path
-        try {
-          const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string | undefined;
-          const path = data.review.pdf_file_name as string;
-          if (supabaseUrl && path) {
-            const publicUrl = `${supabaseUrl}/storage/v1/object/public/pdf-files/${path}`;
-            const res = await fetch(publicUrl);
-            if (res.ok) {
-              const blob = await res.blob();
-              const file = new File([blob], path.split('/').pop() || 'document.pdf', { type: blob.type || 'application/pdf' });
-              setPdfFile(file);
+        // Treat pdf_file_name as a Supabase Storage path (load asynchronously)
+        const loadPdfAsync = async () => {
+          try {
+            const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string | undefined;
+            const path = data.review.pdf_file_name as string;
+            if (supabaseUrl && path) {
+              const publicUrl = `${supabaseUrl}/storage/v1/object/public/pdf-files/${path}`;
+              
+              // Add timeout to fetch
+              const controller = new AbortController();
+              const fetchTimeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout for PDF fetch
+              
+              const res = await fetch(publicUrl, { signal: controller.signal });
+              clearTimeout(fetchTimeout);
+              
+              if (res.ok) {
+                const blob = await res.blob();
+                const file = new File([blob], path.split('/').pop() || 'document.pdf', { type: blob.type || 'application/pdf' });
+                setPdfFile(file);
+              } else {
+                console.warn('Failed to fetch PDF from storage:', res.status);
+                toast({
+                  title: "PDF not available",
+                  description: "Could not load the PDF file from storage.",
+                });
+              }
+            }
+          } catch (e) {
+            if ((e as Error).name === 'AbortError') {
+              console.warn('PDF fetch timed out');
+              toast({
+                title: "PDF loading timeout",
+                description: "PDF file took too long to load.",
+              });
             } else {
-              console.warn('Failed to fetch PDF from storage:', res.status);
+              console.error('Error fetching PDF from storage:', e);
             }
           }
-        } catch (e) {
-          console.error('Error fetching PDF from storage:', e);
-        }
+        };
+        
+        // Load PDF in background, don't block review loading
+        loadPdfAsync();
       }
       
       // Load PDF annotations
-      if (data.pdfAnnotations) {
+      if (data.pdfAnnotations && Object.keys(data.pdfAnnotations).length > 0) {
         const annotationsMap = new Map<number, any[]>();
         Object.entries(data.pdfAnnotations).forEach(([page, annotations]) => {
           annotationsMap.set(parseInt(page), annotations);
@@ -224,7 +265,7 @@ export default function ReviewView() {
       }
       
       // Load work point notes
-      if (data.workPointNotes) {
+      if (data.workPointNotes && Object.keys(data.workPointNotes).length > 0) {
         setPdfWorkPointNotes(data.workPointNotes);
       }
       
@@ -240,6 +281,7 @@ export default function ReviewView() {
         description: `Loaded review: ${data.review.title}`,
       });
     } catch (error: any) {
+      clearTimeout(loadingTimeoutId);
       toast({
         title: "Error loading review",
         description: error.message || "Failed to load review",

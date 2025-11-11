@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Navbar, NavbarActions, NavbarBrand, NavbarNav, NavbarLink } from "@/components/ui/navbar";
 import { reviewsAPI, ReviewListItem } from "@/services/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Search, LogOut, User, Plus, Trash2, TrendingUp, Calendar, FileSpreadsheet, Map as MapIcon } from "lucide-react";
+import { FileText, Search, LogOut, User, Plus, Trash2, TrendingUp, Calendar, FileSpreadsheet, Map as MapIcon, LayoutDashboard } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -20,7 +21,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { LoginDialog } from "@/components/LoginDialog";
-import techservLogo from "@/assets/techserv-logo.png";
 import {
   Table,
   TableBody,

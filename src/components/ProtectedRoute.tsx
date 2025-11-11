@@ -13,39 +13,73 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
 
   useEffect(() => {
-    const checkAuthAndProfile = async () => {
+    let mounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const checkAuthAndProfile = async (retryCount = 0) => {
       try {
-        // Check authentication
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        // Set a longer timeout to prevent false negatives (15 seconds)
+        timeoutId = setTimeout(() => {
+          if (mounted) {
+            if (retryCount < 1) {
+              // Retry once before giving up
+              console.warn("Auth check timeout - retrying...");
+              checkAuthAndProfile(retryCount + 1);
+            } else {
+              console.error("Auth check timeout after retry - assuming not authenticated");
+              setIsAuthenticated(false);
+              setHasProfile(false);
+              setIsLoading(false);
+            }
+          }
+        }, 15000); // 15 second timeout (increased from 5)
+
+        // Check authentication with session first (faster)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (authError || !user) {
+        if (timeoutId) clearTimeout(timeoutId);
+
+        if (!mounted) return;
+        
+        // If we have a session, user is authenticated
+        if (session?.user) {
+          setIsAuthenticated(true);
+
+          // Check if user has a profile in the users table
+          const { data: profile, error: profileError } = await supabase
+            .from("users")
+            .select("id")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (!mounted) return;
+
+          if (profileError) {
+            console.error("Error checking profile:", profileError);
+            setHasProfile(false);
+          } else {
+            setHasProfile(!!profile);
+          }
+        } else if (sessionError) {
+          console.error("Session error:", sessionError);
           setIsAuthenticated(false);
           setHasProfile(false);
-          setIsLoading(false);
-          return;
-        }
-
-        setIsAuthenticated(true);
-
-        // Check if user has a profile in the users table
-        const { data: profile, error: profileError } = await supabase
-          .from("users")
-          .select("id")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error("Error checking profile:", profileError);
-          setHasProfile(false);
         } else {
-          setHasProfile(!!profile);
+          // No session, not authenticated
+          setIsAuthenticated(false);
+          setHasProfile(false);
         }
       } catch (error) {
         console.error("Error in auth check:", error);
-        setIsAuthenticated(false);
-        setHasProfile(false);
+        if (timeoutId) clearTimeout(timeoutId);
+        if (mounted) {
+          setIsAuthenticated(false);
+          setHasProfile(false);
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -53,6 +87,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       if (event === "SIGNED_OUT" || !session) {
         setIsAuthenticated(false);
         setHasProfile(false);
@@ -64,11 +100,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           .select("id")
           .eq("id", session.user.id)
           .maybeSingle();
-        setHasProfile(!!profile);
+        if (mounted) {
+          setHasProfile(!!profile);
+        }
       }
     });
 
     return () => {
+      mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);

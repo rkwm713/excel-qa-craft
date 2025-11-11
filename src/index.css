@@ -10,118 +10,135 @@ All colors MUST be HSL.
   :root {
     /* TechServ Brand Colors */
     --background: 0 0% 100%;
-    --foreground: 210 14% 17%; /* TechServ Black */
+    --foreground: 220 11% 17%; /* TechServ Black */
 
     --card: 0 0% 100%;
-    --card-foreground: 210 14% 17%;
+    --card-foreground: 220 11% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 14% 17%;
+    --popover-foreground: 220 11% 17%;
 
-    --primary: 209 95% 28%; /* TechServ Blue #04458D */
+    --primary: 210 97% 28%; /* TechServ Blue #04458D */
     --primary-foreground: 0 0% 100%;
+    --primary-dark: 210 96% 22%; /* #033562 */
+    --primary-light: 210 95% 34%; /* #0558B3 */
 
-    --secondary: 212 48% 92%; /* Sky Blue */
-    --secondary-foreground: 209 95% 28%;
+    --secondary: 211 57% 89%; /* Sky Blue #D9E8F7 */
+    --secondary-foreground: 210 97% 28%;
 
-    --muted: 240 6% 90%; /* Conduit Gray */
-    --muted-foreground: 210 7% 33%; /* TechServ Gray */
+    --muted: 216 8% 78%; /* Conduit Gray #E6E7E8 */
+    --muted-foreground: 214 9% 33%; /* TechServ Gray #4E525B */
 
-    --accent: 60 100% 50%; /* Safety Yellow */
-    --accent-foreground: 210 14% 17%;
+    --accent: 60 100% 50%; /* Safety Yellow #FFFF00 */
+    --accent-foreground: 220 11% 17%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 355 70% 51%; /* #DC3545 */
     --destructive-foreground: 0 0% 100%;
-    
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 60 100% 50%; /* Safety Yellow */
-    --warning-foreground: 210 14% 17%;
 
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 209 95% 28%;
+    --success: 134 61% 36%; /* #28A745 */
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 100% 50%; /* #FFC107 */
+    --warning-foreground: 220 11% 17%;
+
+    --info: 210 97% 28%;
+
+    --border: 216 8% 78%;
+    --input: 216 8% 78%;
+    --ring: 210 97% 28%;
 
     --radius: 0.5rem;
-    
+
     /* TechServ specific colors */
-    --techserv-blue: 209 95% 28%;
-    --techserv-gray: 210 7% 33%;
-    --techserv-black: 210 14% 17%;
-    --storm-blue: 211 78% 18%;
-    --sky-blue: 212 48% 92%;
+    --techserv-blue: 210 97% 28%;
+    --techserv-blue-dark: 210 96% 22%;
+    --techserv-blue-light: 210 95% 34%;
+    --techserv-gray: 214 9% 33%;
+    --techserv-black: 220 11% 17%;
+    --storm-blue: 209 77% 18%; /* #0A3251 */
+    --sky-blue: 211 57% 89%;
     --safety-yellow: 60 100% 50%;
-    --conduit-gray: 240 6% 90%;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(209 95% 28%), hsl(209 95% 38%));
-    --gradient-hero: linear-gradient(135deg, hsl(209 95% 28%) 0%, hsl(211 78% 18%) 100%);
-    
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    
+    --conduit-gray: 216 8% 78%;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(40, 42, 48, 0.08);
+    --shadow-md: 0 4px 12px rgba(40, 42, 48, 0.12);
+    --shadow-lg: 0 8px 20px rgba(40, 42, 48, 0.16);
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+    --space-3xl: 64px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.2s ease;
+    --transition-slow: 0.3s ease;
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
+    /* Gradients */
+    --gradient-blue: linear-gradient(135deg, hsl(var(--storm-blue)) 0%, hsl(var(--primary)) 100%);
+    --gradient-cta: linear-gradient(135deg, #04458D 0%, #FFFF00 100%);
+    --gradient-light: linear-gradient(180deg, #FFFFFF 0%, #D9E8F7 100%);
+
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-foreground: 217 11% 26%;
+    --sidebar-primary: 217 13% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 217 13% 10%;
+    --sidebar-border: 220 14% 91%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   .dark {
-    --background: 210 14% 17%; /* TechServ Black */
+    --background: 220 11% 17%; /* TechServ Black */
     --foreground: 0 0% 100%;
 
-    --card: 210 7% 25%;
+    --card: 217 10% 22%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 210 14% 17%;
+    --popover: 220 11% 17%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 209 95% 38%; /* Lighter TechServ Blue for dark mode */
+    --primary: 210 95% 34%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 211 78% 18%; /* Storm Blue */
+    --secondary: 209 77% 18%; /* Storm Blue */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 7% 25%;
-    --muted-foreground: 240 6% 70%;
+    --muted: 220 11% 25%;
+    --muted-foreground: 220 13% 85%;
 
-    --accent: 60 100% 50%; /* Safety Yellow */
-    --accent-foreground: 210 14% 17%;
+    --accent: 60 100% 50%;
+    --accent-foreground: 220 11% 17%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 355 70% 41%;
     --destructive-foreground: 0 0% 100%;
-    
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 60 100% 50%;
-    --warning-foreground: 210 14% 17%;
 
-    --border: 210 7% 25%;
-    --input: 210 7% 25%;
-    --ring: 209 95% 38%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --success: 134 61% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 100% 50%;
+    --warning-foreground: 220 11% 17%;
+
+    --border: 217 10% 25%;
+    --input: 217 10% 25%;
+    --ring: 210 95% 34%;
+
+    --sidebar-background: 220 13% 12%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 210 95% 34%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 11% 22%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 220 11% 22%;
+    --sidebar-ring: 210 95% 34%;
   }
 }
 
@@ -140,6 +157,39 @@ All colors MUST be HSL.
     font-weight: 700;
     letter-spacing: 0.05em;
   }
+}
+
+.circuit-pattern {
+  background-image: url("/assets/circuit-pattern.svg");
+  background-repeat: repeat;
+  background-size: 200px;
+  opacity: 0.12;
+}
+
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(4, 69, 141, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(4, 69, 141, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.grid-pattern-light {
+  background-image:
+    linear-gradient(#E6E7E8 1px, transparent 1px),
+    linear-gradient(90deg, #E6E7E8 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.gradient-hero {
+  background: var(--gradient-blue);
+}
+
+.gradient-light {
+  background: var(--gradient-light);
+}
+
+.gradient-cta {
+  background: var(--gradient-cta);
 }
 
 /* Rich Text Editor Styles */

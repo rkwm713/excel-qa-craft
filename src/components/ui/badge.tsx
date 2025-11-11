@@ -4,14 +4,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-saira text-[11px] font-semibold uppercase tracking-[0.08em] transition-brand focus-visible:outline focus-visible:outline-primary focus-visible:outline-[3px] focus-visible:outline-offset-2",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+        default:
+          "border-primary bg-primary text-primary-foreground hover:border-[hsl(var(--primary-light))] hover:bg-[hsl(var(--primary-light))]",
+        secondary:
+          "border-[hsl(var(--secondary))] bg-[hsl(var(--secondary))] text-[hsl(var(--primary))] hover:border-[hsl(var(--primary))]/30 hover:bg-[hsl(var(--secondary))]/80",
+        success:
+          "border-[hsl(var(--success))] bg-[rgba(40,167,69,0.12)] text-[hsl(var(--success))]",
+        warning:
+          "border-[hsl(var(--warning))] bg-[rgba(255,193,7,0.12)] text-[hsl(var(--warning))]",
+        destructive:
+          "border-[hsl(var(--destructive))] bg-[rgba(220,53,69,0.12)] text-[hsl(var(--destructive))]",
+        outline: "border-[hsl(var(--border))] text-foreground",
+        info:
+          "border-[hsl(var(--info))] bg-[rgba(4,69,141,0.12)] text-[hsl(var(--info))]",
       },
     },
     defaultVariants: {
