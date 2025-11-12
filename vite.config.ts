@@ -15,4 +15,10 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Generate source maps for Sentry error tracking
+    sourcemap: true,
+    // Optimize for production
+    minify: mode === "production" ? "esbuild" : false,
+  },
 }));

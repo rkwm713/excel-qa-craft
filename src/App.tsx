@@ -10,55 +10,58 @@ import ReviewsList from "./pages/ReviewsList";
 import ReviewView from "./pages/ReviewView";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { SentryErrorBoundary } from "./components/SentryErrorBoundary";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/new-review" 
-            element={
-              <ProtectedRoute>
-                <NewReview />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/reviews" 
-            element={
-              <ProtectedRoute>
-                <ReviewsList />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/review/:id" 
-            element={
-              <ProtectedRoute>
-                <ReviewView />
-              </ProtectedRoute>
-            } 
-          />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <SentryErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/new-review" 
+              element={
+                <ProtectedRoute>
+                  <NewReview />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reviews" 
+              element={
+                <ProtectedRoute>
+                  <ReviewsList />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/review/:id" 
+              element={
+                <ProtectedRoute>
+                  <ReviewView />
+                </ProtectedRoute>
+              } 
+            />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </SentryErrorBoundary>
 );
 
 export default App;

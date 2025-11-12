@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoginDialog } from "@/components/LoginDialog";
@@ -11,20 +11,22 @@ export default function Landing() {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const redirectTarget = useMemo(() => {
+    const fromLocation = (location.state as { from?: Location } | null)?.from;
+    if (!fromLocation) {
+      return "/dashboard";
+    }
+    return `${fromLocation.pathname}${fromLocation.search}${fromLocation.hash}`;
+  }, [location.state]);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Set a timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-          setIsCheckingAuth(false);
-        }, 5000); // 5 second timeout
-
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        
-        clearTimeout(timeoutId);
 
         if (user) {
           const { data: profile } = await supabase
@@ -34,7 +36,7 @@ export default function Landing() {
             .maybeSingle();
 
           if (profile) {
-            navigate("/dashboard", { replace: true });
+            navigate(redirectTarget, { replace: true });
           }
         }
       } catch (error) {
@@ -45,7 +47,7 @@ export default function Landing() {
     };
 
     checkAuth();
-  }, [navigate]);
+  }, [navigate, redirectTarget]);
 
   const handleLoginSuccess = async (user: any) => {
     const { data: profile, error } = await supabase
@@ -60,7 +62,7 @@ export default function Landing() {
     }
 
     if (profile) {
-      navigate("/dashboard");
+      navigate(redirectTarget, { replace: true });
     } else {
       alert("Your account does not have a profile. Please contact an administrator to set up your profile.");
       await supabase.auth.signOut();
@@ -98,9 +100,39 @@ export default function Landing() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="absolute inset-0 pattern-blue-gradient opacity-80" aria-hidden="true" />
-      <div className="absolute inset-0 pattern-electric-trail mix-blend-screen opacity-20" aria-hidden="true" />
-      <div className="absolute inset-y-0 left-1/2 hidden w-2/3 -translate-x-1/2 blur-3xl md:block pattern-bolt-glow opacity-30" aria-hidden="true" />
+      {/* Base gradient background - Storm Blue to TechServ Blue */}
+      <div className="absolute inset-0 pattern-blue-gradient" aria-hidden="true" />
+      
+      {/* Subtle technical grid overlay */}
+      <div 
+        className="absolute inset-0 opacity-[0.15]" 
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px)
+          `,
+          backgroundSize: '48px 48px'
+        }}
+        aria-hidden="true" 
+      />
+      
+      {/* Diagonal stripe pattern overlay */}
+      <div 
+        className="absolute inset-0 opacity-[0.08]" 
+        style={{
+          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255, 255, 255, 0.1) 20px, rgba(255, 255, 255, 0.1) 40px)'
+        }}
+        aria-hidden="true" 
+      />
+      
+      {/* Subtle radial glow for depth */}
+      <div 
+        className="absolute inset-0 opacity-[0.25]" 
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 70%)'
+        }}
+        aria-hidden="true" 
+      />
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center gap-20 px-6 py-20">
         <section className="flex w-full flex-col items-center gap-10 rounded-[var(--radius-lg)] border border-[hsl(var(--border))]/60 bg-white/90 p-12 text-center shadow-brand-lg backdrop-blur">

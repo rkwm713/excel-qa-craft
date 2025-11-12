@@ -171,20 +171,9 @@ export default function ReviewView() {
 
   const loadReview = async (reviewId: string) => {
     setIsLoading(true);
-    
-    // Set a timeout to prevent infinite loading
-    const loadingTimeoutId = setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Loading timeout",
-        description: "Review loading took too long. Please try refreshing the page.",
-        variant: "destructive",
-      });
-    }, 15000); // 15 second timeout for review loading
 
     try {
       const data = await reviewsAPI.get(reviewId);
-      clearTimeout(loadingTimeoutId);
       
       setReviewData(data);
       
@@ -288,7 +277,6 @@ export default function ReviewView() {
         description: `Loaded review: ${data.review.title}`,
       });
     } catch (error: any) {
-      clearTimeout(loadingTimeoutId);
       toast({
         title: "Error loading review",
         description: error.message || "Failed to load review",

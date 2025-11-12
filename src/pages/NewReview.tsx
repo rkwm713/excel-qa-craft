@@ -54,6 +54,7 @@ const NewReview = () => {
   const [mapDrawings, setMapDrawings] = useState<any[]>([]);
   const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
   const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, WorkPointNote[]>>({});
+  const [hasUploadedFiles, setHasUploadedFiles] = useState(false);
   const [currentWorkPoint, setCurrentWorkPoint] = useState<QAReviewRow | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -290,8 +291,6 @@ const NewReview = () => {
       setIsSaving(false);
     }
   };
-
-  const [hasUploadedFiles, setHasUploadedFiles] = useState(false);
 
   const handleFileSelect = async (file: File) => {
     try {

@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-type AuthErrorType = 'timeout' | 'network' | 'auth' | 'profile' | null;
+type AuthErrorType = 'network' | 'auth' | 'profile' | null;
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -16,36 +16,28 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [hasProfile, setHasProfile] = useState(false);
   const [error, setError] = useState<AuthErrorType>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [isSessionDelayed, setIsSessionDelayed] = useState(false);
   const location = useLocation();
 
-  const checkAuthAndProfile = async (attemptNumber = 0) => {
+  const checkAuthAndProfile = async () => {
+    let slowTimer: ReturnType<typeof setTimeout> | undefined;
     try {
       setError(null);
       setIsLoading(true);
+      setIsSessionDelayed(false);
 
-      // Exponential backoff: 2^attempt * 1000ms, max 10 seconds
-      const timeoutMs = Math.min(2000 * Math.pow(2, attemptNumber), 10000);
+      slowTimer = setTimeout(() => {
+        setIsSessionDelayed(true);
+      }, 5000);
 
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs);
-      });
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-      // Race between auth check and timeout
-      const authPromise = Promise.all([
-        supabase.auth.getSession(),
-        // Small delay to ensure session check completes
-        new Promise(resolve => setTimeout(resolve, 100))
-      ]);
-
-      const result = await Promise.race([authPromise, timeoutPromise]);
-      const [{ data: { session }, error: sessionError }] = result as any;
-
-      // If we have a session, user is authenticated
       if (session?.user) {
         setIsAuthenticated(true);
 
-        // Check if user has a profile in the users table
         const { data: profile, error: profileError } = await supabase
           .from("users")
           .select("id")
@@ -54,45 +46,48 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
         if (profileError) {
           console.error("Error checking profile:", profileError);
-          setError('profile');
+          setError("profile");
           setHasProfile(false);
         } else {
           setHasProfile(!!profile);
           setError(null);
+          setRetryCount(0);
         }
       } else if (sessionError) {
         console.error("Session error:", sessionError);
-        setError('auth');
+        setError("auth");
         setIsAuthenticated(false);
         setHasProfile(false);
       } else {
-        // No session, not authenticated
         setError(null);
         setIsAuthenticated(false);
         setHasProfile(false);
+        setRetryCount(0);
       }
     } catch (error: any) {
       console.error("Error in auth check:", error);
 
-      if (error.message === 'TIMEOUT') {
-        setError('timeout');
-      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        setError('network');
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
+        setError("network");
       } else {
-        setError('auth');
+        setError("auth");
       }
 
       setIsAuthenticated(false);
       setHasProfile(false);
     } finally {
+      if (slowTimer) {
+        clearTimeout(slowTimer);
+      }
       setIsLoading(false);
+      setIsSessionDelayed(false);
     }
   };
 
   const handleRetry = () => {
     const newRetryCount = retryCount + 1;
     setRetryCount(newRetryCount);
-    checkAuthAndProfile(newRetryCount);
+    checkAuthAndProfile();
   };
 
   const handleRefresh = () => {
@@ -138,11 +133,29 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-pulse text-muted-foreground text-lg">
-            {retryCount > 0 ? `Retrying... (${retryCount})` : "Loading..."}
+            {retryCount > 0
+              ? `Retrying... (${retryCount})`
+              : isSessionDelayed
+                ? "Still verifying your session…"
+                : "Loading..."}
           </div>
           <div className="text-sm text-muted-foreground">
-            Checking authentication status
+            {isSessionDelayed
+              ? "This is taking longer than usual. You can wait here—we're still working on it."
+              : "Checking authentication status"}
           </div>
+          {isSessionDelayed && (
+            <div className="flex flex-col gap-2 pt-2">
+              <Button onClick={handleRetry} className="gap-2 justify-center">
+                <RefreshCw className="w-4 h-4" />
+                Try Again
+              </Button>
+              <Button variant="outline" onClick={handleRefresh} className="gap-2 justify-center">
+                <RefreshCw className="w-4 h-4" />
+                Refresh Page
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -151,8 +164,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (error) {
     const getErrorMessage = () => {
       switch (error) {
-        case 'timeout':
-          return "Connection timeout. The authentication service is taking too long to respond.";
         case 'network':
           return "Network connection error. Please check your internet connection.";
         case 'auth':
