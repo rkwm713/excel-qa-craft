@@ -1,5 +1,6 @@
-import { useEffect, useCallback, useRef } from "react";
-import { useBeforeUnload, useBlocker } from "react-router-dom";
+import { useEffect, useCallback, useRef, useContext } from "react";
+import { useBeforeUnload, UNSAFE_NavigationContext } from "react-router-dom";
+import type { History, Transition } from "history";
 
 interface UseUnsavedChangesOptions {
   hasUnsavedChanges: boolean;
@@ -12,7 +13,10 @@ export function useUnsavedChanges({
   message = "You have unsaved changes. Are you sure you want to leave?",
   onConfirmLeave
 }: UseUnsavedChangesOptions) {
+  const navigator = useContext(UNSAFE_NavigationContext).navigator as History;
   const isLeavingRef = useRef(false);
+  const unblockRef = useRef<null | (() => void)>(null);
+  const pendingTransitionRef = useRef<Transition | null>(null);
 
   // Handle browser beforeunload event
   useBeforeUnload(
@@ -29,28 +33,60 @@ export function useUnsavedChanges({
   );
 
   // Handle React Router navigation blocking
-  const blocker = useBlocker(
-    useCallback(
-      ({ currentLocation, nextLocation }) => {
-        if (hasUnsavedChanges && !isLeavingRef.current) {
-          return !window.confirm(message);
+  useEffect(() => {
+    if (!hasUnsavedChanges) {
+      isLeavingRef.current = false;
+      if (unblockRef.current) {
+        unblockRef.current();
+        unblockRef.current = null;
+      }
+      return;
+    }
+
+    const unblock = navigator.block((tx) => {
+      if (isLeavingRef.current || !hasUnsavedChanges) {
+        unblock();
+        unblockRef.current = null;
+        tx.retry();
+        return;
+      }
+
+      const confirmLeave = window.confirm(message);
+      if (confirmLeave) {
+        unblock();
+        unblockRef.current = null;
+        isLeavingRef.current = true;
+        pendingTransitionRef.current = tx;
+        tx.retry();
+        if (onConfirmLeave) {
+          onConfirmLeave();
         }
-        return false;
-      },
-      [hasUnsavedChanges, message]
-    )
-  );
+      } else {
+        pendingTransitionRef.current = null;
+      }
+    });
+
+    unblockRef.current = unblock;
+
+    return unblock;
+  }, [navigator, hasUnsavedChanges, message, onConfirmLeave]);
 
   // Function to allow navigation programmatically
   const allowNavigation = useCallback(() => {
     isLeavingRef.current = true;
-    if (blocker.state === "blocked") {
-      blocker.proceed();
+    if (unblockRef.current) {
+      const unblock = unblockRef.current;
+      unblockRef.current = null;
+      unblock();
+    }
+    if (pendingTransitionRef.current) {
+      pendingTransitionRef.current.retry();
+      pendingTransitionRef.current = null;
     }
     if (onConfirmLeave) {
       onConfirmLeave();
     }
-  }, [blocker, onConfirmLeave]);
+  }, [onConfirmLeave]);
 
   // Reset the leaving flag when component unmounts or hasUnsavedChanges becomes false
   useEffect(() => {
@@ -67,7 +103,6 @@ export function useUnsavedChanges({
   }, []);
 
   return {
-    allowNavigation,
-    isBlocked: blocker.state === "blocked"
+    allowNavigation
   };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,76 +18,106 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [retryCount, setRetryCount] = useState(0);
   const [isSessionDelayed, setIsSessionDelayed] = useState(false);
   const location = useLocation();
+  const isMountedRef = useRef(true);
 
-  const checkAuthAndProfile = async () => {
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const checkAuthAndProfile = async (attempt = 0): Promise<void> => {
     let slowTimer: ReturnType<typeof setTimeout> | undefined;
     try {
       setError(null);
       setIsLoading(true);
       setIsSessionDelayed(false);
+      setRetryCount(attempt);
 
       slowTimer = setTimeout(() => {
-        setIsSessionDelayed(true);
+        if (isMountedRef.current) {
+          setIsSessionDelayed(true);
+        }
       }, 5000);
 
       const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-      if (session?.user) {
+      if (user) {
+        if (!isMountedRef.current) return;
         setIsAuthenticated(true);
 
         const { data: profile, error: profileError } = await supabase
           .from("users")
           .select("id")
-          .eq("id", session.user.id)
+          .eq("id", user.id)
           .maybeSingle();
 
         if (profileError) {
           console.error("Error checking profile:", profileError);
+          if (!isMountedRef.current) return;
           setError("profile");
           setHasProfile(false);
         } else {
+          if (!isMountedRef.current) return;
           setHasProfile(!!profile);
           setError(null);
           setRetryCount(0);
         }
-      } else if (sessionError) {
-        console.error("Session error:", sessionError);
+      } else if (userError) {
+        console.error("Session error:", userError);
+        if (!isMountedRef.current) return;
         setError("auth");
         setIsAuthenticated(false);
         setHasProfile(false);
       } else {
+        // No user yet – likely session still hydrating. Retry a few times before giving up.
+        if (attempt < 4) {
+          if (slowTimer) {
+            clearTimeout(slowTimer);
+          }
+          const delayMs = Math.min(250 * Math.pow(2, attempt), 1000);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          if (!isMountedRef.current) return;
+          return checkAuthAndProfile(attempt + 1);
+        }
+        if (!isMountedRef.current) return;
         setError(null);
         setIsAuthenticated(false);
         setHasProfile(false);
-        setRetryCount(0);
       }
     } catch (error: any) {
       console.error("Error in auth check:", error);
 
       if (error.name === "TypeError" && error.message.includes("fetch")) {
-        setError("network");
+        if (isMountedRef.current) {
+          setError("network");
+        }
       } else {
-        setError("auth");
+        if (isMountedRef.current) {
+          setError("auth");
+        }
       }
 
-      setIsAuthenticated(false);
-      setHasProfile(false);
+      if (isMountedRef.current) {
+        setIsAuthenticated(false);
+        setHasProfile(false);
+      }
     } finally {
       if (slowTimer) {
         clearTimeout(slowTimer);
       }
-      setIsLoading(false);
-      setIsSessionDelayed(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+        setIsSessionDelayed(false);
+      }
     }
   };
 
   const handleRetry = () => {
-    const newRetryCount = retryCount + 1;
-    setRetryCount(newRetryCount);
-    checkAuthAndProfile();
+    checkAuthAndProfile(0);
   };
 
   const handleRefresh = () => {
@@ -109,16 +139,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         setError(null);
       } else if (event === "SIGNED_IN" && session?.user) {
         setIsAuthenticated(true);
-        // Check profile again
-        const { data: profile } = await supabase
-          .from("users")
-          .select("id")
-          .eq("id", session.user.id)
-          .maybeSingle();
-        if (mounted) {
-          setHasProfile(!!profile);
-          setError(null);
-        }
+        setError(null);
+        checkAuthAndProfile(0);
+      } else if (event === "TOKEN_REFRESHED") {
+        checkAuthAndProfile(0);
       }
     });
 

@@ -11,6 +11,7 @@ import { GoogleApiKeyInput } from "@/components/GoogleApiKeyInput";
 import { StreetViewModal } from "@/components/StreetViewModal";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SaveReviewDialog } from "@/components/SaveReviewDialog";
+import { DraftRecoveryDialog } from "@/components/DraftRecoveryDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, FileSpreadsheet, Map as MapIcon, TrendingUp, FileText, Save, ArrowLeft, Clock, CheckCircle2 } from "lucide-react";
