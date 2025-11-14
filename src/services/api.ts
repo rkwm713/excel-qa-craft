@@ -160,7 +160,11 @@ export interface ReviewData {
   pdfAnnotations: Record<number, Array<Record<string, unknown>>>;
   workPointNotes: Record<string, WorkPointNote[] | string>;
   kmzPlacemarks: Array<Record<string, unknown>>;
-  pdfFile?: null;
+  pdfFile?: {
+    data: string;
+    mimeType: string;
+    fileName: string;
+  } | null;
 }
 
 export interface ReviewListItem {
@@ -255,7 +259,7 @@ export const reviewsAPI = {
     stationPageMapping?: Record<string, number>;
     stationSpecMapping?: Record<string, string>;
     editedSpecMapping?: Record<string, string>;
-    pdfAnnotations?: Map<number, Array<Record<string, unknown>>>;
+    pdfAnnotations?: Record<number, Array<Record<string, unknown>>>;
     workPointNotes?: Record<string, WorkPointNote[]>;
     kmzPlacemarks?: Array<Record<string, unknown>>;
   }): Promise<{ id: string; message: string }> => {
@@ -327,8 +331,8 @@ export const reviewsAPI = {
       stationPageMapping?: Record<string, number>;
       stationSpecMapping?: Record<string, string>;
       editedSpecMapping?: Record<string, string>;
-      pdfAnnotations?: Map<number, Array<Record<string, unknown>>>;
-      workPointNotes?: Record<string, WorkPointNote[]>;
+      pdfAnnotations?: Record<number, Array<Record<string, unknown>>>;
+      workPointNotes?: Record<string, WorkPointNote[] | string>;
     }
   ): Promise<{ message: string }> => {
     await ensureUserProfile();

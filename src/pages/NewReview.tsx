@@ -53,7 +53,7 @@ const NewReview = () => {
   const [editedSpecMapping, setEditedSpecMapping] = useState<Record<string, string>>({});
   const [placemarkNotes, setPlacemarkNotes] = useState<Record<string, string>>({});
   const [mapDrawings, setMapDrawings] = useState<any[]>([]);
-  const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
+  const [pdfAnnotations, setPdfAnnotations] = useState<Record<number, any[]>>({});
   const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, WorkPointNote[]>>({});
   const [hasUploadedFiles, setHasUploadedFiles] = useState(false);
   const [currentWorkPoint, setCurrentWorkPoint] = useState<QAReviewRow | null>(null);
@@ -452,7 +452,7 @@ const NewReview = () => {
   };
 
   const handlePDFAnnotationsChange = (pageNumber: number, annotations: any[]) => {
-    setPdfAnnotations(prev => new Map(prev).set(pageNumber, annotations));
+    setPdfAnnotations(prev => ({ ...prev, [pageNumber]: annotations }));
   };
 
   const handlePDFWorkPointNotesChange = (workPoint: string, notes: WorkPointNote[]) => {
