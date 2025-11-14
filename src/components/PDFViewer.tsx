@@ -23,7 +23,7 @@ interface PDFViewerProps {
   stationPageMapping?: Record<string, number>;
   currentStation?: string | null;
   onAnnotationsChange?: (pageNumber: number, annotations: PDFAnnotation[]) => void;
-  initialAnnotations?: Map<number, PDFAnnotation[]>;
+  initialAnnotations?: Record<number, PDFAnnotation[]>;
   onWorkPointNotesChange?: (workPoint: string, notes: WorkPointNote[]) => void;
   initialWorkPointNotes?: Record<string, WorkPointNote[] | string>;
 }
@@ -139,7 +139,12 @@ export function PDFViewer({
   // Initialize annotations from props
   useEffect(() => {
     if (initialAnnotations) {
-      setAnnotationsByPage(initialAnnotations);
+      // Convert Record to Map
+      const map = new Map<number, PDFAnnotation[]>();
+      Object.entries(initialAnnotations).forEach(([page, annotations]) => {
+        map.set(Number(page), annotations);
+      });
+      setAnnotationsByPage(map);
     }
   }, [initialAnnotations]);
 
@@ -249,7 +254,6 @@ export function PDFViewer({
         id: commentId,
         text: '',
         calloutAnnotationId: annotationWithPage.id,
-        pageNumber: currentPage,
         createdAt: new Date().toISOString(),
       };
 
@@ -366,7 +370,6 @@ export function PDFViewer({
     const newNote: WorkPointNote = {
       id: generateId('note'),
       text: '',
-      pageNumber: currentPage,
       createdAt: new Date().toISOString(),
     };
     const nextNotes = [...workPointNotes, newNote];
@@ -423,8 +426,8 @@ export function PDFViewer({
   };
 
   const handleJumpToNotePage = (note: WorkPointNote) => {
-    if (!note.pageNumber || note.pageNumber === currentPage) return;
-    onPageChange(note.pageNumber);
+    // Notes no longer have pageNumber, so this function is deprecated
+    return;
   };
 
   const currentPageAnnotations = annotationsByPage.get(currentPage) || [];
@@ -578,23 +581,8 @@ export function PDFViewer({
                         <Badge variant={note.calloutNumber ? "default" : "outline"} className="text-xs">
                           {note.calloutNumber ? `Callout #${note.calloutNumber}` : 'Comment'}
                         </Badge>
-                        {note.pageNumber && (
-                          <span className="text-xs text-muted-foreground">
-                            Page {note.pageNumber}
-                          </span>
-                        )}
                       </div>
                       <div className="flex items-center gap-1">
-                        {note.pageNumber && note.pageNumber !== currentPage && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleJumpToNotePage(note)}
-                            title={`Jump to page ${note.pageNumber}`}
-                          >
-                            <LocateFixed className="h-4 w-4" />
-                          </Button>
-                        )}
                         <Button
                           variant="ghost"
                           size="icon"

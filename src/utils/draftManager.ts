@@ -83,7 +83,7 @@ class DraftManager {
         ...state,
       };
 
-      // Convert Map to object for serialization
+      // Ensure pdfAnnotations is a Record (convert Map if needed)
       if (state.pdfAnnotations instanceof Map) {
         draftState.pdfAnnotations = {};
         state.pdfAnnotations.forEach((annotations, page) => {
@@ -113,12 +113,10 @@ class DraftManager {
         return null;
       }
 
-      // Convert annotations object back to Map
-      const pdfAnnotations = new Map<number, any[]>();
-      Object.entries(draftState.pdfAnnotations || {}).forEach(([page, annotations]) => {
-        pdfAnnotations.set(Number(page), annotations);
-      });
-      draftState.pdfAnnotations = pdfAnnotations;
+      // Keep annotations as Record (no conversion needed)
+      if (!draftState.pdfAnnotations) {
+        draftState.pdfAnnotations = {};
+      }
 
       const normalizedWorkPointNotes: Record<string, WorkPointNote[]> = {};
       Object.entries(draftState.pdfWorkPointNotes || {}).forEach(([station, notes]) => {
@@ -217,11 +215,11 @@ class DraftManager {
   draftHasContent(state: DraftReviewState | null): boolean {
     if (!state) return false;
 
-    return state.qaData?.length > 0 ||
+    return Boolean(state.qaData?.length > 0 ||
            state.fileName ||
            state.kmzFileName ||
            state.pdfFileName ||
-           Object.keys(state.stationPageMapping || {}).length > 0;
+           Object.keys(state.stationPageMapping || {}).length > 0);
   }
 }
 

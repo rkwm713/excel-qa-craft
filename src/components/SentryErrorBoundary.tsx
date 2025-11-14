@@ -119,7 +119,7 @@ export function SentryErrorBoundary({ children }: { children: ReactNode }) {
               {error && (
                 <div className="rounded-md bg-muted p-3">
                   <p className="text-sm font-mono text-muted-foreground">
-                    {error.message || "Unknown error"}
+                    {(error as Error)?.message || "Unknown error"}
                   </p>
                 </div>
               )}

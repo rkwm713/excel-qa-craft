@@ -9,6 +9,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, FileSpreadsheet, Map as MapIcon, TrendingUp, Save, Download, Edit2, Check, X } from "lucide-react";
 import { QAReviewRow, DashboardMetrics } from "@/types/qa-tool";
+import { WorkPointNote } from "@/types/pdf";
 import { parsePDFForWorkPoints } from "@/utils/pdfParser";
 import { normalizeStation, findMatchingStation } from "@/utils/stationNormalizer";
 import { exportToExcel } from "@/utils/excelParser";
@@ -59,7 +60,7 @@ export default function ReviewView() {
   const [selectedStation, setSelectedStation] = useState<string>("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [currentPdfPage, setCurrentPdfPage] = useState<number>(1);
-  const [pdfAnnotations, setPdfAnnotations] = useState<Map<number, any[]>>(new Map());
+  const [pdfAnnotations, setPdfAnnotations] = useState<Record<number, any[]>>({});
   const [pdfWorkPointNotes, setPdfWorkPointNotes] = useState<Record<string, WorkPointNote[]>>({});
   const [currentWorkPoint, setCurrentWorkPoint] = useState<QAReviewRow | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -253,16 +254,22 @@ export default function ReviewView() {
       
       // Load PDF annotations
       if (data.pdfAnnotations && Object.keys(data.pdfAnnotations).length > 0) {
-        const annotationsMap = new Map<number, any[]>();
-        Object.entries(data.pdfAnnotations).forEach(([page, annotations]) => {
-          annotationsMap.set(parseInt(page), annotations);
-        });
-        setPdfAnnotations(annotationsMap);
+        setPdfAnnotations(data.pdfAnnotations);
       }
       
-      // Load work point notes
+      // Load work point notes with normalization
       if (data.workPointNotes && Object.keys(data.workPointNotes).length > 0) {
-        setPdfWorkPointNotes(data.workPointNotes);
+        const normalizedNotes: Record<string, WorkPointNote[]> = {};
+        Object.entries(data.workPointNotes).forEach(([key, value]) => {
+          // Normalize each entry to WorkPointNote[]
+          if (Array.isArray(value)) {
+            normalizedNotes[key] = value;
+          } else if (typeof value === 'string') {
+            // Legacy string notes - skip or convert if needed
+            normalizedNotes[key] = [];
+          }
+        });
+        setPdfWorkPointNotes(normalizedNotes);
       }
       
       // Auto-select first station
@@ -349,10 +356,10 @@ export default function ReviewView() {
   }, [reviewData?.stationPageMapping, qaData]);
 
   const handlePDFAnnotationsChange = (pageNumber: number, annotations: any[]) => {
-    setPdfAnnotations(prev => new Map(prev).set(pageNumber, annotations));
+    setPdfAnnotations(prev => ({ ...prev, [pageNumber]: annotations }));
   };
 
-  const handlePDFWorkPointNotesChange = (workPoint: string, notes: string) => {
+  const handlePDFWorkPointNotesChange = (workPoint: string, notes: WorkPointNote[]) => {
     setPdfWorkPointNotes(prev => ({ ...prev, [workPoint]: notes }));
   };
 

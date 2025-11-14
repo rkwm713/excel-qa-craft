@@ -3,7 +3,7 @@ import { QAReviewRow } from "@/types/qa-tool";
 const cleanString = (value: string | null | undefined) =>
   value ? value.trim() : "";
 
-const normalizeQty = (value: QAReviewRow["qaQty"]) => {
+const normalizeQty = (value: QAReviewRow["qaQty"] | unknown) => {
   if (value === null || value === undefined || value === "") {
     return null;
   }
@@ -26,7 +26,8 @@ export const normalizeQaRow = (row: QAReviewRow): QAReviewRow => {
 
   const cuCheck = qaCU === "" ? true : qaCU === designerCU;
   const wfCheck = qaWF === "" ? true : qaWF === designerWF;
-  const qtyCheck = qaQty === null ? true : qaQty === row.designerQty;
+  const designerQtyNormalized = normalizeQty(row.designerQty);
+  const qtyCheck = qaQty === null ? true : qaQty === designerQtyNormalized;
 
   const qaHasValue = qaCU !== "" || qaWF !== "" || qaQty !== null;
   const issueType =

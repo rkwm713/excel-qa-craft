@@ -31,7 +31,7 @@ interface QAReviewTableProps {
   editedSpecMapping?: Record<string, string>;
   onSpecNumberChange?: (station: string, specNumber: string) => void;
   onAnnotationsChange?: (pageNumber: number, annotations: any[]) => void;
-  initialAnnotations?: Map<number, any[]>;
+  initialAnnotations?: Record<number, any[]>;
   onWorkPointNotesChange?: (workPoint: string, notes: WorkPointNote[]) => void;
   initialWorkPointNotes?: Record<string, WorkPointNote[] | string>;
   currentWorkPoint?: QAReviewRowType | null;

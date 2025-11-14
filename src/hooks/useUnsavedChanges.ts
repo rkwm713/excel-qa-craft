@@ -1,6 +1,5 @@
 import { useEffect, useCallback, useRef, useContext } from "react";
 import { useBeforeUnload, UNSAFE_NavigationContext } from "react-router-dom";
-import type { History, Transition } from "history";
 
 interface UseUnsavedChangesOptions {
   hasUnsavedChanges: boolean;
@@ -13,10 +12,10 @@ export function useUnsavedChanges({
   message = "You have unsaved changes. Are you sure you want to leave?",
   onConfirmLeave
 }: UseUnsavedChangesOptions) {
-  const navigator = useContext(UNSAFE_NavigationContext).navigator as History;
+  const navigator = useContext(UNSAFE_NavigationContext).navigator as any;
   const isLeavingRef = useRef(false);
   const unblockRef = useRef<null | (() => void)>(null);
-  const pendingTransitionRef = useRef<Transition | null>(null);
+  const pendingTransitionRef = useRef<any | null>(null);
 
   // Handle browser beforeunload event
   useBeforeUnload(
